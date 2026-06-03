@@ -1,0 +1,46 @@
+<view class="page">
+  <view class="hero">
+    <view class="title">吵架复盘</view>
+    <view class="subtitle">先记录事实和状态，再讨论需求和下一步。</view>
+  </view>
+
+  <view class="panel">
+    <view class="field">
+      <view class="label">吵架时间</view>
+      <input value="{{conflictTime}}" placeholder="例如：2026-05-15 晚上" bindinput="onInput" data-key="conflictTime" />
+    </view>
+    <view class="field">
+      <view class="label">大致内容</view>
+      <textarea value="{{content}}" placeholder="尽量写事实，不写评价" bindinput="onInput" data-key="content" />
+    </view>
+    <view class="field">
+      <view class="label">七天内的压力性事件</view>
+      <textarea value="{{stressEvents}}" placeholder="工作、学业、家庭、金钱、健康等压力" bindinput="onInput" data-key="stressEvents" />
+    </view>
+    <view class="field">
+      <view class="label">3天内生理状态</view>
+      <textarea value="{{bodyState}}" placeholder="疲劳、经期、身体不适、饮食、运动等" bindinput="onInput" data-key="bodyState" />
+    </view>
+    <view class="field">
+      <view class="label">3天内睡眠情况</view>
+      <textarea value="{{sleepState}}" placeholder="睡眠时长、睡眠质量、熬夜情况" bindinput="onInput" data-key="sleepState" />
+    </view>
+    <view class="field">
+      <view class="label">3天内环境和人际关系</view>
+      <textarea value="{{relationshipState}}" placeholder="环境变化、家人朋友、同事同学关系" bindinput="onInput" data-key="relationshipState" />
+    </view>
+    <view class="field">
+      <view class="label">沟通情况</view>
+      <textarea value="{{communication}}" placeholder="有没有打断、冷战、解释、倾听、道歉" bindinput="onInput" data-key="communication" />
+    </view>
+    <view class="field">
+      <view class="label">沟通满意度（1到10分）</view>
+      <input type="number" value="{{satisfaction}}" placeholder="1-10" bindinput="onInput" data-key="satisfaction" />
+    </view>
+    <view class="field">
+      <view class="label">大致结果</view>
+      <textarea value="{{result}}" placeholder="达成了什么、没解决什么、下一步做什么" bindinput="onInput" data-key="result" />
+    </view>
+    <button class="button" bindtap="submitConflict">保存复盘</button>
+  </view>
+</view>

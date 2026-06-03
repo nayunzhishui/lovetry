@@ -1,0 +1,132 @@
+page {
+  background: #f7f4ef;
+  color: #273044;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+.hero {
+  padding: 28rpx 0 20rpx;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #273044;
+}
+
+.subtitle {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #687086;
+}
+
+.panel {
+  margin-top: 24rpx;
+  padding: 28rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 28rpx rgba(39, 48, 68, 0.08);
+}
+
+.field {
+  margin-top: 24rpx;
+}
+
+.label {
+  margin-bottom: 12rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+input,
+textarea,
+picker {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1rpx solid #d9dee8;
+  border-radius: 12rpx;
+  background: #fbfcfd;
+  color: #273044;
+  font-size: 28rpx;
+}
+
+input,
+picker {
+  height: 84rpx;
+  padding: 0 20rpx;
+  line-height: 84rpx;
+}
+
+textarea {
+  min-height: 150rpx;
+  padding: 18rpx 20rpx;
+  line-height: 1.5;
+}
+
+.button {
+  margin-top: 28rpx;
+  border-radius: 12rpx;
+  background: #2f6fed;
+  color: #ffffff;
+}
+
+.button.secondary {
+  background: #eef3f8;
+  color: #273044;
+}
+
+.nav-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-top: 20rpx;
+}
+
+.nav-item {
+  padding: 26rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 28rpx rgba(39, 48, 68, 0.08);
+}
+
+.nav-title {
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.nav-desc {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #687086;
+}
+
+.record {
+  margin-top: 18rpx;
+  padding: 24rpx;
+  border-radius: 14rpx;
+  background: #ffffff;
+}
+
+.record-title {
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.record-meta {
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: #7a8494;
+}
+
+.record-content {
+  margin-top: 14rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+}

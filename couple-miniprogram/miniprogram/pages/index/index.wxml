@@ -1,0 +1,51 @@
+<view class="page">
+  <view class="hero">
+    <view class="title">恋爱记录</view>
+    <view class="subtitle">把重要经历、情绪和沟通结果记录下来，帮助两个人更清楚地理解彼此。</view>
+  </view>
+
+  <view wx:if="{{!couple}}" class="panel">
+    <view class="label">还没有情侣空间</view>
+    <view class="subtitle">先创建或加入一个空间，再开始同步记录。</view>
+    <button class="button" bindtap="goSettings">去设置</button>
+  </view>
+
+  <view wx:else>
+    <view class="panel">
+      <view class="label">当前情侣空间</view>
+      <view class="subtitle">加入码：{{couple.code}}</view>
+    </view>
+
+    <view class="nav-grid">
+      <view class="nav-item" bindtap="goMoment">
+        <view class="nav-title">记录经历</view>
+        <view class="nav-desc">日常、约会、纪念日</view>
+      </view>
+      <view class="nav-item" bindtap="goConflict">
+        <view class="nav-title">吵架复盘</view>
+        <view class="nav-desc">事实、状态、沟通</view>
+      </view>
+      <view class="nav-item" bindtap="goTimeline">
+        <view class="nav-title">时间线</view>
+        <view class="nav-desc">查看双方记录</view>
+      </view>
+      <view class="nav-item" bindtap="goSettings">
+        <view class="nav-title">设置</view>
+        <view class="nav-desc">空间与加入码</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{couple}}" class="panel">
+    <view class="label">新增恋爱经历</view>
+    <view class="field">
+      <view class="label">标题</view>
+      <input value="{{title}}" placeholder="例如：第一次一起做饭" bindinput="onTitleInput" />
+    </view>
+    <view class="field">
+      <view class="label">内容</view>
+      <textarea value="{{content}}" placeholder="记录发生了什么、感受、想保留的细节" bindinput="onContentInput" />
+    </view>
+    <button class="button" bindtap="submitMoment">保存记录</button>
+  </view>
+</view>
