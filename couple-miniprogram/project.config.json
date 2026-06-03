@@ -1,0 +1,16 @@
+{
+  "description": "情侣恋爱记录与吵架复盘小程序",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "miniprogram/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "enhance": true
+  },
+  "appid": "touristappid",
+  "projectname": "couple-records",
+  "condition": {}
+}

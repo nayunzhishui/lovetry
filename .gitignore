@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+miniprogram_npm/
+
+# Build output
+dist/
+build/
+
+# Runtime/cache
+.DS_Store
+Thumbs.db
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# WeChat DevTools local files
+.idea/
+.vscode/
+
+# Cloud function dependencies
+couple-miniprogram/cloudfunctions/*/node_modules/
+
+# Temporary files
+*.tmp
+*.log
