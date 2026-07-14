@@ -1,0 +1,38 @@
+<view class="page detail-page">
+  <view wx:if="{{isLoading}}" class="detail-state" aria-live="polite">正在打开记录…</view>
+
+  <view wx:elif="{{error && !record}}" class="empty">
+    <view class="empty-title">这条记录暂时无法打开</view>
+    <view class="empty-desc">{{error}}</view>
+    <button class="button secondary compact detail-retry" bindtap="loadRecord">重新加载</button>
+  </view>
+
+  <block wx:elif="{{record}}">
+    <view class="hero detail-hero">
+      <view class="dual-rail" aria-hidden="true">
+        <view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view>
+      </view>
+      <view class="eyebrow">{{record.typeLabel}}</view>
+      <view class="title">{{record.title || record.typeLabel}}</view>
+      <view class="detail-meta"><text>{{record.startText}}</text><text class="detail-dot">·</text><text>{{record.visibilityLabel}}</text></view>
+    </view>
+
+    <view wx:if="{{record.content}}" class="panel detail-copy">{{record.content}}</view>
+
+    <view wx:if="{{record.endText || record.detailRows.length}}" class="panel detail-facts">
+      <view class="panel-kicker">DETAILS</view>
+      <view wx:if="{{record.endText}}" class="detail-row"><view class="detail-label">结束时间</view><view class="detail-value">{{record.endText}}</view></view>
+      <view wx:for="{{record.detailRows}}" wx:key="label" class="detail-row"><view class="detail-label">{{item.label}}</view><view class="detail-value">{{item.value}}</view></view>
+    </view>
+
+    <view wx:if="{{record.type === 'conflict'}}" class="panel panel--quiet gentle-note">复盘用于看见彼此的感受和需要，不用于判断输赢。</view>
+
+    <view wx:if="{{canEdit}}" class="detail-actions">
+      <button class="button secondary" bindtap="editRecord">修改记录</button>
+      <button class="delete-button" disabled="{{isDeleting}}" bindtap="deleteRecord">{{isDeleting ? '正在删除…' : '删除记录'}}</button>
+    </view>
+    <view wx:else class="owner-note">{{editNote}}</view>
+
+    <view wx:if="{{error}}" class="inline-error" aria-live="polite">{{error}}</view>
+  </block>
+</view>

@@ -1,21 +1,46 @@
-<view class="page">
-  <view class="hero">
-    <view class="title">时间线</view>
-    <view class="subtitle">查看当前情侣空间内的恋爱经历和吵架复盘。</view>
+<view class="page timeline-page">
+  <view class="hero timeline-hero">
+    <view class="dual-rail" aria-hidden="true">
+      <view class="dual-rail__line"></view>
+      <view class="dual-rail__meeting"></view>
+      <view class="dual-rail__line"></view>
+    </view>
+    <view class="eyebrow">TOGETHER, IN TIME</view>
+    <view class="title">共同时间线</view>
+    <view class="subtitle">两条生活轨迹，在一次次共同经历里相遇。</view>
   </view>
 
-  <button class="button secondary" bindtap="loadRecords">刷新</button>
+  <view class="timeline-toolbar">
+    <view>
+      <view class="panel-kicker">ALL MOMENTS</view>
+      <view class="timeline-count">共 {{records.length}} 条记录</view>
+    </view>
+    <button class="button secondary compact" bindtap="loadRecords">刷新</button>
+  </view>
 
-  <view wx:for="{{records}}" wx:key="_id" class="record">
-    <view class="record-title">{{item.typeLabel}}：{{item.title}}</view>
-    <view class="record-meta">{{item.createdAtText}}</view>
-    <view class="record-content">{{item.content}}</view>
-    <view wx:if="{{item.type === 'conflict'}}" class="record-content">
-      满意度：{{item.payload.satisfaction}}/10
+  <view wx:if="{{records.length > 0}}" class="timeline-list">
+    <view class="timeline-tracks" aria-hidden="true">
+      <view class="timeline-track timeline-track--amber"></view>
+      <view class="timeline-track timeline-track--sage"></view>
+    </view>
+    <view wx:for="{{records}}" wx:key="_id" class="record timeline-record">
+      <view class="timeline-node" aria-hidden="true"></view>
+      <view class="record-type">{{item.typeLabel}}</view>
+      <view class="record-title">{{item.title}}</view>
+      <view class="record-meta">{{item.createdAtText}}</view>
+      <view class="record-content">{{item.content}}</view>
+      <view wx:if="{{item.type === 'conflict'}}" class="record-extra">
+        <view class="record-extra__label">沟通满意度</view>
+        <view class="record-extra__value">{{item.payload.satisfaction}} / 10</view>
+      </view>
     </view>
   </view>
 
-  <view wx:if="{{records.length === 0}}" class="panel">
-    <view class="subtitle">暂无记录。</view>
+  <view wx:if="{{records.length === 0}}" class="empty">
+    <view class="dual-empty" aria-hidden="true">
+      <view></view><view></view>
+    </view>
+    <view class="empty-title">时间线还没有内容</view>
+    <view class="empty-desc">从首页保存第一段共同经历后，它会出现在这里。</view>
   </view>
 </view>

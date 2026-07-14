@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="hero">
+    <view class="dual-rail"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view>
+    <view class="eyebrow">DEVELOPMENT CHECK</view>
+    <view class="title">云端联调检查</view>
+    <view class="subtitle">这个页面只用于开发验证，不承载正式业务。</view>
+  </view>
+
+  <view class="panel">
+    <view wx:for="{{steps}}" wx:key="key" class="check-row">
+      <view>
+        <view class="label">{{item.label}}</view>
+        <view class="hint">{{item.detail}}</view>
+      </view>
+      <view class="status status--{{item.status}}">{{item.status}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{error}}" class="error-banner">{{error}}</view>
+  <button class="button" loading="{{running}}" disabled="{{running}}" bindtap="runChecks">运行基础检查</button>
+  <button class="button secondary" disabled="{{running}}" bindtap="createTestRecord">创建私密测试记录</button>
+  <button class="button secondary" disabled="{{running}}" bindtap="cleanup">清理我的测试记录</button>
+</view>

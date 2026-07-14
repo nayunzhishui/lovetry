@@ -1,0 +1,54 @@
+.timer-hero { padding-bottom: 20rpx; }
+.phase-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10rpx;
+  padding: 8rpx;
+  border-radius: 38rpx;
+  background: var(--surface-muted);
+}
+.phase-option {
+  min-height: 64rpx;
+  margin: 0;
+  padding: 0 14rpx;
+  border-radius: 32rpx;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 22rpx;
+  line-height: 64rpx;
+}
+.phase-option--active { background: var(--surface); color: var(--ink-strong); box-shadow: 0 5rpx 18rpx rgba(73, 61, 44, 0.08); }
+.timer-panel { padding: 64rpx 26rpx 44rpx; text-align: center; }
+.timer-status { color: var(--amber-deep); font-size: 21rpx; font-weight: 700; letter-spacing: 4rpx; }
+.timer-clock {
+  margin-top: 16rpx;
+  color: var(--ink-strong);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 112rpx;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -5rpx;
+}
+.progress-track { width: 100%; height: 7rpx; margin-top: 38rpx; overflow: hidden; border-radius: 4rpx; background: var(--line); }
+.progress-value { height: 100%; border-radius: 4rpx; background: linear-gradient(90deg, var(--amber), var(--sage)); transition: width 450ms linear; }
+.timer-caption { margin-top: 14rpx; color: var(--ink-soft); font-size: 20rpx; }
+.target-panel { margin-top: 8rpx; }
+.target-panel .label { margin-bottom: 12rpx; }
+.task-label { margin-top: 22rpx; }
+.picker-value { min-height: 76rpx; padding: 0 20rpx; line-height: 76rpx; }
+.timer-actions { margin-top: 10rpx; }
+.timer-primary { margin-top: 0; }
+.secondary-actions { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 16rpx; margin-top: 16rpx; }
+.interrupt-button,
+.reset-button { min-height: 72rpx; margin: 0; background: transparent; color: var(--danger); font-size: 24rpx; line-height: 72rpx; }
+.reset-button { width: 100%; margin-top: 14rpx; color: var(--ink-soft); }
+.timer-error { margin-top: 20rpx; color: var(--danger); font-size: 23rpx; line-height: 1.6; text-align: center; }
+.timer-note { margin-top: 36rpx; color: var(--ink-soft); font-size: 23rpx; line-height: 1.7; }
+@media (max-width: 340px) {
+  .timer-clock { font-size: 90rpx; }
+  .phase-switch,
+  .secondary-actions { grid-template-columns: 1fr; border-radius: var(--radius-md); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress-value { transition: none; }
+}

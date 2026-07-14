@@ -1,0 +1,47 @@
+<view class="page pomodoro-page">
+  <view class="hero timer-hero">
+    <view class="dual-rail" aria-hidden="true"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view>
+    <view class="eyebrow">ONE THING AT A TIME</view>
+    <view class="title">一起把时间留给当下</view>
+    <view class="subtitle">计时以实际结束时间校准，切到后台也不会悄悄变慢。</view>
+  </view>
+
+  <view class="phase-switch">
+    <button class="phase-option {{phase === 'focus' ? 'phase-option--active' : ''}}" data-phase="focus" bindtap="selectPhase">专注 · 25 分钟</button>
+    <button class="phase-option {{phase === 'break' ? 'phase-option--active' : ''}}" data-phase="break" bindtap="selectPhase">休息 · 5 分钟</button>
+  </view>
+
+  <view class="timer-panel">
+    <view class="timer-status">{{statusText}}</view>
+    <view class="timer-clock" aria-label="剩余时间 {{timeText}}">{{timeText}}</view>
+    <view class="progress-track" aria-hidden="true"><view class="progress-value" style="width: {{progress}}%;"></view></view>
+    <view class="timer-caption">已走过 {{progress}}%</view>
+  </view>
+
+  <view wx:if="{{phase === 'focus' && (status === 'idle' || status === 'completed')}}" class="panel target-panel">
+    <view class="label">这次想专注什么</view>
+    <input value="{{focusTitle}}" maxlength="80" placeholder="例如：整理旅行清单" data-key="focusTitle" bindinput="onInput" />
+    <view class="label task-label">关联任务（可选）</view>
+    <picker range="{{taskOptions}}" range-key="title" value="{{taskIndex}}" bindchange="selectTask"><view class="input-like picker-value">{{taskOptions[taskIndex].title}}</view></picker>
+  </view>
+
+  <view class="timer-actions">
+    <button wx:if="{{status === 'idle' || status === 'completed'}}" class="button timer-primary" bindtap="start">开始{{phaseLabel}}</button>
+    <button wx:elif="{{status === 'running'}}" class="button timer-primary" bindtap="pause">暂停</button>
+    <button wx:elif="{{status === 'paused'}}" class="button timer-primary" bindtap="resume">继续</button>
+    <button wx:elif="{{status === 'saveFailed'}}" class="button timer-primary" disabled="{{isSaving}}" bindtap="retrySave">{{isSaving ? '正在保存…' : '重新保存记录'}}</button>
+
+    <view wx:if="{{status === 'running' || status === 'paused'}}" class="secondary-actions">
+      <button class="button secondary compact" bindtap="requestComplete">现在完成</button>
+      <button class="interrupt-button" bindtap="requestInterrupt">中断</button>
+    </view>
+    <button wx:if="{{status === 'completed' || status === 'saveFailed'}}" class="reset-button" bindtap="reset">重新计时</button>
+  </view>
+
+  <view wx:if="{{error}}" class="timer-error" aria-live="polite">{{error}}</view>
+
+  <view class="panel panel--quiet timer-note">
+    <view class="panel-kicker">HOW IT WORKS</view>
+    <view>暂停会保留剩余时间；离开页面再回来时，会按真实时间重新校准。专注完成或中断后会保存为仅自己可见的记录。</view>
+  </view>
+</view>

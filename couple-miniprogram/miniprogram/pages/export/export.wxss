@@ -1,0 +1,3 @@
+.error-banner { margin-top: 24rpx; padding: 22rpx; border-radius: var(--radius-sm); background: #f5e4e1; color: var(--danger); }
+.restore-panel { margin-top: 24rpx; }
+.restore-panel textarea { min-height: 220rpx; margin: 18rpx 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 20rpx; }

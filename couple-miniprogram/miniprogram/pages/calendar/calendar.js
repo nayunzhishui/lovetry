@@ -1,0 +1,116 @@
+const api = require("../../services/cloudApi");
+
+function pad(value) {
+  return String(value).padStart(2, "0");
+}
+
+function dateKey(value) {
+  const date = new Date(value);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function monthRange(date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  return { start, end };
+}
+
+function buildDays(month, events) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const total = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells = [];
+  for (let blank = 0; blank < first.getDay(); blank += 1) cells.push({ key: `blank-${blank}`, blank: true });
+  for (let day = 1; day <= total; day += 1) {
+    const date = new Date(month.getFullYear(), month.getMonth(), day);
+    const key = dateKey(date);
+    const dayEvents = events.filter((event) => dateKey(event.startAt) === key);
+    cells.push({ key, day, eventCount: dayEvents.length, events: dayEvents });
+  }
+  return cells;
+}
+
+Page({
+  data: {
+    month: new Date(),
+    monthLabel: "",
+    days: [],
+    events: [],
+    filters: [
+      { value: "", label: "全部" }, { value: "record", label: "记录" }, { value: "plan", label: "计划" },
+      { value: "mood", label: "心情" }, { value: "task", label: "任务" }, { value: "anniversary", label: "纪念日" }
+    ],
+    activeFilter: "",
+    selectedKey: "",
+    selectedEvents: [],
+    loading: false,
+    error: ""
+  },
+
+  onLoad() {
+    const now = new Date();
+    this.setData({ selectedKey: dateKey(now) });
+    this.loadMonth(now);
+  },
+
+  async loadMonth(month) {
+    this.setData({ loading: true, error: "" });
+    try {
+      const { start, end } = monthRange(month);
+      const events = await api.getCalendarEvents(start.toISOString(), end.toISOString());
+      const visibleEvents = this.filterEvents(events, this.data.activeFilter);
+      const days = buildDays(month, visibleEvents);
+      const selected = days.find((day) => day.key === this.data.selectedKey);
+      this.setData({
+        month,
+        monthLabel: `${month.getFullYear()} 年 ${month.getMonth() + 1} 月`,
+        events,
+        days,
+        selectedEvents: selected?.events || []
+      });
+    } catch (error) {
+      this.setData({ error: api.getErrorMessage(error, "日历加载失败") });
+    } finally {
+      this.setData({ loading: false });
+    }
+  },
+
+  filterEvents(events, filter) {
+    if (!filter) return events;
+    if (filter === "record" || filter === "plan") return events.filter((item) => item.source === filter);
+    return events.filter((item) => item.type === filter);
+  },
+
+  selectFilter(event) {
+    const activeFilter = event.currentTarget.dataset.filter || "";
+    const days = buildDays(new Date(this.data.month), this.filterEvents(this.data.events, activeFilter));
+    const selected = days.find((day) => day.key === this.data.selectedKey);
+    this.setData({ activeFilter, days, selectedEvents: selected?.events || [] });
+  },
+
+  previousMonth() {
+    const month = new Date(this.data.month);
+    month.setMonth(month.getMonth() - 1, 1);
+    this.loadMonth(month);
+  },
+
+  nextMonth() {
+    const month = new Date(this.data.month);
+    month.setMonth(month.getMonth() + 1, 1);
+    this.loadMonth(month);
+  },
+
+  selectDay(event) {
+    const key = event.currentTarget.dataset.key;
+    const day = this.data.days.find((item) => item.key === key);
+    if (!day || day.blank) return;
+    this.setData({ selectedKey: key, selectedEvents: day.events || [] });
+  },
+
+  openEvent(event) {
+    const item = this.data.selectedEvents.find((entry) => entry.id === event.currentTarget.dataset.id);
+    if (!item) return;
+    wx.navigateTo({ url: item.source === "record"
+      ? `/pages/record-detail/record-detail?id=${encodeURIComponent(item.id)}`
+      : "/pages/plans/plans" });
+  }
+});

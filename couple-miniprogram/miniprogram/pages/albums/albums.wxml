@@ -1,0 +1,37 @@
+<view class="page">
+  <view class="hero"><view class="dual-rail"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view><view class="eyebrow">TWO-PERSON ARCHIVE</view><view class="title">共同相册</view><view class="subtitle">照片只属于当前情侣空间，不作为公开动态。</view></view>
+
+  <view class="panel">
+    <view class="panel-title">新建相册</view>
+    <input value="{{newTitle}}" placeholder="例如：厦门旅行" bindinput="onTitleInput" />
+    <button class="button" disabled="{{loading || !newTitle}}" bindtap="createAlbum">创建相册</button>
+  </view>
+
+  <scroll-view wx:if="{{albums.length}}" scroll-x class="album-strip">
+    <view class="album-strip__inner">
+      <view wx:for="{{albums}}" wx:key="_id" class="album-pill {{selectedAlbum && selectedAlbum._id === item._id ? 'album-pill--active' : ''}}" data-id="{{item._id}}" bindtap="openAlbum">{{item.title}}</view>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{selectedAlbum}}" class="panel-head album-head">
+    <view><view class="panel-kicker">当前相册</view><view class="panel-title">{{selectedAlbum.title}}</view></view>
+    <button class="button compact" loading="{{uploading}}" disabled="{{uploading}}" bindtap="chooseAndUpload">加入照片</button>
+  </view>
+  <view wx:if="{{selectedAlbum}}" class="album-tools">
+    <input value="{{renameTitle}}" maxlength="60" placeholder="相册名称" bindinput="onRenameInput" />
+    <button class="button secondary compact" bindtap="renameAlbum">改名</button>
+    <button class="button secondary compact danger-button" bindtap="deleteAlbum">删空相册</button>
+  </view>
+  <view wx:if="{{uploadProgress}}" class="upload-progress">{{uploadProgress}}</view>
+
+  <view wx:if="{{error}}" class="error-banner">{{error}}</view>
+  <view wx:if="{{!loading && selectedAlbum && assets.length === 0}}" class="empty"><view class="empty-title">相册还是空的</view><view class="empty-desc">选择几张只属于你们的照片。</view></view>
+  <view class="photo-grid">
+    <view wx:for="{{assets}}" wx:key="_id" class="photo-wrap">
+      <image src="{{item.tempURL}}" mode="aspectFill" class="photo" data-url="{{item.tempURL}}" bindtap="preview" />
+      <view class="photo-delete" data-id="{{item._id}}" bindtap="deleteAsset">删除</view>
+      <view class="photo-cover" data-id="{{item._id}}" bindtap="setCover">{{selectedAlbum.coverAssetId === item._id ? '封面' : '设封面'}}</view>
+    </view>
+  </view>
+  <button wx:if="{{hasMore}}" class="button secondary load-more" loading="{{loadingMore}}" disabled="{{loadingMore}}" bindtap="loadMore">加载更多照片</button>
+</view>

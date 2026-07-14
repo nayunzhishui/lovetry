@@ -1,0 +1,192 @@
+<view class="page plans-page">
+  <view class="hero plans-hero">
+    <view class="dual-rail" aria-hidden="true">
+      <view class="dual-rail__line"></view>
+      <view class="dual-rail__meeting"></view>
+      <view class="dual-rail__line"></view>
+    </view>
+    <view class="eyebrow">MAKE ROOM FOR US</view>
+    <view class="title">共同计划</view>
+    <view class="subtitle">把想做的事放在同一张桌面上，一件件完成。</view>
+  </view>
+
+  <scroll-view class="type-tabs" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="type-tabs__inner">
+      <button
+        wx:for="{{planTypes}}"
+        wx:key="value"
+        class="type-tab {{activeType === item.value ? 'type-tab--active' : ''}}"
+        data-type="{{item.value}}"
+        bindtap="switchType"
+      >{{item.label}}</button>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{activeType === 'menu'}}" class="choice-card">
+    <view class="choice-card__label">今晚吃什么</view>
+    <view wx:if="{{pickedMenu}}" class="choice-card__answer">{{pickedMenu.title}}</view>
+    <view wx:else class="choice-card__answer choice-card__answer--quiet">交给一次随机相遇</view>
+    <view wx:if="{{pickedMenu.categoryText}}" class="choice-card__meta">{{pickedMenu.categoryText}}</view>
+    <button class="button choice-card__button" disabled="{{isPicking || isLoading}}" bindtap="pickMenu">
+      {{isPicking ? '正在选择…' : pickedMenu ? '换一个' : '帮我们选'}}
+    </button>
+  </view>
+
+  <view class="panel create-panel">
+    <view class="panel-head">
+      <view>
+        <view class="panel-kicker">{{activeConfig.eyebrow}}</view>
+        <view class="panel-title">{{editingId ? '编辑' : '新增'}}{{activeConfig.label}}</view>
+      </view>
+      <view class="status status--warm">共同可见</view>
+    </view>
+
+    <view class="field">
+      <view class="label">名称</view>
+      <input
+        value="{{form.title}}"
+        maxlength="80"
+        placeholder="{{activeConfig.titlePlaceholder}}"
+        data-field="title"
+        bindinput="onFieldInput"
+      />
+    </view>
+
+    <view class="field">
+      <view class="label">补充说明</view>
+      <textarea
+        value="{{form.detail}}"
+        maxlength="1000"
+        auto-height
+        placeholder="写下地点、分工或想记住的细节"
+        data-field="detail"
+        bindinput="onFieldInput"
+      ></textarea>
+    </view>
+
+    <view wx:if="{{activeType === 'menu'}}" class="field">
+      <view class="label">分类</view>
+      <input value="{{form.category}}" maxlength="30" placeholder="例如：川菜、甜品、常去餐厅" data-field="category" bindinput="onFieldInput" />
+    </view>
+    <view wx:if="{{activeType === 'menu'}}" class="field"><view class="label">标签</view><input value="{{form.tagsText}}" maxlength="80" placeholder="例如：清淡，约会，常去" data-field="tagsText" bindinput="onFieldInput" /></view>
+    <view wx:if="{{activeType === 'menu'}}" class="field"><view class="label">喜欢程度 · {{form.preference}} / 5</view><slider min="1" max="5" step="1" value="{{form.preference}}" data-field="preference" bindchange="onFieldInput" activeColor="#b77932" backgroundColor="#ded6c9" /></view>
+
+    <view wx:if="{{activeType === 'task'}}" class="form-grid">
+      <view class="field">
+        <view class="label">截止日期</view>
+        <picker mode="date" value="{{form.endDate}}" data-field="endDate" bindchange="onDateChange">
+          <view class="input-like picker-value">{{form.endDate}}</view>
+        </picker>
+      </view>
+      <view class="field">
+        <view class="label">完成积分</view>
+        <input type="number" value="{{form.rewardPoints}}" placeholder="可不填" data-field="rewardPoints" bindinput="onFieldInput" />
+      </view>
+    </view>
+    <view wx:if="{{activeType === 'task'}}" class="field">
+      <view class="label">执行人</view>
+      <picker range="{{assigneeOptions}}" value="{{form.assigneeIndex}}" bindchange="onAssigneeChange">
+        <view class="input-like picker-value">{{assigneeOptions[form.assigneeIndex]}}</view>
+      </picker>
+    </view>
+    <view wx:if="{{activeType === 'task'}}" class="field">
+      <view class="label">步骤清单（每行一项）</view>
+      <textarea value="{{form.checklistText}}" maxlength="1000" auto-height placeholder="买菜&#10;准备餐具&#10;收拾厨房" data-field="checklistText" bindinput="onFieldInput"></textarea>
+    </view>
+
+    <view wx:if="{{activeType === 'event' || activeType === 'anniversary'}}" class="field">
+      <view class="label">日期</view>
+      <picker mode="date" value="{{form.startDate}}" data-field="startDate" bindchange="onDateChange">
+        <view class="input-like picker-value">{{form.startDate}}</view>
+      </picker>
+    </view>
+
+    <view wx:if="{{activeType === 'trip'}}" class="form-grid form-grid--trip">
+      <view class="field">
+        <view class="label">出发日期</view>
+        <picker mode="date" value="{{form.startDate}}" data-field="startDate" bindchange="onDateChange">
+          <view class="input-like picker-value">{{form.startDate}}</view>
+        </picker>
+      </view>
+      <view class="field">
+        <view class="label">结束日期</view>
+        <picker mode="date" value="{{form.endDate}}" data-field="endDate" bindchange="onDateChange">
+          <view class="input-like picker-value">{{form.endDate}}</view>
+        </picker>
+      </view>
+      <view class="field form-grid__wide">
+        <view class="label">预算（元）</view>
+        <input type="digit" value="{{form.budget}}" placeholder="可不填" data-field="budget" bindinput="onFieldInput" />
+      </view>
+    </view>
+    <view wx:if="{{activeType === 'trip'}}" class="field">
+      <view class="label">行程节点（每行一项）</view>
+      <textarea value="{{form.itineraryText}}" maxlength="1500" auto-height placeholder="周六上午 · 抵达&#10;周六下午 · 参观展览" data-field="itineraryText" bindinput="onFieldInput"></textarea>
+    </view>
+    <view wx:if="{{activeType === 'trip'}}" class="field">
+      <view class="label">准备清单（每行一项）</view>
+      <textarea value="{{form.checklistText}}" maxlength="1000" auto-height placeholder="身份证&#10;充电器" data-field="checklistText" bindinput="onFieldInput"></textarea>
+    </view>
+
+    <button class="button" disabled="{{isSubmitting}}" bindtap="createPlan">
+      {{isSubmitting ? '正在保存…' : editingId ? '保存修改' : '加入共同计划'}}
+    </button>
+    <button wx:if="{{editingId}}" class="button secondary" disabled="{{isSubmitting}}" bindtap="cancelEdit">取消编辑</button>
+  </view>
+
+  <view class="list-head">
+    <view>
+      <view class="panel-kicker">OUR BOARD</view>
+      <view class="list-head__title">{{activeConfig.label}}清单</view>
+    </view>
+    <view class="list-head__count">{{plans.length}} 项</view>
+  </view>
+
+  <view wx:if="{{isLoading}}" class="state-card">
+    <view class="state-pulse"></view>
+    <view>正在整理共同计划…</view>
+  </view>
+
+  <view wx:elif="{{error && plans.length === 0}}" class="state-card state-card--error">
+    <view class="empty-title">计划暂时没有加载出来</view>
+    <view class="empty-desc">{{error}}</view>
+    <button class="button secondary compact" bindtap="loadPlans">重新加载</button>
+  </view>
+
+  <view wx:elif="{{plans.length === 0}}" class="empty">
+    <view class="empty-title">还没有{{activeConfig.label}}</view>
+    <view class="empty-desc">从上方写下第一项，两个人会看到同一份清单。</view>
+  </view>
+
+  <view wx:else class="plan-list">
+    <view wx:for="{{plans}}" wx:key="_id" class="plan-card {{item.isDone ? 'plan-card--done' : ''}}">
+      <view class="plan-card__rail" aria-hidden="true"><view></view><view></view></view>
+      <view class="plan-card__top">
+        <view class="plan-card__type">{{item.typeLabel}}</view>
+        <view class="status {{item.isDone ? '' : 'status--warm'}}">{{item.statusLabel}}</view>
+      </view>
+      <view class="record-title">{{item.title}}</view>
+      <view wx:if="{{item.detail}}" class="record-content">{{item.detail}}</view>
+      <view wx:if="{{item.dateText || item.categoryText || item.preferenceText || item.budgetText || item.rewardText}}" class="plan-card__meta">
+        <text wx:if="{{item.dateText}}">{{item.dateText}}</text>
+        <text wx:if="{{item.categoryText}}">{{item.categoryText}}</text>
+        <text wx:if="{{item.preferenceText}}">{{item.preferenceText}}</text>
+        <text wx:if="{{item.budgetText}}">{{item.budgetText}}</text>
+        <text wx:if="{{item.rewardText}}">{{item.rewardText}}</text>
+      </view>
+      <view wx:if="{{item.checklist.length}}" class="checklist">
+        <button wx:for="{{item.checklist}}" wx:for-item="step" wx:for-index="stepIndex" wx:key="title" class="checklist__item {{step.done ? 'checklist__item--done' : ''}}" data-id="{{item._id}}" data-index="{{stepIndex}}" bindtap="toggleChecklist">
+          <text class="checklist__box">{{step.done ? '✓' : ''}}</text><text>{{step.title}}</text>
+        </button>
+      </view>
+      <view wx:if="{{item.itinerary.length}}" class="itinerary">
+        <view wx:for="{{item.itinerary}}" wx:for-item="node" wx:key="*this" class="itinerary__item"><text></text>{{node}}</view>
+      </view>
+      <view class="plan-actions">
+        <button class="button secondary compact" disabled="{{changingPlanId !== ''}}" data-id="{{item._id}}" bindtap="startEdit">编辑</button>
+        <button class="button secondary compact danger-action" disabled="{{changingPlanId !== ''}}" data-id="{{item._id}}" bindtap="deletePlan">删除</button>
+        <button class="button secondary compact" disabled="{{changingPlanId !== ''}}" data-id="{{item._id}}" bindtap="toggleStatus">{{changingPlanId === item._id ? '正在更新…' : item.actionLabel}}</button>
+      </view>
+    </view>
+  </view>
+</view>

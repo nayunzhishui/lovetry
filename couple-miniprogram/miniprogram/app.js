@@ -1,4 +1,5 @@
 const config = require("./config");
+const cloudApi = require("./services/cloudApi");
 
 App({
   globalData: {
@@ -16,26 +17,22 @@ App({
       return;
     }
 
-    wx.cloud.init({
-      env: config.envId,
-      traceUser: true
-    });
+    const cloudOptions = { traceUser: true };
+    if (config.envId && !config.envId.startsWith("replace-with")) cloudOptions.env = config.envId;
+    wx.cloud.init(cloudOptions);
 
     this.bootstrap();
   },
 
   bootstrap() {
-    return wx.cloud
-      .callFunction({ name: "login" })
-      .then((res) => {
-        this.globalData.openid = res.result.openid;
-        return wx.cloud.callFunction({
-          name: "couple",
-          data: { action: "mine" }
-        });
+    return cloudApi
+      .login()
+      .then((identity) => {
+        this.globalData.openid = identity.openid;
+        return cloudApi.getMyCouple();
       })
-      .then((res) => {
-        this.globalData.couple = res.result.couple || null;
+      .then((couple) => {
+        this.globalData.couple = couple;
         return this.globalData;
       })
       .catch((err) => {

@@ -1,0 +1,346 @@
+.rewards-hero {
+  padding-bottom: 20rpx;
+}
+
+.state-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  min-height: 174rpx;
+  padding: 28rpx;
+  border: 1rpx solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.state-card--small {
+  min-height: 116rpx;
+}
+
+.state-card--error {
+  display: block;
+}
+
+.state-card--error .button {
+  width: 220rpx;
+  margin: 24rpx auto 0;
+}
+
+.state-pulse {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--sage);
+  animation: state-pulse 900ms ease-in-out infinite alternate;
+}
+
+@keyframes state-pulse {
+  from { opacity: 0.35; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.15); }
+}
+
+.wallet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.wallet-card {
+  min-height: 250rpx;
+  margin: 0;
+  padding: 24rpx;
+  border: 1rpx solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  line-height: normal;
+  text-align: left;
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+.wallet-card--active {
+  border-color: var(--ink-strong);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-3rpx);
+}
+
+.wallet-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.wallet-card__owner {
+  color: var(--ink-strong);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.wallet-card__mark {
+  width: 26rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--sage);
+}
+
+.wallet-card__mark--amber {
+  background: var(--amber);
+}
+
+.wallet-card__balance {
+  margin-top: 24rpx;
+  color: var(--ink-strong);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wallet-card__unit {
+  margin-top: 10rpx;
+  color: var(--ink-soft);
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
+}
+
+.wallet-card__totals {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  margin-top: 24rpx;
+  color: var(--ink-soft);
+  font-size: 20rpx;
+}
+
+.approval-note {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 18rpx;
+  padding: 24rpx;
+  border-radius: var(--radius-md);
+  background: #e8eee9;
+}
+
+.approval-note__lines {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6rpx;
+}
+
+.approval-note__lines view {
+  width: 2rpx;
+  background: var(--amber);
+}
+
+.approval-note__lines view:last-child {
+  background: var(--sage);
+}
+
+.approval-note__title {
+  color: var(--ink-strong);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.approval-note__desc {
+  margin-top: 7rpx;
+  color: #536a59;
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.action-panel {
+  margin-top: 18rpx;
+}
+
+.task-approvals {
+  margin-top: 18rpx;
+  padding: 26rpx;
+  border: 1rpx solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.task-approvals__title {
+  margin: 8rpx 0 16rpx;
+  color: var(--ink-strong);
+  font-family: "Songti SC", "STSong", serif;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.task-approval {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 18rpx 0;
+  border-top: 1rpx solid var(--line);
+}
+
+.task-approval .button {
+  width: 140rpx;
+  margin: 0;
+}
+
+.task-approval__name { color: var(--ink-strong); font-size: 24rpx; font-weight: 650; }
+.task-approval__points { margin-top: 6rpx; color: var(--ink-soft); font-size: 21rpx; }
+
+.action-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8rpx;
+  padding: 7rpx;
+  border-radius: 38rpx;
+  background: var(--surface-muted);
+}
+
+.action-tab {
+  height: 66rpx;
+  margin: 0;
+  padding: 0 10rpx;
+  border-radius: 33rpx;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 23rpx;
+  font-weight: 650;
+  line-height: 66rpx;
+}
+
+.action-tab--active {
+  background: var(--surface);
+  color: var(--ink-strong);
+  box-shadow: 0 4rpx 14rpx rgba(73, 61, 44, 0.1);
+}
+
+.ledger-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 48rpx 4rpx 22rpx;
+}
+
+.ledger-head__title {
+  color: var(--ink-strong);
+  font-family: "Songti SC", "STSong", serif;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.ledger-head__count {
+  color: var(--ink-soft);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 22rpx;
+}
+
+.inline-error {
+  margin-bottom: 18rpx;
+  padding: 18rpx 22rpx;
+  border-radius: var(--radius-sm);
+  background: #f4e4e1;
+  color: var(--danger);
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
+.ledger {
+  position: relative;
+  padding-left: 34rpx;
+}
+
+.ledger__spine {
+  position: absolute;
+  top: 12rpx;
+  bottom: 12rpx;
+  left: 10rpx;
+  width: 2rpx;
+  background: var(--line);
+}
+
+.ledger-row {
+  position: relative;
+  margin-bottom: 14rpx;
+}
+
+.ledger-row__node {
+  position: absolute;
+  top: 28rpx;
+  left: -31rpx;
+  z-index: 1;
+  width: 12rpx;
+  height: 12rpx;
+  border: 4rpx solid var(--paper);
+  border-radius: 50%;
+  background: var(--sage);
+  box-shadow: 0 0 0 2rpx var(--sage);
+}
+
+.ledger-row__node--earn {
+  background: var(--amber);
+  box-shadow: 0 0 0 2rpx var(--amber);
+}
+
+.ledger-row__body {
+  padding: 24rpx;
+  border: 1rpx solid rgba(133, 80, 31, 0.09);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.ledger-row__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.ledger-row__title {
+  color: var(--ink-strong);
+  font-size: 26rpx;
+  font-weight: 650;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.ledger-row__amount {
+  flex: 0 0 auto;
+  color: var(--sage);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 27rpx;
+  font-weight: 700;
+}
+
+.ledger-row__amount--earn {
+  color: var(--amber-deep);
+}
+
+.ledger-row__meta {
+  margin-top: 10rpx;
+  color: var(--ink-soft);
+  font-size: 21rpx;
+}
+
+@media (max-width: 340px) {
+  .wallet-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-card {
+    min-height: 220rpx;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-pulse {
+    animation: none;
+  }
+
+  .wallet-card {
+    transition: none;
+  }
+}

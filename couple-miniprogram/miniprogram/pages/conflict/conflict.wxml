@@ -1,46 +1,63 @@
-<view class="page">
+<view class="page conflict-page">
   <view class="hero">
-    <view class="title">吵架复盘</view>
-    <view class="subtitle">先记录事实和状态，再讨论需求和下一步。</view>
+    <view class="dual-rail" aria-hidden="true">
+      <view class="dual-rail__line"></view>
+      <view class="dual-rail__meeting"></view>
+      <view class="dual-rail__line"></view>
+    </view>
+    <view class="eyebrow">PAUSE · NOTICE · TALK</view>
+    <view class="title">沟通复盘</view>
+    <view class="subtitle">先分别看见发生了什么，再一起讨论彼此需要什么。</view>
   </view>
 
-  <view class="panel">
+  <view class="panel panel--quiet reflection-note">
+    <view class="reflection-mark">“</view>
+    <view class="reflection-copy">这里不判断谁对谁错。尽量描述可观察的事实，也可以暂时跳过不想回答的部分。</view>
+  </view>
+
+  <view class="panel conflict-form">
+    <view class="panel-kicker">WHAT HAPPENED</view>
+    <view class="panel-title">回到当时的情境</view>
+
     <view class="field">
-      <view class="label">吵架时间</view>
-      <input value="{{conflictTime}}" placeholder="例如：2026-05-15 晚上" bindinput="onInput" data-key="conflictTime" />
+      <view class="field-head"><view class="field-index">01</view><view class="label">发生时间</view></view>
+      <input value="{{conflictTime}}" maxlength="40" placeholder="例如：5 月 15 日晚上" bindinput="onInput" data-key="conflictTime" />
     </view>
     <view class="field">
-      <view class="label">大致内容</view>
-      <textarea value="{{content}}" placeholder="尽量写事实，不写评价" bindinput="onInput" data-key="content" />
+      <view class="field-head"><view class="field-index">02</view><view class="label">发生了什么</view></view>
+      <textarea value="{{content}}" maxlength="1000" auto-height placeholder="尽量写可观察的事实，少写对彼此的评价" bindinput="onInput" data-key="content" />
     </view>
     <view class="field">
-      <view class="label">七天内的压力性事件</view>
-      <textarea value="{{stressEvents}}" placeholder="工作、学业、家庭、金钱、健康等压力" bindinput="onInput" data-key="stressEvents" />
+      <view class="field-head"><view class="field-index">03</view><view class="label">此前七天的压力</view></view>
+      <textarea value="{{stressEvents}}" maxlength="600" auto-height placeholder="工作、学业、家庭、金钱或健康等压力" bindinput="onInput" data-key="stressEvents" />
     </view>
     <view class="field">
-      <view class="label">3天内生理状态</view>
-      <textarea value="{{bodyState}}" placeholder="疲劳、经期、身体不适、饮食、运动等" bindinput="onInput" data-key="bodyState" />
+      <view class="field-head"><view class="field-index">04</view><view class="label">近期身体状态</view></view>
+      <textarea value="{{bodyState}}" maxlength="600" auto-height placeholder="疲劳、身体不适、饮食或运动等情况" bindinput="onInput" data-key="bodyState" />
     </view>
     <view class="field">
-      <view class="label">3天内睡眠情况</view>
-      <textarea value="{{sleepState}}" placeholder="睡眠时长、睡眠质量、熬夜情况" bindinput="onInput" data-key="sleepState" />
+      <view class="field-head"><view class="field-index">05</view><view class="label">近期睡眠情况</view></view>
+      <textarea value="{{sleepState}}" maxlength="600" auto-height placeholder="睡眠时长、质量或熬夜情况" bindinput="onInput" data-key="sleepState" />
     </view>
     <view class="field">
-      <view class="label">3天内环境和人际关系</view>
-      <textarea value="{{relationshipState}}" placeholder="环境变化、家人朋友、同事同学关系" bindinput="onInput" data-key="relationshipState" />
+      <view class="field-head"><view class="field-index">06</view><view class="label">环境与人际变化</view></view>
+      <textarea value="{{relationshipState}}" maxlength="600" auto-height placeholder="环境变化，以及家人、朋友或同事关系" bindinput="onInput" data-key="relationshipState" />
     </view>
     <view class="field">
-      <view class="label">沟通情况</view>
-      <textarea value="{{communication}}" placeholder="有没有打断、冷战、解释、倾听、道歉" bindinput="onInput" data-key="communication" />
+      <view class="field-head"><view class="field-index">07</view><view class="label">沟通过程</view></view>
+      <textarea value="{{communication}}" maxlength="800" auto-height placeholder="彼此怎样表达、倾听，又在哪个时刻停住了" bindinput="onInput" data-key="communication" />
+    </view>
+    <view class="field score-field">
+      <view class="field-head"><view class="field-index">08</view><view class="label">沟通满意度</view></view>
+      <view class="score-row">
+        <input class="score-input" type="number" value="{{satisfaction}}" maxlength="2" placeholder="1–10" bindinput="onInput" data-key="satisfaction" />
+        <view class="score-caption">1 表示很不满意，10 表示很满意</view>
+      </view>
     </view>
     <view class="field">
-      <view class="label">沟通满意度（1到10分）</view>
-      <input type="number" value="{{satisfaction}}" placeholder="1-10" bindinput="onInput" data-key="satisfaction" />
+      <view class="field-head"><view class="field-index">09</view><view class="label">结果与下一步</view></view>
+      <textarea value="{{result}}" maxlength="800" auto-height placeholder="已经达成什么，还有什么需要之后再谈" bindinput="onInput" data-key="result" />
     </view>
-    <view class="field">
-      <view class="label">大致结果</view>
-      <textarea value="{{result}}" placeholder="达成了什么、没解决什么、下一步做什么" bindinput="onInput" data-key="result" />
-    </view>
-    <button class="button" bindtap="submitConflict">保存复盘</button>
+    <button class="button" bindtap="submitConflict">保存这次复盘</button>
   </view>
 </view>

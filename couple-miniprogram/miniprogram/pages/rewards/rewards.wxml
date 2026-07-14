@@ -1,0 +1,132 @@
+<view class="page rewards-page">
+  <view class="hero rewards-hero">
+    <view class="dual-rail" aria-hidden="true">
+      <view class="dual-rail__line"></view>
+      <view class="dual-rail__meeting"></view>
+      <view class="dual-rail__line"></view>
+    </view>
+    <view class="eyebrow">GIVE &amp; GROW</view>
+    <view class="title">奖励账户</view>
+    <view class="subtitle">把看见、感谢和兑现，记成两个人都看得见的流水。</view>
+  </view>
+
+  <view wx:if="{{isLoading}}" class="state-card">
+    <view class="state-pulse"></view>
+    <view>正在核对两个人的账户…</view>
+  </view>
+
+  <view wx:elif="{{error && wallets.length === 0}}" class="state-card state-card--error">
+    <view class="empty-title">账户暂时没有加载出来</view>
+    <view class="empty-desc">{{error}}</view>
+    <button class="button secondary compact" bindtap="loadRewards">重新加载</button>
+  </view>
+
+  <block wx:else>
+    <view class="wallet-grid">
+      <button
+        wx:for="{{wallets}}"
+        wx:key="_id"
+        class="wallet-card {{selectedOwnerOpenid === item.ownerOpenid ? 'wallet-card--active' : ''}}"
+        data-openid="{{item.ownerOpenid}}"
+        bindtap="selectWallet"
+      >
+        <view class="wallet-card__top">
+          <view class="wallet-card__owner">{{item.ownerLabel}}</view>
+          <view class="wallet-card__mark {{item.isMine ? 'wallet-card__mark--amber' : ''}}"></view>
+        </view>
+        <view class="wallet-card__balance">{{item.balance}}</view>
+        <view class="wallet-card__unit">当前积分</view>
+        <view class="wallet-card__totals">
+          <text>获得 {{item.totalEarned}}</text>
+          <text>消费 {{item.totalSpent}}</text>
+        </view>
+      </button>
+    </view>
+
+    <view class="approval-note">
+      <view class="approval-note__lines" aria-hidden="true"><view></view><view></view></view>
+      <view>
+        <view class="approval-note__title">积分不能自我审批</view>
+        <view class="approval-note__desc">奖励只能由伴侣赠送；你可以使用自己账户中的积分。每笔变化都会留下流水。</view>
+      </view>
+    </view>
+
+    <view wx:if="{{pendingTasks.length}}" class="task-approvals">
+      <view class="panel-kicker">PARTNER CONFIRMATION</view>
+      <view class="task-approvals__title">待确认的任务奖励</view>
+      <view wx:for="{{pendingTasks}}" wx:key="_id" class="task-approval">
+        <view><view class="task-approval__name">{{item.title}}</view><view class="task-approval__points">完成奖励 {{item.rewardPoints}} 积分</view></view>
+        <button class="button secondary compact" data-id="{{item._id}}" disabled="{{isSubmitting}}" bindtap="settleTask">确认</button>
+      </view>
+    </view>
+
+    <view class="panel action-panel">
+      <view class="action-tabs">
+        <button class="action-tab {{actionMode === 'grant' ? 'action-tab--active' : ''}}" data-mode="grant" bindtap="switchAction">给伴侣奖励</button>
+        <button class="action-tab {{actionMode === 'spend' ? 'action-tab--active' : ''}}" data-mode="spend" bindtap="switchAction">使用我的积分</button>
+      </view>
+
+      <view wx:if="{{actionMode === 'grant'}}">
+        <view class="field">
+          <view class="label">为什么想奖励对方</view>
+          <input value="{{grantForm.title}}" maxlength="80" placeholder="例如：谢谢你准备了晚餐" data-form="grantForm" data-field="title" bindinput="onFormInput" />
+        </view>
+        <view class="field">
+          <view class="label">积分</view>
+          <input type="number" value="{{grantForm.amount}}" placeholder="填写正整数" data-form="grantForm" data-field="amount" bindinput="onFormInput" />
+        </view>
+        <button class="button" disabled="{{isSubmitting || !partnerOpenid}}" bindtap="submitGrant">
+          {{isSubmitting ? '正在记录…' : partnerOpenid ? '送给伴侣' : '等待伴侣加入'}}
+        </button>
+      </view>
+
+      <view wx:else>
+        <view class="field">
+          <view class="label">这次想兑换什么</view>
+          <input value="{{spendForm.title}}" maxlength="80" placeholder="例如：今晚的电影选择权" data-form="spendForm" data-field="title" bindinput="onFormInput" />
+        </view>
+        <view class="field">
+          <view class="label">使用积分</view>
+          <input type="number" value="{{spendForm.amount}}" placeholder="不能超过当前余额" data-form="spendForm" data-field="amount" bindinput="onFormInput" />
+        </view>
+        <button class="button" disabled="{{isSubmitting}}" bindtap="submitSpend">
+          {{isSubmitting ? '正在记录…' : '确认使用积分'}}
+        </button>
+      </view>
+    </view>
+
+    <view class="ledger-head">
+      <view>
+        <view class="panel-kicker">LEDGER</view>
+        <view class="ledger-head__title">{{selectedOwnerOpenid === openid ? '我的流水' : '伴侣的流水'}}</view>
+      </view>
+      <view class="ledger-head__count">{{transactions.length}} 笔</view>
+    </view>
+
+    <view wx:if="{{error}}" class="inline-error">{{error}}</view>
+
+    <view wx:if="{{isLoadingTransactions}}" class="state-card state-card--small">
+      <view class="state-pulse"></view>
+      <view>正在加载流水…</view>
+    </view>
+
+    <view wx:elif="{{transactions.length === 0}}" class="empty">
+      <view class="empty-title">还没有积分流水</view>
+      <view class="empty-desc">赠送或使用积分后，变化会按时间留在这里。</view>
+    </view>
+
+    <view wx:else class="ledger">
+      <view class="ledger__spine" aria-hidden="true"></view>
+      <view wx:for="{{transactions}}" wx:key="_id" class="ledger-row">
+        <view class="ledger-row__node {{item.isEarn ? 'ledger-row__node--earn' : ''}}" aria-hidden="true"></view>
+        <view class="ledger-row__body">
+          <view class="ledger-row__top">
+            <view class="ledger-row__title">{{item.title}}</view>
+            <view class="ledger-row__amount {{item.isEarn ? 'ledger-row__amount--earn' : ''}}">{{item.amountText}}</view>
+          </view>
+          <view class="ledger-row__meta">{{item.kindLabel}} · {{item.createdAtText}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

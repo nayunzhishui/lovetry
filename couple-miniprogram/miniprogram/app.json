@@ -1,9 +1,20 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/calendar/calendar",
+    "pages/records/records",
+    "pages/plans/plans",
+    "pages/rewards/rewards",
+    "pages/albums/albums",
     "pages/conflict/conflict",
     "pages/timeline/timeline",
-    "pages/settings/settings"
+    "pages/settings/settings",
+    "pages/record-form/record-form",
+    "pages/record-detail/record-detail",
+    "pages/pomodoro/pomodoro",
+    "pages/search/search",
+    "pages/export/export",
+    "pages/integration-test/integration-test"
   ],
   "window": {
     "navigationBarTitleText": "恋爱记录",
@@ -12,5 +23,6 @@
     "backgroundColor": "#f7f4ef"
   },
   "style": "v2",
+  "requiredPrivateInfos": ["chooseMedia"],
   "sitemapLocation": "sitemap.json"
 }

@@ -1,1 +1,120 @@
+.code-card {
+  position: relative;
+  overflow: hidden;
+}
 
+.code-card::before,
+.code-card::after {
+  position: absolute;
+  right: -34rpx;
+  width: 122rpx;
+  height: 2rpx;
+  background: var(--amber);
+  content: "";
+}
+
+.code-card::before {
+  bottom: 50rpx;
+}
+
+.code-card::after {
+  right: -18rpx;
+  bottom: 35rpx;
+  background: var(--sage);
+}
+
+.invite-code {
+  margin-top: 32rpx;
+  color: var(--ink-strong);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 54rpx;
+  font-weight: 700;
+  letter-spacing: 12rpx;
+  line-height: 1.25;
+  word-break: break-all;
+}
+
+.action-panel {
+  margin-top: 30rpx;
+}
+
+.connection-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 18rpx;
+  margin-top: 32rpx;
+}
+
+.choice-index {
+  flex: none;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: #f2e6d5;
+  color: var(--amber-deep);
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 44rpx;
+  text-align: center;
+}
+
+.choice-index--sage {
+  background: #e8eee9;
+  color: #536a59;
+}
+
+.choice-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.choice-body .hint {
+  margin-top: 5rpx;
+}
+
+.choice-divider {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin: 36rpx 0 4rpx;
+}
+
+.choice-divider__line {
+  height: 1rpx;
+  flex: 1;
+  background: var(--line);
+}
+
+.choice-divider__text {
+  color: var(--ink-soft);
+  font-size: 22rpx;
+}
+
+.join-field {
+  margin-top: 22rpx;
+}
+
+.join-input {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 5rpx;
+  text-transform: uppercase;
+}
+
+.profile-date {
+  min-height: 84rpx;
+  padding: 0 22rpx;
+  line-height: 84rpx;
+}
+
+.tool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+
+.tool-row:last-child { border-bottom: 0; }
+.tool-row > text { color: var(--ink-soft); font-size: 38rpx; }
+.leave-button { margin-top: 34rpx; background: transparent; color: var(--danger); font-size: 24rpx; }

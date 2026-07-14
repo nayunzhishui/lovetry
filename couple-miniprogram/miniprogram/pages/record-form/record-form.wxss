@@ -1,0 +1,58 @@
+.form-hero { padding-bottom: 18rpx; }
+.form-panel { margin-top: 4rpx; }
+.picker-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 84rpx;
+  padding: 0 22rpx;
+}
+.picker-value text { color: var(--ink-soft); font-size: 21rpx; }
+.type-fields { margin-top: 28rpx; padding-top: 2rpx; border-top: 1rpx solid var(--line); }
+.reflection-note,
+.privacy-note {
+  margin-top: 26rpx;
+  padding: 22rpx 24rpx;
+  border-left: 5rpx solid var(--sage);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: #eef2ee;
+  color: #56645a;
+  font-size: 23rpx;
+  line-height: 1.65;
+}
+.privacy-note { border-left-color: var(--amber); background: #f5eee4; color: var(--amber-deep); }
+.time-section { margin-top: 32rpx; padding-top: 28rpx; border-top: 1rpx solid var(--line); }
+.section-label { margin-bottom: 14rpx; color: var(--ink-strong); font-size: 26rpx; font-weight: 650; }
+.date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14rpx; }
+.date-grid--end { margin-top: 14rpx; }
+.duration-badge {
+  display: inline-flex;
+  margin-top: 18rpx;
+  padding: 10rpx 18rpx;
+  border-radius: 24rpx;
+  background: #e8eee9;
+  color: #536a59;
+  font-size: 22rpx;
+  font-weight: 650;
+}
+.visibility-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14rpx; }
+.visibility-option {
+  min-height: 118rpx;
+  margin: 0;
+  padding: 20rpx;
+  border: 1rpx solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  line-height: 1.4;
+  text-align: left;
+}
+.visibility-option--active { border-color: var(--amber-deep); background: #f5eee4; }
+.visibility-title { color: var(--ink-strong); font-size: 25rpx; font-weight: 700; }
+.visibility-desc { margin-top: 7rpx; color: var(--ink-soft); font-size: 20rpx; }
+.form-error { margin-top: 24rpx; color: var(--danger); font-size: 23rpx; line-height: 1.5; }
+.state-card { padding: 80rpx 20rpx; color: var(--ink-soft); text-align: center; }
+@media (max-width: 340px) {
+  .visibility-row,
+  .date-grid { grid-template-columns: 1fr; }
+}

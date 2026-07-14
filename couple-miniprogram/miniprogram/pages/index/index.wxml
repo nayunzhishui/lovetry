@@ -1,51 +1,104 @@
-<view class="page">
-  <view class="hero">
+<view class="page index-page">
+  <view class="hero home-hero">
+    <view class="dual-rail" aria-hidden="true">
+      <view class="dual-rail__line"></view>
+      <view class="dual-rail__meeting"></view>
+      <view class="dual-rail__line"></view>
+    </view>
+    <view class="eyebrow">OUR DAYS</view>
     <view class="title">恋爱记录</view>
-    <view class="subtitle">把重要经历、情绪和沟通结果记录下来，帮助两个人更清楚地理解彼此。</view>
+    <view class="subtitle">把共同经历和沟通结果放在同一条时间线上，慢慢看见两个人的生活。</view>
   </view>
 
-  <view wx:if="{{!couple}}" class="panel">
-    <view class="label">还没有情侣空间</view>
-    <view class="subtitle">先创建或加入一个空间，再开始同步记录。</view>
-    <button class="button" bindtap="goSettings">去设置</button>
+  <view wx:if="{{!couple}}" class="empty empty--home">
+    <view class="empty-title">还没有情侣空间</view>
+    <view class="empty-desc">创建或加入一个只属于两个人的空间，再开始同步记录。</view>
+    <button class="button" bindtap="goSettings">设置情侣空间</button>
   </view>
 
   <view wx:else>
-    <view class="panel">
-      <view class="label">当前情侣空间</view>
-      <view class="subtitle">加入码：{{couple.code}}</view>
+    <view class="panel space-card">
+      <view class="panel-head">
+        <view>
+          <view class="panel-kicker">SHARED SPACE</view>
+          <view class="panel-title">当前情侣空间</view>
+        </view>
+        <view class="status">已连接</view>
+      </view>
+      <view class="space-code">{{couple.code}}</view>
+      <view class="hint">这是邀请另一半加入当前空间的加入码</view>
+    </view>
+
+    <view wx:if="{{summary}}" class="today-strip">
+      <view class="today-metric"><view class="today-metric__value">{{summary.pendingTasks.length}}</view><view class="today-metric__label">待完成任务</view></view>
+      <view class="today-metric"><view class="today-metric__value">{{summary.todayPlans.length}}</view><view class="today-metric__label">今日安排</view></view>
+      <view class="today-metric"><view class="today-metric__value">{{walletText || '0'}}</view><view class="today-metric__label">两人积分</view></view>
+    </view>
+    <view wx:if="{{summary}}" class="relationship-note">
+      <view><text>{{togetherDays || '—'}}</text><view>{{togetherDays ? '在一起的第几天' : '设置纪念日后显示天数'}}</view></view>
+      <view><text>{{recentMoodText}}</text><view>最近的心情线索</view></view>
+    </view>
+    <view wx:if="{{summary.stats}}" class="week-summary">近 7 天：{{summary.stats.recordCount7d}} 条记录 · {{summary.stats.focusMinutes7d}} 分钟专注</view>
+
+    <view class="section-head">
+      <view>
+        <view class="panel-kicker">QUICK START</view>
+        <view class="section-title">今天想做什么</view>
+      </view>
     </view>
 
     <view class="nav-grid">
-      <view class="nav-item" bindtap="goMoment">
-        <view class="nav-title">记录经历</view>
-        <view class="nav-desc">日常、约会、纪念日</view>
+      <view class="nav-item" bindtap="goRecords">
+        <view class="nav-mark"></view>
+        <view class="nav-title">生活记录</view>
+        <view class="nav-desc">心情、睡眠与共同经历</view>
       </view>
-      <view class="nav-item" bindtap="goConflict">
-        <view class="nav-title">吵架复盘</view>
-        <view class="nav-desc">事实、状态、沟通</view>
+      <view class="nav-item" bindtap="goCalendar">
+        <view class="nav-mark"></view>
+        <view class="nav-title">共同日历</view>
+        <view class="nav-desc">把计划与回忆放在一起</view>
       </view>
-      <view class="nav-item" bindtap="goTimeline">
-        <view class="nav-title">时间线</view>
-        <view class="nav-desc">查看双方记录</view>
+      <view class="nav-item" bindtap="goPlans">
+        <view class="nav-mark"></view>
+        <view class="nav-title">共同计划</view>
+        <view class="nav-desc">任务、菜单、旅行和纪念日</view>
       </view>
-      <view class="nav-item" bindtap="goSettings">
-        <view class="nav-title">设置</view>
-        <view class="nav-desc">空间与加入码</view>
+      <view class="nav-item" bindtap="goRewards">
+        <view class="nav-mark"></view>
+        <view class="nav-title">奖励账户</view>
+        <view class="nav-desc">获得、消费与兑换流水</view>
       </view>
+      <view class="nav-item" bindtap="goAlbums">
+        <view class="nav-mark"></view>
+        <view class="nav-title">共同相册</view>
+        <view class="nav-desc">保存只属于两个人的照片</view>
+      </view>
+      <view class="nav-item" bindtap="goSearch">
+        <view class="nav-mark"></view>
+        <view class="nav-title">搜索回忆</view>
+        <view class="nav-desc">按关键词找到记录和计划</view>
+      </view>
+    </view>
+
+    <view class="home-links">
+      <text bindtap="goConflict">沟通复盘</text>
+      <text bindtap="goTimeline">共同时间线</text>
+      <text bindtap="goSettings">情侣空间</text>
     </view>
   </view>
 
-  <view wx:if="{{couple}}" class="panel">
-    <view class="label">新增恋爱经历</view>
+  <view wx:if="{{couple}}" id="moment-form" class="panel moment-panel">
+    <view class="panel-kicker">NEW MOMENT</view>
+    <view class="panel-title">留下一段共同经历</view>
+    <view class="subtitle">不必写得完整，先记下你最想保留的细节。</view>
     <view class="field">
       <view class="label">标题</view>
-      <input value="{{title}}" placeholder="例如：第一次一起做饭" bindinput="onTitleInput" />
+      <input value="{{title}}" maxlength="40" placeholder="例如：第一次一起做饭" bindinput="onTitleInput" />
     </view>
     <view class="field">
       <view class="label">内容</view>
-      <textarea value="{{content}}" placeholder="记录发生了什么、感受、想保留的细节" bindinput="onContentInput" />
+      <textarea value="{{content}}" maxlength="1000" auto-height placeholder="发生了什么？当时有什么感受？" bindinput="onContentInput" />
     </view>
-    <button class="button" bindtap="submitMoment">保存记录</button>
+    <button class="button" bindtap="submitMoment">保存这段经历</button>
   </view>
 </view>

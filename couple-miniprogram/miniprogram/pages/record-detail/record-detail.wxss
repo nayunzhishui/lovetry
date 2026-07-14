@@ -1,0 +1,20 @@
+.detail-state { padding: 120rpx 20rpx; color: var(--ink-soft); text-align: center; }
+.detail-retry { display: inline-flex; margin: 26rpx auto 0; }
+.detail-hero { padding-bottom: 22rpx; }
+.detail-meta { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 18rpx; color: var(--ink-soft); font-size: 22rpx; }
+.detail-dot { color: var(--amber); }
+.detail-copy { color: var(--ink-strong); font-size: 29rpx; line-height: 1.9; white-space: pre-wrap; }
+.detail-facts { padding-top: 26rpx; }
+.detail-row { display: grid; grid-template-columns: 180rpx 1fr; gap: 22rpx; padding: 20rpx 0; border-top: 1rpx solid var(--line); }
+.detail-row:first-of-type { margin-top: 12rpx; }
+.detail-label { color: var(--ink-soft); font-size: 23rpx; }
+.detail-value { color: var(--ink-strong); font-size: 25rpx; line-height: 1.65; word-break: break-word; white-space: pre-wrap; }
+.gentle-note { border-left: 5rpx solid var(--sage); color: #56645a; font-size: 24rpx; line-height: 1.7; }
+.detail-actions { margin-top: 34rpx; }
+.delete-button { margin-top: 18rpx; background: transparent; color: var(--danger); font-size: 24rpx; line-height: 72rpx; }
+.delete-button[disabled] { color: var(--ink-soft); }
+.owner-note { margin-top: 30rpx; color: var(--ink-soft); font-size: 23rpx; line-height: 1.6; text-align: center; }
+.inline-error { margin-top: 22rpx; color: var(--danger); font-size: 23rpx; text-align: center; }
+@media (max-width: 340px) {
+  .detail-row { grid-template-columns: 1fr; gap: 8rpx; }
+}

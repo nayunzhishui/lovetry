@@ -1,0 +1,93 @@
+<view class="page form-page">
+  <view class="hero form-hero">
+    <view class="dual-rail" aria-hidden="true">
+      <view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view>
+    </view>
+    <view class="eyebrow">A NOTE FOR TODAY</view>
+    <view class="title">{{recordId ? '修改' : '新增'}}{{typeLabel}}</view>
+    <view class="subtitle">按你舒服的程度记录，留白也可以。</view>
+  </view>
+
+  <view wx:if="{{isLoading}}" class="state-card">正在读取记录…</view>
+  <view wx:elif="{{error && !version && recordId}}" class="empty">
+    <view class="empty-title">记录暂时无法打开</view><view class="empty-desc">{{error}}</view>
+  </view>
+
+  <view wx:else class="panel form-panel">
+    <view class="field">
+      <view class="label">记录类型</view>
+      <picker mode="selector" range="{{typeOptions}}" range-key="label" value="{{typeIndex}}" disabled="{{!!recordId}}" bindchange="onTypeChange">
+        <view class="input-like picker-value">{{typeLabel}}<text>{{recordId ? '编辑时不可更换' : '点击更换'}}</text></view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <view class="label">标题</view>
+      <input value="{{title}}" maxlength="80" placeholder="不填将使用默认标题" data-key="title" bindinput="onInput" />
+    </view>
+
+    <view class="field">
+      <view class="label">{{contentLabel}}</view>
+      <textarea value="{{content}}" maxlength="2000" auto-height placeholder="{{contentPlaceholder}}" data-key="content" bindinput="onInput" />
+    </view>
+
+    <view wx:if="{{type === 'mood'}}" class="type-fields">
+      <view class="field"><view class="label">心情程度 · {{moodLevel}} / 5</view><slider min="1" max="5" step="1" value="{{moodLevel}}" activeColor="#b77932" backgroundColor="#ded6c9" data-key="moodLevel" bindchange="onNumberInput" /></view>
+      <view class="field"><view class="label">心情标签</view><input value="{{tagsText}}" maxlength="80" placeholder="例如：安心，期待，疲惫" data-key="tagsText" bindinput="onInput" /></view>
+    </view>
+
+    <view wx:if="{{type === 'conflict'}}" class="type-fields reflection-fields">
+      <view class="reflection-note">这里不判断谁对谁错。先写自己的感受和需要，再决定是否共享。</view>
+      <view class="field"><view class="label">我的感受</view><textarea value="{{feelings}}" maxlength="600" auto-height placeholder="当时我感到……" data-key="feelings" bindinput="onInput" /></view>
+      <view class="field"><view class="label">我在意的需要</view><textarea value="{{needs}}" maxlength="600" auto-height placeholder="我希望被理解或一起解决的是……" data-key="needs" bindinput="onInput" /></view>
+      <view class="field"><view class="label">沟通过程</view><textarea value="{{communication}}" maxlength="800" auto-height placeholder="彼此怎样表达、倾听，又在哪里停住了" data-key="communication" bindinput="onInput" /></view>
+      <view class="field"><view class="label">共同约定</view><textarea value="{{agreement}}" maxlength="800" auto-height placeholder="已经达成什么，还有什么之后再谈" data-key="agreement" bindinput="onInput" /></view>
+      <view class="field"><view class="label">沟通满意度 · {{satisfaction}} / 10</view><slider min="1" max="10" step="1" value="{{satisfaction}}" activeColor="#718577" backgroundColor="#ded6c9" data-key="satisfaction" bindchange="onNumberInput" /></view>
+    </view>
+
+    <view wx:if="{{type === 'outing'}}" class="type-fields">
+      <view class="field"><view class="label">类型</view><picker mode="selector" range="{{outingCategories}}" value="{{outingCategoryIndex}}" data-key="outingCategoryIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{outingCategories[outingCategoryIndex]}}</view></picker></view>
+      <view class="field"><view class="label">地点</view><input value="{{location}}" maxlength="100" placeholder="餐厅、城市或地点" data-key="location" bindinput="onInput" /></view>
+      <view class="field"><view class="label">共同花费（元）</view><input type="digit" value="{{amount}}" placeholder="可选填" data-key="amount" bindinput="onInput" /></view>
+      <view class="field"><view class="label">这次体验 · {{outingRating}} / 5</view><slider min="1" max="5" step="1" value="{{outingRating}}" activeColor="#b77932" backgroundColor="#ded6c9" data-key="outingRating" bindchange="onNumberInput" /></view>
+    </view>
+
+    <view wx:if="{{type === 'sleep'}}" class="type-fields">
+      <view class="field"><view class="label">睡眠质量 · {{sleepQuality}} / 5</view><slider min="1" max="5" step="1" value="{{sleepQuality}}" activeColor="#718577" backgroundColor="#ded6c9" data-key="sleepQuality" bindchange="onNumberInput" /></view>
+    </view>
+
+    <view wx:if="{{type === 'period'}}" class="type-fields">
+      <view class="field"><view class="label">记录状态</view><picker mode="selector" range="{{periodFlows}}" value="{{periodFlowIndex}}" data-key="periodFlowIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{periodFlows[periodFlowIndex]}}</view></picker></view>
+      <view class="privacy-note">此类记录默认仅自己可见，可见性始终由你控制。</view>
+    </view>
+
+    <view wx:if="{{type === 'game'}}" class="type-fields">
+      <view class="field"><view class="label">一起参与的人</view><input value="{{participants}}" maxlength="80" placeholder="例如：我们两个人" data-key="participants" bindinput="onInput" /></view>
+    </view>
+
+    <view class="time-section">
+      <view class="section-label">{{type === 'period' ? '日期范围' : (type === 'sleep' || type === 'game' ? '开始与结束' : '记录时间')}}</view>
+      <view class="date-grid">
+        <picker mode="date" value="{{startDate}}" data-key="startDate" bindchange="onDateTimeChange"><view class="input-like picker-value">{{startDate}}</view></picker>
+        <picker wx:if="{{type !== 'period'}}" mode="time" value="{{startTime}}" data-key="startTime" bindchange="onDateTimeChange"><view class="input-like picker-value">{{startTime}}</view></picker>
+      </view>
+      <view wx:if="{{type === 'sleep' || type === 'game' || type === 'period'}}" class="date-grid date-grid--end">
+        <picker mode="date" value="{{endDate}}" data-key="endDate" bindchange="onDateTimeChange"><view class="input-like picker-value">{{endDate}}</view></picker>
+        <picker wx:if="{{type !== 'period'}}" mode="time" value="{{endTime}}" data-key="endTime" bindchange="onDateTimeChange"><view class="input-like picker-value">{{endTime}}</view></picker>
+      </view>
+      <view wx:if="{{durationText}}" class="duration-badge">共 {{durationText}}</view>
+      <view wx:if="{{(type === 'sleep' || type === 'game') && !durationText}}" class="hint">跨天时请把结束日期选择为第二天。</view>
+    </view>
+
+    <view class="field">
+      <view class="label">谁可以看见</view>
+      <view class="visibility-row">
+        <button class="visibility-option {{visibility === 'private' ? 'visibility-option--active' : ''}}" data-value="private" bindtap="selectVisibility"><view class="visibility-title">仅自己</view><view class="visibility-desc">只在你的记录中显示</view></button>
+        <button class="visibility-option {{visibility === 'couple' ? 'visibility-option--active' : ''}}" data-value="couple" bindtap="selectVisibility"><view class="visibility-title">两人共享</view><view class="visibility-desc">伴侣也能查看</view></button>
+      </view>
+    </view>
+
+    <view wx:if="{{error}}" class="form-error" aria-live="polite">{{error}}</view>
+    <button class="button" disabled="{{isSubmitting}}" bindtap="submit">{{isSubmitting ? '正在保存…' : '保存记录'}}</button>
+  </view>
+</view>

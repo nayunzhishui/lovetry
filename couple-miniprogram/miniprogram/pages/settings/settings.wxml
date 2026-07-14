@@ -1,21 +1,73 @@
-<view class="page">
+<view class="page settings-page">
   <view class="hero">
+    <view class="dual-rail" aria-hidden="true">
+      <view class="dual-rail__line"></view>
+      <view class="dual-rail__meeting"></view>
+      <view class="dual-rail__line"></view>
+    </view>
+    <view class="eyebrow">PRIVATE SPACE</view>
     <view class="title">情侣空间</view>
-    <view class="subtitle">创建空间后，把加入码发给另一半；对方输入加入码后即可同步记录。</view>
+    <view class="subtitle">两个人共用一个空间。创建后，把加入码单独发给另一半。</view>
+  </view>
+
+  <view wx:if="{{couple}}" class="panel code-card">
+    <view class="panel-head">
+      <view>
+        <view class="panel-kicker">INVITE CODE</view>
+        <view class="panel-title">当前加入码</view>
+      </view>
+      <view class="status status--warm">{{couple.members.length}} 人</view>
+    </view>
+    <view class="invite-code">{{couple.code}}</view>
+    <view class="hint">仅发送给你的伴侣，不要发布在公开平台。</view>
+    <button wx:if="{{couple.members.length < 2}}" class="button secondary compact" disabled="{{isSaving}}" bindtap="refreshInvite">更新加入码</button>
   </view>
 
   <view wx:if="{{couple}}" class="panel">
-    <view class="label">当前加入码</view>
-    <view class="title">{{couple.code}}</view>
-    <view class="subtitle">成员数：{{couple.members.length}}</view>
+    <view class="panel-kicker">SPACE PROFILE</view>
+    <view class="panel-title">两个人的资料</view>
+    <view class="field"><view class="label">空间名称</view><input value="{{spaceName}}" maxlength="30" placeholder="我们的小空间" data-key="spaceName" bindinput="onProfileInput" /></view>
+    <view class="field"><view class="label">在一起的日期</view><picker mode="date" value="{{anniversaryDate}}" bindchange="onAnniversaryChange"><view class="input-like profile-date">{{anniversaryDate || '选择日期'}}</view></picker></view>
+    <button class="button" disabled="{{isSaving}}" bindtap="saveProfile">保存资料</button>
   </view>
 
-  <view class="panel">
+  <view wx:if="{{!couple}}" class="panel action-panel">
+    <view class="panel-kicker">CONNECT</view>
+    <view class="panel-title">建立两个人的连接</view>
+    <view class="connection-choice">
+      <view class="choice-index">A</view>
+      <view class="choice-body">
+        <view class="label">还没有空间</view>
+        <view class="hint">由其中一人创建，再分享加入码。</view>
+      </view>
+    </view>
     <button class="button" bindtap="createCouple">创建情侣空间</button>
-    <view class="field">
+
+    <view class="choice-divider">
+      <view class="choice-divider__line"></view>
+      <view class="choice-divider__text">或</view>
+      <view class="choice-divider__line"></view>
+    </view>
+
+    <view class="connection-choice">
+      <view class="choice-index choice-index--sage">B</view>
+      <view class="choice-body">
+        <view class="label">已经收到加入码</view>
+        <view class="hint">输入对方发来的 8 位加入码。</view>
+      </view>
+    </view>
+    <view class="field join-field">
       <view class="label">加入码</view>
-      <input value="{{joinCode}}" placeholder="输入 6 位加入码" bindinput="onJoinCodeInput" />
+      <input class="join-input" value="{{joinCode}}" maxlength="8" placeholder="请输入 8 位加入码" bindinput="onJoinCodeInput" />
     </view>
     <button class="button secondary" bindtap="joinCouple">加入情侣空间</button>
   </view>
+
+  <view wx:if="{{couple}}" class="panel tools-panel">
+    <view class="panel-kicker">DATA & DEVELOPMENT</view>
+    <view class="tool-row" bindtap="goExport"><view><view class="label">数据备份</view><view class="hint">导出共享数据和自己的私密记录</view></view><text>›</text></view>
+    <view class="tool-row" bindtap="goIntegrationTest"><view><view class="label">联调检查</view><view class="hint">检查云函数和数据库连接</view></view><text>›</text></view>
+  </view>
+
+  <button wx:if="{{couple}}" class="leave-button" disabled="{{isSaving}}" bindtap="leaveCouple">解除当前情侣空间</button>
 </view>

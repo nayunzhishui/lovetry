@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="hero">
+    <view class="dual-rail"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view>
+    <view class="eyebrow">OUR CALENDAR</view>
+    <view class="title">共同日历</view>
+    <view class="subtitle">共享安排会汇合在这里，私密记录只留在自己的轨道。</view>
+  </view>
+
+  <view class="calendar-head">
+    <button class="month-button" bindtap="previousMonth">‹</button>
+    <view class="panel-title">{{monthLabel}}</view>
+    <button class="month-button" bindtap="nextMonth">›</button>
+  </view>
+  <scroll-view scroll-x class="calendar-filters" show-scrollbar="{{false}}"><view class="calendar-filters__inner">
+    <button wx:for="{{filters}}" wx:key="value" class="filter-chip {{activeFilter === item.value ? 'filter-chip--active' : ''}}" data-filter="{{item.value}}" bindtap="selectFilter">{{item.label}}</button>
+  </view></scroll-view>
+
+  <view class="week-row"><view wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this" class="week-cell">{{item}}</view></view>
+  <view class="calendar-grid">
+    <view wx:for="{{days}}" wx:key="key" class="day {{item.blank ? 'day--blank' : ''}} {{selectedKey === item.key ? 'day--selected' : ''}}" data-key="{{item.key}}" bindtap="selectDay">
+      <text wx:if="{{!item.blank}}">{{item.day}}</text>
+      <view wx:if="{{item.eventCount}}" class="event-dot"></view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty"><view class="empty-desc">正在整理这个月的记录…</view></view>
+  <view wx:if="{{error}}" class="error-banner">{{error}}</view>
+  <view wx:elif="{{!loading && selectedEvents.length === 0}}" class="empty"><view class="empty-title">这一天还没有安排</view><view class="empty-desc">可以从计划或记录页面添加。</view></view>
+  <view wx:else class="panel">
+    <view class="panel-kicker">{{selectedKey}}</view>
+    <view wx:for="{{selectedEvents}}" wx:key="id" class="event-row" data-id="{{item.id}}" bindtap="openEvent">
+      <view class="status">{{item.type}}</view>
+      <view class="event-title">{{item.title}}</view>
+    </view>
+  </view>
+</view>
