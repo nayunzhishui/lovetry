@@ -1,5 +1,5 @@
 const cloud = require("wx-server-sdk");
-const crypto = require("crypto");
+const { recordIdForRequest } = require("./idempotency");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -149,7 +149,7 @@ async function handle(event, openid) {
     };
     const clientRequestId = trimText(event.record && event.record.clientRequestId, 120);
     if (clientRequestId) {
-      const recordId = crypto.createHash("sha256").update(`${couple._id}:${openid}:${clientRequestId}`).digest("hex").slice(0, 32);
+      const recordId = recordIdForRequest(couple._id, openid, clientRequestId);
       try {
         const existing = (await db.collection("records").doc(recordId).get()).data;
         if (existing && existing.coupleId === couple._id && canRead(existing, openid)) return success({ record: existing, duplicate: true });

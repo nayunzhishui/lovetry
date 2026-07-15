@@ -8,6 +8,7 @@ const { failure, success } = require("./result");
 const RECORD_TYPE_VALUES = new Set(Object.values(RECORD_TYPES));
 const VISIBILITY_VALUES = new Set(Object.values(VISIBILITIES));
 const PRIVATE_BY_DEFAULT = new Set([
+  RECORD_TYPES.MOOD,
   RECORD_TYPES.CONFLICT,
   RECORD_TYPES.SLEEP,
   RECORD_TYPES.PERIOD,
