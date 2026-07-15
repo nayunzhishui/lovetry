@@ -1,0 +1,33 @@
+name: Mini Program Preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 预览版本号
+        required: true
+        default: 0.1.0-preview
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save miniprogram-ci
+      - name: Prepare private key
+        env:
+          PRIVATE_KEY: ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
+        run: printf '%s' "$PRIVATE_KEY" > "$RUNNER_TEMP/private.key"
+      - name: Generate preview
+        env:
+          MINIPROGRAM_APPID: ${{ secrets.MINIPROGRAM_APPID }}
+          MINIPROGRAM_PRIVATE_KEY_PATH: ${{ runner.temp }}/private.key
+          MINIPROGRAM_VERSION: ${{ inputs.version }}
+        run: node scripts/miniprogram-preview.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-qrcode
+          path: preview-qrcode.png

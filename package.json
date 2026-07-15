@@ -4,7 +4,8 @@
   "private": true,
   "description": "情侣微信小程序的本地自动化与共享业务规则",
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "verify": "node scripts/verify-project.js"
   },
   "engines": {
     "node": ">=22"
