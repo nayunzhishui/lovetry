@@ -201,11 +201,14 @@ async function handle(event, openid) {
 }
 
 exports.main = async (event = {}) => {
+  const startedAt = Date.now();
   const { OPENID } = cloud.getWXContext();
   try {
-    return await handle(event, OPENID);
+    const result = await handle(event, OPENID);
+    console.info("media function completed", { traceId: event._traceId || "", action: event.action || "", code: "OK", durationMs: Date.now() - startedAt });
+    return result;
   } catch (error) {
-    console.error("media function failed", { action: event.action, code: error.code || error.message });
+    console.error("media function failed", { traceId: event._traceId || "", action: event.action, code: error.code || error.message, durationMs: Date.now() - startedAt });
     return failure(error);
   }
 };

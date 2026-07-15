@@ -16,11 +16,29 @@
     "pages/export/export",
     "pages/integration-test/integration-test"
   ],
+  "subpackages": [
+    {
+      "root": "features",
+      "pages": ["notifications/notifications", "reward-store/reward-store"]
+    }
+  ],
   "window": {
     "navigationBarTitleText": "恋爱记录",
-    "navigationBarBackgroundColor": "#f7f4ef",
+    "navigationBarBackgroundColor": "#f1f4f2",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f7f4ef"
+    "backgroundColor": "#f1f4f2"
+  },
+  "tabBar": {
+    "color": "#68767A",
+    "selectedColor": "#1F2D31",
+    "backgroundColor": "#FCFDFC",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "今天" },
+      { "pagePath": "pages/calendar/calendar", "text": "日历" },
+      { "pagePath": "pages/records/records", "text": "记录" },
+      { "pagePath": "pages/settings/settings", "text": "我们" }
+    ]
   },
   "style": "v2",
   "requiredPrivateInfos": ["chooseMedia"],

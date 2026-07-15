@@ -4,9 +4,9 @@
 
 1. 用微信开发者工具导入本目录，填写真实小程序 AppID；
 2. 开通云开发环境；开发阶段可保持 `miniprogram/config.js` 占位值，此时使用开发者工具当前云环境；发布前改为真实环境 ID；
-3. 创建集合：`couples`、`memberships`、`records`、`plans`、`wallets`、`reward_transactions`、`albums`、`media_assets`；
+3. 创建集合：`couples`、`memberships`、`records`、`plans`、`wallets`、`reward_transactions`、`reward_items`、`reward_inventory`、`albums`、`media_assets`、`notification_preferences`、`notifications`、`record_reaction_requests`；
 4. 数据库设置为“仅云函数可读写”；云存储读取保持私有，写入只允许已登录用户向本人路径上传；
-5. 依次上传并部署 `login`、`couple`、`records`、`plans`、`rewards`、`media`、`dashboard`，选择“云端安装依赖”。
+5. 依次上传并部署 `login`、`couple`、`records`、`plans`、`rewards`、`media`、`dashboard`、`notifications`，选择“云端安装依赖”。
 
 ## 2. 推荐索引
 
@@ -26,8 +26,13 @@
 | plans | `coupleId`、`restoredFromId` | 恢复去重 |
 | wallets | `coupleId`、`ownerOpenid` | 钱包查询 |
 | reward_transactions | `coupleId`、`ownerOpenid`、`createdAt desc` | 积分流水 |
+| reward_items | `coupleId`、`status`、`createdAt desc` | 奖励商城列表 |
+| reward_inventory | `coupleId`、`createdAt desc` | 奖励仓库列表 |
 | albums | `coupleId`、`createdAt desc` | 相册列表 |
 | media_assets | `coupleId`、`albumId`、`createdAt desc` | 相片分页 |
+| notification_preferences | `coupleId`、`ownerOpenid` | 用户提醒偏好 |
+| notifications | `coupleId`、`recipientOpenid`、`updatedAt asc` | 增量同步与提醒列表 |
+| record_reaction_requests | `coupleId`、`recordId`、`actorOpenid` | 轻回应幂等请求 |
 
 加入码的全局唯一由云函数生成前检查；CloudBase 控制台若支持唯一索引，应为 `couples.code` 增加唯一索引。
 
@@ -43,7 +48,7 @@
 
 ## 4. 部署后验收
 
-1. 在“设置 → 云端联调检查”运行七模块检查；
+1. 在“设置 → 云端联调检查”运行八模块检查；
 2. 账号 A 创建空间，账号 B 使用 8 位加入码加入；
 3. 验证共享记录同步、私密记录对 B 不可见；
 4. 账号 C 尝试加入，必须返回空间已满；

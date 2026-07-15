@@ -1,0 +1,11 @@
+.segment-control { display: grid; grid-template-columns: 1fr 1fr; gap: 8rpx; padding: 8rpx; border: 1rpx solid var(--line); background: var(--surface); }
+.segment-control button { min-height: 72rpx; background: transparent; color: var(--ink-soft); font-size: 24rpx; line-height: 72rpx; }
+.segment-control .is-active { background: var(--ink-strong); color: #fff; }
+.reward-item { display: grid; grid-template-columns: 1fr auto; gap: 24rpx; align-items: center; }
+.reward-item__action { min-width: 132rpx; color: var(--brass); font-family: Menlo, Consolas, monospace; text-align: right; }
+.reward-item__action .button { margin-top: 14rpx; }
+.text-action { width:auto; min-height:52rpx; margin:14rpx 0 0; padding:0; background:transparent; color:var(--ink-soft); font-size:21rpx; line-height:52rpx; text-align:left; text-decoration:underline; }
+.inventory-item { position: relative; overflow: hidden; }
+.archive-stamp { position: absolute; top: 20rpx; right: 20rpx; padding: 7rpx 13rpx; border: 2rpx solid currentColor; color: var(--moss); font-size: 19rpx; letter-spacing: 2rpx; transform: rotate(2deg); }
+.inventory-item .button { margin-top: 22rpx; }
+.error-banner { margin-top: 24rpx; padding: 22rpx; border-left: 6rpx solid var(--coral); background: #fff5f3; color: var(--danger); }

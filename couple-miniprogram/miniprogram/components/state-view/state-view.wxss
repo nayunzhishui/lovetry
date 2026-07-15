@@ -1,0 +1,6 @@
+.state-view { margin-top: 24rpx; padding: 52rpx 28rpx; border: 1rpx dashed #bcc9c5; background: rgba(252,253,252,.72); color: #68767a; text-align: center; }
+.state-view__mark { width: 40rpx; height: 6rpx; margin: 0 auto 22rpx; background: linear-gradient(90deg,#35658d 0 44%,transparent 44% 56%,#d46557 56%); }
+.state-view__title { color: #1f2d31; font-size: 28rpx; font-weight: 650; }
+.state-view__description { margin-top: 12rpx; font-size: 23rpx; line-height: 1.65; }
+.state-view__action { min-height: 68rpx; margin-top: 24rpx; border-radius: 6rpx; background: #1f2d31; color: #fff; font-size: 23rpx; line-height: 68rpx; }
+@media (prefers-color-scheme: dark) { .state-view { border-color:#486069; background:#1b2a2f; color:#94a5a2; } .state-view__title { color:#eef4f2; } .state-view__action { background:#eef4f2; color:#1f2d31; } }

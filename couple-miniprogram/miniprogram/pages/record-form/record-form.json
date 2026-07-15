@@ -1,3 +1,4 @@
 {
-  "navigationBarTitleText": "编辑记录"
+  "navigationBarTitleText": "编辑记录",
+  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
 }

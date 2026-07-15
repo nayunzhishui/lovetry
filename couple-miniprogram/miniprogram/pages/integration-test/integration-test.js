@@ -10,7 +10,8 @@ Page({
       { key: "plans", label: "计划服务", status: "idle", detail: "等待检查" },
       { key: "rewards", label: "奖励服务", status: "idle", detail: "等待检查" },
       { key: "media", label: "相册服务", status: "idle", detail: "等待检查" },
-      { key: "dashboard", label: "聚合服务", status: "idle", detail: "等待检查" }
+      { key: "dashboard", label: "聚合服务", status: "idle", detail: "等待检查" },
+      { key: "notifications", label: "提醒服务", status: "idle", detail: "等待检查" }
     ],
     error: ""
   },
@@ -38,7 +39,7 @@ Page({
       );
 
       if (!couple) {
-        ["records", "plans", "rewards", "media", "dashboard"].forEach((key) => {
+        ["records", "plans", "rewards", "media", "dashboard", "notifications"].forEach((key) => {
           this.setStep(key, "warning", "绑定情侣空间后才能检查");
         });
         return;
@@ -63,6 +64,10 @@ Page({
       this.setStep("dashboard", "running", "正在检查云函数版本");
       const health = await api.getServiceHealth();
       this.setStep("dashboard", "success", `${health.modules.length} 个模块可用`);
+
+      this.setStep("notifications", "running", "正在读取提醒偏好");
+      const preferences = await api.getNotificationPreferences();
+      this.setStep("notifications", "success", preferences.enabled ? "提醒中心已启用" : "提醒中心当前关闭");
     } catch (error) {
       this.setData({ error: api.getErrorMessage(error, "联调检查失败") });
       const running = this.data.steps.find((step) => step.status === "running");

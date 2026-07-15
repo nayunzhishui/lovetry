@@ -1,10 +1,6 @@
 <view class="page conflict-page">
   <view class="hero">
-    <view class="dual-rail" aria-hidden="true">
-      <view class="dual-rail__line"></view>
-      <view class="dual-rail__meeting"></view>
-      <view class="dual-rail__line"></view>
-    </view>
+    <twin-rail />
     <view class="eyebrow">PAUSE · NOTICE · TALK</view>
     <view class="title">沟通复盘</view>
     <view class="subtitle">先分别看见发生了什么，再一起讨论彼此需要什么。</view>

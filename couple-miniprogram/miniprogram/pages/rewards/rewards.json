@@ -1,4 +1,5 @@
 {
   "navigationBarTitleText": "奖励账户",
-  "enablePullDownRefresh": true
+  "enablePullDownRefresh": true,
+  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
 }

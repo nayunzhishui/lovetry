@@ -1,14 +1,12 @@
 <view class="page rewards-page">
   <view class="hero rewards-hero">
-    <view class="dual-rail" aria-hidden="true">
-      <view class="dual-rail__line"></view>
-      <view class="dual-rail__meeting"></view>
-      <view class="dual-rail__line"></view>
-    </view>
+    <twin-rail />
     <view class="eyebrow">GIVE &amp; GROW</view>
     <view class="title">奖励账户</view>
     <view class="subtitle">把看见、感谢和兑现，记成两个人都看得见的流水。</view>
   </view>
+
+  <view class="reward-mode-nav"><button class="reward-mode-nav__active">账户</button><button data-mode="store" bindtap="goRewardStore">商城</button><button data-mode="inventory" bindtap="goRewardStore">仓库</button></view>
 
   <view wx:if="{{isLoading}}" class="state-card">
     <view class="state-pulse"></view>

@@ -1,0 +1,1 @@
+<view class="archive-card"><slot></slot></view>

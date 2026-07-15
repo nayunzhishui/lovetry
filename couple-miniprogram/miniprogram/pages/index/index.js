@@ -1,5 +1,6 @@
 const app = getApp();
 const cloudApi = require("../../services/cloudApi");
+const { nextAnniversary } = require("../../../shared/anniversary");
 
 Page({
   data: {
@@ -8,6 +9,8 @@ Page({
     walletText: "",
     togetherDays: 0,
     recentMoodText: "",
+    upcomingAnniversary: null,
+    syncText: "等待首次同步",
     title: "",
     content: "",
     isLoading: false,
@@ -16,7 +19,47 @@ Page({
   },
 
   onShow() {
+    this.stopSyncTimer();
     this.loadCouple();
+    this.syncTimer = setInterval(() => this.runSync(), 30000);
+  },
+
+  onHide() {
+    this.stopSyncTimer();
+  },
+
+  onUnload() {
+    this.stopSyncTimer();
+  },
+
+  stopSyncTimer() {
+    if (this.syncTimer) clearInterval(this.syncTimer);
+    this.syncTimer = null;
+  },
+
+  refreshSyncText() {
+    if (!app.globalData.isOnline) {
+      this.setData({ syncText: "当前离线 · 恢复网络后自动同步" });
+      return;
+    }
+    const summary = app.globalData.syncSummary || {};
+    if (summary.total > 0) {
+      this.setData({ syncText: `最近同步 · 接收 ${summary.total} 项更新` });
+      return;
+    }
+    const date = new Date(app.globalData.lastSyncAt || "");
+    const time = Number.isNaN(date.getTime())
+      ? "等待首次同步"
+      : `已同步 · ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    this.setData({ syncText: time });
+  },
+
+  runSync() {
+    if (!app.globalData.couple || typeof app.syncChanges !== "function") return Promise.resolve(null);
+    return app.syncChanges({ silent: true }).then((result) => {
+      this.refreshSyncText();
+      return result;
+    });
   },
 
   loadCouple() {
@@ -28,7 +71,10 @@ Page({
       .then((couple) => {
         app.globalData.couple = couple;
         this.setData({ couple });
-        if (couple) this.loadSummary();
+        if (couple) {
+          this.loadSummary();
+          this.runSync();
+        }
       })
       .catch((error) => {
         const message = cloudApi.getErrorMessage(error, "情侣空间加载失败");
@@ -56,7 +102,11 @@ Page({
         const recentMoodText = recentMood && recentMood.payload && recentMood.payload.level
           ? `${recentMood.payload.level}/5 · ${recentMood.title}`
           : "还没有心情记录";
-        this.setData({ summary, walletText, togetherDays, recentMoodText });
+        const upcomingAnniversary = (summary.anniversaries || [])
+          .map((plan) => ({ ...plan, next: nextAnniversary(String(plan.startAt || "").slice(0, 10)) }))
+          .filter((plan) => plan.next)
+          .sort((a, b) => a.next.daysRemaining - b.next.daysRemaining)[0] || null;
+        this.setData({ summary, walletText, togetherDays, recentMoodText, upcomingAnniversary });
       })
       .catch(() => {
         this.setData({ summary: null, walletText: "" });
@@ -72,7 +122,7 @@ Page({
   },
 
   goSettings() {
-    wx.navigateTo({ url: "/pages/settings/settings" });
+    wx.switchTab({ url: "/pages/settings/settings" });
   },
 
   goMoment() {
@@ -88,11 +138,11 @@ Page({
   },
 
   goRecords() {
-    wx.navigateTo({ url: "/pages/records/records" });
+    wx.switchTab({ url: "/pages/records/records" });
   },
 
   goCalendar() {
-    wx.navigateTo({ url: "/pages/calendar/calendar" });
+    wx.switchTab({ url: "/pages/calendar/calendar" });
   },
 
   goPlans() {

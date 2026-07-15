@@ -1,0 +1,6 @@
+.setting-switch { display: flex; align-items: center; justify-content: space-between; min-height: 88rpx; border-bottom: 1rpx solid var(--line); color: var(--ink-strong); }
+.setting-switch:last-of-type { border-bottom: 0; }
+.reminder-card { display: flex; align-items: center; gap: 22rpx; }
+.rail-dot { width: 18rpx; height: 18rpx; flex: none; border-radius: 50%; background: var(--cobalt); box-shadow: 0 0 0 8rpx rgba(53, 101, 141, 0.1); }
+.rail-dot--shared { background: var(--moss); }
+.error-banner { margin-top: 24rpx; padding: 22rpx; border-left: 6rpx solid var(--coral); background: #fff5f3; color: var(--danger); }

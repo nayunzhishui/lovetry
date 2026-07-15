@@ -15,6 +15,11 @@ const ERROR_MESSAGES = {
   REWARD_ALREADY_SETTLED: "该奖励已经结算",
   IDEMPOTENCY_KEY_REQUIRED: "请求标识缺失，请重试",
   IDEMPOTENCY_CONFLICT: "重复请求的内容不一致",
+  INVALID_REWARD_ITEM: "请填写有效的奖励名称和积分",
+  REWARD_ITEM_NOT_FOUND: "奖励商品不存在或已下架",
+  INVENTORY_NOT_FOUND: "仓库条目不存在",
+  INVALID_REWARD_STATE: "奖励状态不能这样变更",
+  NO_PERMISSION: "无权执行这个操作",
   UNKNOWN_ACTION: "暂不支持这个操作"
 };
 
@@ -53,6 +58,25 @@ function amount(value) {
     throw businessError("INVALID_AMOUNT");
   }
   return parsed;
+}
+
+function normalizeRewardItem(input) {
+  const item = input || {};
+  const title = String(item.title || "").trim().slice(0, 80);
+  if (!title) throw businessError("INVALID_REWARD_ITEM");
+  const points = amount(item.points);
+  return { title, detail: String(item.detail || "").trim().slice(0, 500), points };
+}
+
+async function getRewardItem(itemId, couple) {
+  try {
+    const item = (await db.collection("reward_items").doc(itemId).get()).data;
+    if (!item || item.coupleId !== couple._id || item.status !== "active") throw businessError("REWARD_ITEM_NOT_FOUND");
+    return item;
+  } catch (error) {
+    if (error.code) throw error;
+    throw businessError("REWARD_ITEM_NOT_FOUND");
+  }
 }
 
 async function ensureWallet(couple, openid) {
@@ -203,6 +227,94 @@ async function handle(event, openid) {
     return success({ tasks: candidates.filter((task, index) => !settled[index]) });
   }
 
+  if (action === "listCatalog") {
+    const result = await db.collection("reward_items").where({ coupleId: couple._id, status: "active" }).orderBy("createdAt", "desc").limit(100).get();
+    return success({ items: result.data });
+  }
+
+  if (action === "createItem") {
+    const now = new Date();
+    const data = { coupleId: couple._id, ...normalizeRewardItem(event.item), status: "active", createdBy: openid, createdAt: now, updatedAt: now };
+    const result = await db.collection("reward_items").add({ data });
+    return success({ item: { _id: result._id, ...data } });
+  }
+
+  if (action === "archiveItem") {
+    const item = await getRewardItem(event.itemId, couple);
+    if (item.createdBy !== openid) throw businessError("NO_PERMISSION");
+    const updatedAt = new Date();
+    await db.collection("reward_items").doc(item._id).update({ data: { status: "archived", updatedAt } });
+    return success({ itemId: item._id });
+  }
+
+  if (action === "redeemItem") {
+    if (!String(event.idempotencyKey || "").trim()) throw businessError("IDEMPOTENCY_KEY_REQUIRED");
+    const itemId = String(event.itemId || "");
+    const wallet = await ensureWallet(couple, openid);
+    const stableKey = String(event.idempotencyKey).slice(0, 160);
+    const inventoryId = transactionId(couple._id, `inventory:${stableKey}`);
+    const rewardTransactionId = transactionId(couple._id, stableKey);
+    const result = await db.runTransaction(async (transaction) => {
+      try {
+        const existing = (await transaction.collection("reward_inventory").doc(inventoryId).get()).data;
+        if (existing) {
+          if (existing.itemId !== itemId || existing.ownerOpenid !== openid) throw businessError("IDEMPOTENCY_CONFLICT");
+          return { inventory: existing, duplicate: true };
+        }
+      } catch (error) {
+        if (error.code === "IDEMPOTENCY_CONFLICT") throw error;
+      }
+      let item;
+      try { item = (await transaction.collection("reward_items").doc(itemId).get()).data; }
+      catch (error) { throw businessError("REWARD_ITEM_NOT_FOUND"); }
+      if (!item || item.coupleId !== couple._id || item.status !== "active") throw businessError("REWARD_ITEM_NOT_FOUND");
+      const latest = (await transaction.collection("wallets").doc(wallet._id).get()).data;
+      if (Number(latest.balance) < Number(item.points)) throw businessError("INSUFFICIENT_BALANCE");
+      const now = new Date();
+      const inventoryData = {
+        coupleId: couple._id, itemId: item._id, ownerOpenid: openid, title: item.title,
+        detail: item.detail || "", points: item.points, status: "pending", idempotencyKey: stableKey,
+        createdAt: now, updatedAt: now
+      };
+      const transactionData = {
+        coupleId: couple._id, ownerOpenid: openid, actorOpenid: openid, kind: "spend",
+        amount: item.points, delta: -item.points, title: `兑换：${item.title}`, sourceType: "reward_item",
+        sourceId: item._id, idempotencyKey: stableKey, createdAt: now
+      };
+      await transaction.collection("reward_inventory").doc(inventoryId).set({ data: inventoryData });
+      await transaction.collection("reward_transactions").doc(rewardTransactionId).set({ data: transactionData });
+      await transaction.collection("wallets").doc(wallet._id).update({ data: {
+        balance: Number(latest.balance) - Number(item.points),
+        totalSpent: Number(latest.totalSpent) + Number(item.points),
+        version: Number(latest.version || 1) + 1, updatedAt: now
+      } });
+      return { inventory: { _id: inventoryId, ...inventoryData }, transaction: { _id: rewardTransactionId, ...transactionData }, duplicate: false };
+    });
+    return success(result);
+  }
+
+  if (action === "listInventory") {
+    const result = await db.collection("reward_inventory").where({ coupleId: couple._id }).orderBy("createdAt", "desc").limit(100).get();
+    return success({ inventory: result.data });
+  }
+
+  if (action === "setInventoryStatus") {
+    const inventory = await db.runTransaction(async (transaction) => {
+      let current;
+      try { current = (await transaction.collection("reward_inventory").doc(event.inventoryId).get()).data; } catch (error) { throw businessError("INVENTORY_NOT_FOUND"); }
+      if (!current || current.coupleId !== couple._id) throw businessError("INVENTORY_NOT_FOUND");
+      const next = event.status;
+      const partnerOpenid = couple.members.find((member) => member !== current.ownerOpenid);
+      const allowed = (current.status === "pending" && next === "ready" && openid === partnerOpenid) ||
+        (current.status === "ready" && next === "used" && openid === current.ownerOpenid);
+      if (!allowed) throw businessError(openid === current.ownerOpenid && current.status === "pending" ? "SELF_APPROVAL_NOT_ALLOWED" : "INVALID_REWARD_STATE");
+      const updatedAt = new Date();
+      await transaction.collection("reward_inventory").doc(current._id).update({ data: { status: next, updatedAt, updatedBy: openid } });
+      return { ...current, status: next, updatedAt, updatedBy: openid };
+    });
+    return success({ inventory });
+  }
+
   if (action === "grant") {
     if (!String(event.idempotencyKey || "").trim()) throw businessError("IDEMPOTENCY_KEY_REQUIRED");
     const targetOpenid = event.targetOpenid;
@@ -270,11 +382,14 @@ async function handle(event, openid) {
 }
 
 exports.main = async (event = {}) => {
+  const startedAt = Date.now();
   const { OPENID } = cloud.getWXContext();
   try {
-    return await handle(event, OPENID);
+    const result = await handle(event, OPENID);
+    console.info("rewards function completed", { traceId: event._traceId || "", action: event.action || "", code: "OK", durationMs: Date.now() - startedAt });
+    return result;
   } catch (error) {
-    console.error("rewards function failed", { action: event.action, code: error.code || error.message });
+    console.error("rewards function failed", { traceId: event._traceId || "", action: event.action, code: error.code || error.message, durationMs: Date.now() - startedAt });
     return failure(error);
   }
 };

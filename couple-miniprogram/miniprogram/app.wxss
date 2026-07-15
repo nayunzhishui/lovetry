@@ -1,29 +1,33 @@
 page {
-  --ink-strong: #292b31;
-  --ink: #464950;
-  --ink-soft: #77786f;
-  --paper: #f7f3eb;
-  --surface: #fffdf8;
-  --surface-muted: #f0ebe2;
-  --line: #ded6c9;
-  --amber: #b77932;
-  --amber-deep: #85501f;
-  --sage: #718577;
-  --danger: #a8584e;
+  --ink-strong: #1f2d31;
+  --ink: #3f5054;
+  --ink-soft: #68767a;
+  --paper: #f1f4f2;
+  --surface: #fcfdfc;
+  --surface-muted: #e9efec;
+  --line: #d6dfdc;
+  --cobalt: #35658d;
+  --coral: #d46557;
+  --moss: #738e78;
+  --brass: #c49a4a;
+  --amber: #c49a4a;
+  --amber-deep: #735a2d;
+  --sage: #738e78;
+  --danger: #b44f45;
   --space-1: 8rpx;
   --space-2: 16rpx;
   --space-3: 24rpx;
   --space-4: 32rpx;
   --space-5: 48rpx;
-  --radius-sm: 12rpx;
-  --radius-md: 22rpx;
-  --radius-lg: 32rpx;
-  --shadow-card: 0 12rpx 36rpx rgba(73, 61, 44, 0.08);
+  --radius-sm: 6rpx;
+  --radius-md: 10rpx;
+  --radius-lg: 16rpx;
+  --shadow-card: 0 12rpx 36rpx rgba(31, 45, 49, 0.06);
 
   min-height: 100%;
   background: var(--paper);
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", sans-serif;
   font-size: 28rpx;
 }
 
@@ -49,9 +53,15 @@ button::after {
   overflow: hidden;
 }
 
+.almanac-hero { border-bottom: 1rpx solid var(--line); }
+.almanac-code { color: var(--cobalt); font-family: Menlo, Consolas, monospace; font-size: 19rpx; font-weight: 650; letter-spacing: 3rpx; }
+.almanac-card { margin-top: 20rpx; padding: 28rpx; border: 1rpx solid var(--line); border-left: 6rpx solid var(--cobalt); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-card); }
+.section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 18rpx; margin-top: 42rpx; color: var(--ink-strong); font-size: 30rpx; font-weight: 700; }
+
 .eyebrow {
   margin-bottom: 12rpx;
-  color: var(--amber-deep);
+  color: var(--cobalt);
+  font-family: Menlo, Consolas, monospace;
   font-size: 21rpx;
   font-weight: 700;
   letter-spacing: 5rpx;
@@ -75,40 +85,12 @@ button::after {
   word-break: break-word;
 }
 
-/* Signature: two independent tracks that meet at a shared moment. */
-.dual-rail {
-  display: flex;
-  align-items: center;
-  width: 128rpx;
-  height: 24rpx;
-  margin-bottom: 20rpx;
-}
-
-.dual-rail__line {
-  flex: 1;
-  height: 2rpx;
-  background: var(--amber);
-}
-
-.dual-rail__line:last-child {
-  background: var(--sage);
-}
-
-.dual-rail__meeting {
-  width: 14rpx;
-  height: 14rpx;
-  margin: 0 8rpx;
-  border: 3rpx solid var(--surface);
-  border-radius: 50%;
-  background: var(--amber-deep);
-  box-shadow: 0 0 0 2rpx var(--amber-deep);
-}
-
 .panel,
 .card {
   margin-top: var(--space-3);
   padding: 28rpx;
-  border: 1rpx solid rgba(133, 80, 31, 0.09);
+  border: 1rpx solid var(--line);
+  border-left: 6rpx solid var(--cobalt);
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-card);
@@ -179,7 +161,7 @@ textarea,
   box-sizing: border-box;
   border: 1rpx solid var(--line);
   border-radius: var(--radius-sm);
-  background: #fffefa;
+  background: #ffffff;
   color: var(--ink-strong);
   font-size: 28rpx;
   transition: border-color 160ms ease, box-shadow 160ms ease;
@@ -207,7 +189,7 @@ textarea:focus {
   min-height: 88rpx;
   margin-top: 28rpx;
   padding: 0 28rpx;
-  border-radius: 44rpx;
+  border-radius: 6rpx;
   background: var(--ink-strong);
   color: #ffffff;
   font-size: 27rpx;
@@ -254,7 +236,8 @@ textarea:focus {
   min-height: 158rpx;
   padding: 26rpx 24rpx;
   box-sizing: border-box;
-  border: 1rpx solid rgba(133, 80, 31, 0.09);
+  border: 1rpx solid var(--line);
+  border-top: 6rpx solid var(--cobalt);
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-card);
@@ -276,7 +259,7 @@ textarea:focus {
 }
 
 .nav-item:nth-child(even) .nav-mark {
-  background: var(--sage);
+  background: var(--coral);
 }
 
 .nav-title {
@@ -336,7 +319,7 @@ textarea:focus {
   position: relative;
   margin: 0 0 18rpx 46rpx;
   padding: 26rpx 26rpx 26rpx 30rpx;
-  border: 1rpx solid rgba(133, 80, 31, 0.09);
+  border: 1rpx solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-card);
@@ -399,4 +382,10 @@ textarea:focus {
   .nav-item {
     transition: none;
   }
+}
+
+@media (prefers-color-scheme: dark) {
+  page { --ink-strong:#eef4f2; --ink:#c8d2cf; --ink-soft:#94a5a2; --paper:#142126; --surface:#1b2a2f; --surface-muted:#22343a; --line:#34494f; --shadow-card:none; }
+  input, textarea, .input-like { background:#172429; color:var(--ink-strong); }
+  .button.secondary, .panel, .card, .almanac-card, .nav-item { background:var(--surface); }
 }

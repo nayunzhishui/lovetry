@@ -1,0 +1,9 @@
+.dialog-mask { position: fixed; inset: 0; z-index: 99; display: flex; align-items: flex-end; background: rgba(18,30,34,.48); }
+.dialog-sheet { width: 100%; padding: 38rpx 30rpx calc(30rpx + env(safe-area-inset-bottom)); box-sizing: border-box; background: #fcfdfc; }
+.dialog-code { color: #35658d; font-family: Menlo,Consolas,monospace; font-size: 19rpx; letter-spacing: 3rpx; }
+.dialog-title { margin-top: 14rpx; color: #1f2d31; font-family: "Songti SC",STSong,serif; font-size: 38rpx; font-weight: 700; }
+.dialog-detail { margin-top: 14rpx; color: #68767a; font-size: 24rpx; line-height: 1.7; }
+.dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; margin-top: 32rpx; }
+.dialog-actions button { border-radius: 6rpx; background: #eef2f0; color: #1f2d31; }
+.dialog-actions .is-danger { background: #d46557; color: #fff; }
+@media (prefers-color-scheme: dark) { .dialog-sheet { background:#1b2a2f; } .dialog-title { color:#eef4f2; } .dialog-detail { color:#94a5a2; } .dialog-actions button { background:#22343a; color:#eef4f2; } }

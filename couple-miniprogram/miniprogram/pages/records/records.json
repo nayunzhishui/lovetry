@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "生活记录",
   "enablePullDownRefresh": true,
-  "backgroundTextStyle": "dark"
+  "backgroundTextStyle": "dark",
+  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
 }

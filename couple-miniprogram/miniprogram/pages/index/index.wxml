@@ -1,10 +1,6 @@
 <view class="page index-page">
   <view class="hero home-hero">
-    <view class="dual-rail" aria-hidden="true">
-      <view class="dual-rail__line"></view>
-      <view class="dual-rail__meeting"></view>
-      <view class="dual-rail__line"></view>
-    </view>
+    <twin-rail />
     <view class="eyebrow">OUR DAYS</view>
     <view class="title">恋爱记录</view>
     <view class="subtitle">把共同经历和沟通结果放在同一条时间线上，慢慢看见两个人的生活。</view>
@@ -17,6 +13,7 @@
   </view>
 
   <view wx:else>
+    <view class="sync-ribbon"><view class="sync-ribbon__light"></view><text>{{syncText}}</text></view>
     <view class="panel space-card">
       <view class="panel-head">
         <view>
@@ -39,6 +36,10 @@
       <view><text>{{recentMoodText}}</text><view>最近的心情线索</view></view>
     </view>
     <view wx:if="{{summary.stats}}" class="week-summary">近 7 天：{{summary.stats.recordCount7d}} 条记录 · {{summary.stats.focusMinutes7d}} 分钟专注</view>
+    <view wx:if="{{upcomingAnniversary}}" class="almanac-card anniversary-card" bindtap="goPlans">
+      <view><view class="almanac-code">NEXT ANNIVERSARY</view><view class="record-title">{{upcomingAnniversary.title}}</view><view class="record-meta">{{upcomingAnniversary.next.date}}</view></view>
+      <view class="anniversary-card__count"><text>{{upcomingAnniversary.next.daysRemaining}}</text><view>{{upcomingAnniversary.next.daysRemaining === 0 ? '今天' : '天后'}}</view></view>
+    </view>
 
     <view class="section-head">
       <view>

@@ -344,3 +344,6 @@
     transition: none;
   }
 }
+.reward-mode-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8rpx; margin-bottom: 24rpx; padding: 8rpx; border: 1rpx solid var(--line); background: var(--surface); }
+.reward-mode-nav button { min-height: 68rpx; background: transparent; color: var(--ink-soft); font-size: 23rpx; line-height: 68rpx; }
+.reward-mode-nav .reward-mode-nav__active { background: var(--ink-strong); color: #fff; }

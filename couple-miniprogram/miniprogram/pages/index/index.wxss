@@ -2,6 +2,25 @@
   padding-bottom: 24rpx;
 }
 
+.sync-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 6rpx 0 18rpx;
+  color: var(--ink-soft);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 21rpx;
+  letter-spacing: 1rpx;
+}
+
+.sync-ribbon__light {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: var(--moss);
+  box-shadow: 0 0 0 6rpx rgba(115, 142, 120, 0.12);
+}
+
 .empty--home {
   padding-top: 46rpx;
   padding-bottom: 34rpx;
@@ -102,3 +121,7 @@
 .relationship-note text { display: block; color: var(--ink-strong); font-family: "Songti SC", "STSong", serif; font-size: 28rpx; font-weight: 700; }
 .relationship-note view view { margin-top: 6rpx; color: var(--ink-soft); font-size: 19rpx; }
 .week-summary { margin-top: 10rpx; color: var(--ink-soft); font-size: 20rpx; text-align: right; }
+.anniversary-card { display: flex; align-items: center; justify-content: space-between; gap: 24rpx; }
+.anniversary-card__count { min-width: 120rpx; color: var(--coral); text-align: right; }
+.anniversary-card__count text { font-family: "Songti SC", STSong, serif; font-size: 58rpx; line-height: 1; }
+.anniversary-card__count view { margin-top: 6rpx; color: var(--ink-soft); font-size: 21rpx; }

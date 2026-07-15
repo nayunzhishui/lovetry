@@ -1,0 +1,36 @@
+<view class="page notifications-page">
+  <view class="hero almanac-hero">
+    <view class="almanac-code">NOTICE / 01</view>
+    <view class="title">提醒中心</view>
+    <view class="subtitle">只提醒需要两个人回应的事情，不追踪、不催促。</view>
+  </view>
+
+  <view class="panel">
+    <view class="panel-kicker">PREFERENCES</view>
+    <view class="panel-title">我想收到的提醒</view>
+    <view class="setting-switch"><text>启用提醒中心</text><switch checked="{{preferences.enabled}}" color="#35658D" data-key="enabled" bindchange="onToggle" /></view>
+    <view class="setting-switch"><text>任务临近截止</text><switch checked="{{preferences.taskDue}}" color="#35658D" data-key="taskDue" bindchange="onToggle" /></view>
+    <view class="setting-switch"><text>纪念日临近</text><switch checked="{{preferences.anniversary}}" color="#D46557" data-key="anniversary" bindchange="onToggle" /></view>
+    <view class="setting-switch"><text>奖励等待确认</text><switch checked="{{preferences.rewardApproval}}" color="#C49A4A" data-key="rewardApproval" bindchange="onToggle" /></view>
+    <button class="button" loading="{{saving}}" bindtap="save">保存提醒设置</button>
+    <button class="button secondary" bindtap="subscribe">设置微信订阅消息</button>
+  </view>
+
+  <view class="section-heading"><text>近期提醒</text><text class="almanac-code">{{reminders.length}} ITEMS</text></view>
+  <state-view wx:if="{{loading}}" loading="{{true}}" />
+  <state-view wx:elif="{{!reminders.length}}" title="暂时没有临近事项" description="任务和纪念日进入提醒范围后会出现在这里。" />
+  <archive-card wx:for="{{reminders}}" wx:key="sourceId">
+    <view class="rail-dot rail-dot--shared"></view>
+    <view><view class="record-title">{{item.title}}</view><view class="record-meta">{{item.scheduledDate}} · {{item.daysRemaining === 0 ? '就是今天' : item.daysRemaining + ' 天后'}}</view></view>
+  </archive-card>
+
+  <view wx:if="{{notifications.length}}" class="section-heading"><text>提醒存档</text><text class="almanac-code">{{notifications.length}} LOGS</text></view>
+  <archive-card wx:for="{{notifications}}" wx:key="_id">
+    <view class="archive-stamp">{{item.readAt ? '已读' : '待查看'}}</view>
+    <view class="record-title">{{item.title}}</view>
+    <view class="record-meta">{{item.scheduledDate}}</view>
+    <button wx:if="{{!item.readAt}}" class="button secondary compact" data-id="{{item._id}}" bindtap="markRead">标记已读</button>
+  </archive-card>
+
+  <view wx:if="{{error}}" class="error-banner">{{error}}</view>
+</view>

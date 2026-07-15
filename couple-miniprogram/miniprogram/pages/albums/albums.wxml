@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="hero"><view class="dual-rail"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view><view class="eyebrow">TWO-PERSON ARCHIVE</view><view class="title">共同相册</view><view class="subtitle">照片只属于当前情侣空间，不作为公开动态。</view></view>
+  <view class="hero"><twin-rail /><view class="eyebrow">TWO-PERSON ARCHIVE</view><view class="title">共同相册</view><view class="subtitle">照片只属于当前情侣空间，不作为公开动态。</view></view>
 
   <view class="panel">
     <view class="panel-title">新建相册</view>

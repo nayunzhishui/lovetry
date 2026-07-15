@@ -1,6 +1,6 @@
 <view class="page pomodoro-page">
   <view class="hero timer-hero">
-    <view class="dual-rail" aria-hidden="true"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view>
+    <twin-rail />
     <view class="eyebrow">ONE THING AT A TIME</view>
     <view class="title">一起把时间留给当下</view>
     <view class="subtitle">计时以实际结束时间校准，切到后台也不会悄悄变慢。</view>

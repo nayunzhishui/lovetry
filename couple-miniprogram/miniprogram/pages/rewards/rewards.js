@@ -135,6 +135,11 @@ Page({
     this.setData({ actionMode, error: "" });
   },
 
+  goRewardStore(event) {
+    const mode = event.currentTarget.dataset.mode || "store";
+    wx.navigateTo({ url: `/features/reward-store/reward-store?mode=${mode}` });
+  },
+
   onFormInput(event) {
     const form = event.currentTarget.dataset.form;
     const field = event.currentTarget.dataset.field;

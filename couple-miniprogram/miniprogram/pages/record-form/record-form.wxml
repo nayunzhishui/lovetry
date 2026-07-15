@@ -1,8 +1,6 @@
 <view class="page form-page">
   <view class="hero form-hero">
-    <view class="dual-rail" aria-hidden="true">
-      <view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view>
-    </view>
+    <twin-rail mode="{{visibility === 'private' ? 'private' : 'shared'}}" />
     <view class="eyebrow">A NOTE FOR TODAY</view>
     <view class="title">{{recordId ? '修改' : '新增'}}{{typeLabel}}</view>
     <view class="subtitle">按你舒服的程度记录，留白也可以。</view>

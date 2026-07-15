@@ -13,6 +13,7 @@ const ERROR_MESSAGES = {
   INVALID_RECORD: "请检查记录内容后重试",
   RECORD_NOT_FOUND: "记录不存在或已删除",
   VERSION_CONFLICT: "记录已在另一台设备更新，请刷新后重试",
+  INVALID_REACTION: "请选择有效回应",
   INVALID_PLAN: "请检查计划内容后重试",
   PLAN_NOT_FOUND: "计划不存在或已删除",
   INVALID_AMOUNT: "积分必须是大于零的整数",
@@ -23,11 +24,18 @@ const ERROR_MESSAGES = {
   INVALID_ASSET: "图片信息不正确",
   TASK_NOT_FOUND: "未找到可结算的已完成任务",
   REWARD_ALREADY_SETTLED: "这项奖励已经结算",
+  INVALID_REWARD_ITEM: "请填写有效的奖励名称和积分",
+  REWARD_ITEM_NOT_FOUND: "奖励商品不存在或已下架",
+  INVENTORY_NOT_FOUND: "仓库条目不存在",
+  INVALID_REWARD_STATE: "奖励状态不能这样变更",
   IDEMPOTENCY_KEY_REQUIRED: "请求标识缺失，请重试",
   IDEMPOTENCY_CONFLICT: "重复请求内容不一致，请刷新后重试",
   ALBUM_NOT_FOUND: "相册不存在或已删除",
   ASSET_NOT_FOUND: "图片不存在或已删除",
+  INVALID_PREFERENCES: "提醒设置不正确",
+  NOTIFICATION_NOT_FOUND: "提醒不存在或无权访问",
   INVALID_RANGE: "请选择正确的日期范围",
+  INVALID_SYNC_CURSOR: "同步位置已失效，请刷新页面",
   NO_PERMISSION: "无权访问这项数据",
   UNKNOWN_ACTION: "当前操作暂不支持"
 };
@@ -78,7 +86,8 @@ function call(name, data) {
     return Promise.reject(createApiError("CLOUD_UNAVAILABLE"));
   }
 
-  const payload = data || {};
+  const traceId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const payload = Object.assign({}, data || {}, { _traceId: traceId });
   const policy = getRequestPolicy(name, payload.action || "");
 
   return executeWithRetry(
@@ -114,6 +123,10 @@ function media(action, data) {
 
 function dashboard(action, data) {
   return call("dashboard", Object.assign({}, data || {}, { action }));
+}
+
+function notifications(action, data) {
+  return call("notifications", Object.assign({}, data || {}, { action }));
 }
 
 function login() {
@@ -160,6 +173,14 @@ function cleanupTestData() {
 
 function getRecordStats(type) {
   return records("stats", { type }).then((result) => result.stats || null);
+}
+
+function listSharedFeed() {
+  return records("feed").then((result) => result.records || []);
+}
+
+function reactToRecord(recordId, reaction, idempotencyKey) {
+  return records("react", { recordId, reaction, idempotencyKey }).then((result) => result.record);
 }
 
 function createPlan(plan) {
@@ -221,6 +242,30 @@ function listPendingRewardTasks() {
   return call("rewards", { action: "pendingTasks" }).then((data) => data.tasks || []);
 }
 
+function listRewardCatalog() {
+  return rewards("listCatalog").then((result) => result.items || []);
+}
+
+function createRewardItem(item) {
+  return rewards("createItem", { item }).then((result) => result.item);
+}
+
+function archiveRewardItem(itemId) {
+  return rewards("archiveItem", { itemId });
+}
+
+function redeemRewardItem(itemId, idempotencyKey) {
+  return rewards("redeemItem", { itemId, idempotencyKey }).then((result) => result.inventory);
+}
+
+function listRewardInventory() {
+  return rewards("listInventory").then((result) => result.inventory || []);
+}
+
+function setRewardInventoryStatus(inventoryId, status) {
+  return rewards("setInventoryStatus", { inventoryId, status }).then((result) => result.inventory);
+}
+
 function createAlbum(album) {
   return media("createAlbum", { album }).then((result) => result.album || null);
 }
@@ -280,6 +325,10 @@ function searchAll(keyword, options) {
   return searchDashboard(keyword, options);
 }
 
+function syncSince(since, offset = 0) {
+  return dashboard("sync", { since, offset });
+}
+
 function exportData() {
   return dashboard("export").then((result) => result.exportData || null);
 }
@@ -290,6 +339,34 @@ function importData(backup) {
 
 function getServiceHealth() {
   return dashboard("health");
+}
+
+function getNotificationPreferences() {
+  return notifications("getPreferences").then((result) => result.preferences);
+}
+
+function updateNotificationPreferences(preferences) {
+  return notifications("updatePreferences", { preferences }).then((result) => result.preferences);
+}
+
+function registerNotificationSubscription(templateIds) {
+  return notifications("registerSubscription", { templateIds });
+}
+
+function previewNotifications() {
+  return notifications("preview").then((result) => result.reminders || []);
+}
+
+function materializeMyNotifications() {
+  return notifications("materializeMine").then((result) => result.reminders || []);
+}
+
+function listNotifications() {
+  return notifications("list").then((result) => result.notifications || []);
+}
+
+function markNotificationRead(notificationId) {
+  return notifications("markRead", { notificationId });
 }
 
 function getErrorMessage(error, fallback) {
@@ -307,6 +384,7 @@ module.exports = {
   rewards,
   media,
   dashboard,
+  notifications,
   login,
   getMyCouple,
   createCouple,
@@ -318,6 +396,8 @@ module.exports = {
   deleteRecord,
   cleanupTestData,
   getRecordStats,
+  listSharedFeed,
+  reactToRecord,
   createPlan,
   listPlans,
   getPlan,
@@ -332,6 +412,12 @@ module.exports = {
   spendReward,
   settleTaskReward,
   listPendingRewardTasks,
+  listRewardCatalog,
+  createRewardItem,
+  archiveRewardItem,
+  redeemRewardItem,
+  listRewardInventory,
+  setRewardInventoryStatus,
   createAlbum,
   listAlbums,
   updateAlbum,
@@ -346,8 +432,16 @@ module.exports = {
   getCalendarEvents,
   searchDashboard,
   searchAll,
+  syncSince,
   exportData,
   importData,
   getServiceHealth,
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  registerNotificationSubscription,
+  previewNotifications,
+  materializeMyNotifications,
+  listNotifications,
+  markNotificationRead,
   getErrorMessage
 };

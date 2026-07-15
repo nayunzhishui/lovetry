@@ -4,10 +4,13 @@
     <view class="panel-title">导出前请注意</view>
     <view class="hint">导出的 JSON 可能包含敏感日期和文字。请保存在只有自己可以访问的位置，不要发送到公开群聊。</view>
   </view>
-  <button class="button" loading="{{loading}}" disabled="{{loading}}" bindtap="copyExport">生成并复制备份</button>
+  <button class="button" loading="{{loading}}" disabled="{{loading}}" bindtap="exportFile">生成备份文件</button>
+  <button class="button secondary" disabled="{{loading}}" bindtap="copyExport">复制备份文本</button>
+  <button wx:if="{{backupPath}}" class="button secondary" bindtap="shareFile">通过微信分享文件</button>
   <view class="panel restore-panel">
     <view class="panel-title">从备份恢复</view>
-    <view class="hint">只接受当前情侣空间生成的版本 1 备份。重复恢复会跳过；钱包流水和图片文件不会被导入。</view>
+    <view class="hint">接受版本 1 和带摘要的版本 2 备份。重复恢复会跳过；钱包流水和图片文件不会被导入。</view>
+    <button class="button secondary" bindtap="chooseBackupFile">从微信文件选择</button>
     <textarea value="{{backupText}}" maxlength="-1" placeholder="在此粘贴备份 JSON" bindinput="onBackupInput"></textarea>
     <button class="button secondary" loading="{{loading}}" disabled="{{loading || !backupText}}" bindtap="restoreBackup">校验并恢复记录与计划</button>
   </view>

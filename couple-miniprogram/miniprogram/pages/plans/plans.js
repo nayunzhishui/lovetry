@@ -44,7 +44,9 @@ function emptyForm() {
     category: "",
     tagsText: "",
     preference: 3,
-    budget: ""
+    budget: "",
+    reminderDays: "3",
+    repeatYearly: true
   };
 }
 
@@ -183,6 +185,10 @@ Page({
         });
     }
     if (activeType === "event" || activeType === "anniversary") plan.startAt = form.startDate;
+    if (activeType === "anniversary") {
+      plan.payload.repeatYearly = form.repeatYearly !== false;
+      plan.payload.reminderDays = Math.min(Math.max(Number(form.reminderDays) || 0, 0), 30);
+    }
     if (activeType === "menu") {
       plan.payload.category = form.category.trim();
       plan.payload.preference = Number(form.preference) || 3;
@@ -271,7 +277,9 @@ Page({
         category: plan.payload && plan.payload.category || "",
         tagsText: plan.payload && Array.isArray(plan.payload.tags) ? plan.payload.tags.join("，") : "",
         preference: plan.payload && Number(plan.payload.preference) || 3,
-        budget: plan.payload && plan.payload.budget ? String(plan.payload.budget) : ""
+        budget: plan.payload && plan.payload.budget ? String(plan.payload.budget) : "",
+        reminderDays: plan.payload && plan.payload.reminderDays !== undefined ? String(plan.payload.reminderDays) : "3",
+        repeatYearly: !(plan.payload && plan.payload.repeatYearly === false)
       }
     });
     wx.pageScrollTo({ scrollTop: 180, duration: 250 });

@@ -1,5 +1,7 @@
 const cloud = require("wx-server-sdk");
+const crypto = require("crypto");
 const { recordIdForRequest } = require("./idempotency");
+const { toggleReaction, validateReactionRequest } = require("./reactions");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -22,6 +24,9 @@ const ERROR_MESSAGES = {
   RECORD_NOT_FOUND: "记录不存在或已删除",
   NO_PERMISSION: "无权查看或修改这条记录",
   VERSION_CONFLICT: "记录已在另一台设备更新，请刷新后重试",
+  INVALID_REACTION: "请选择有效回应",
+  IDEMPOTENCY_KEY_REQUIRED: "请求标识缺失，请重试",
+  IDEMPOTENCY_CONFLICT: "重复请求内容不一致，请刷新后重试",
   UNKNOWN_ACTION: "暂不支持这个操作"
 };
 
@@ -192,6 +197,42 @@ async function handle(event, openid) {
     });
   }
 
+  if (action === "feed") {
+    const result = await db.collection("records")
+      .where({ coupleId: couple._id, visibility: "couple", type: _.in(["moment", "mood", "outing"]), deletedAt: null })
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get();
+    return success({ records: result.data.filter((record) => canRead(record, openid)) });
+  }
+
+  if (action === "react") {
+    if (!String(event.idempotencyKey || "").trim()) throw businessError("IDEMPOTENCY_KEY_REQUIRED");
+    const requestId = crypto.createHash("sha256").update(`${couple._id}:${openid}:${event.idempotencyKey}`).digest("hex").slice(0, 32);
+    const updated = await db.runTransaction(async (transaction) => {
+      try {
+        const request = (await transaction.collection("record_reaction_requests").doc(requestId).get()).data;
+        if (request) return validateReactionRequest(request, event.recordId, event.reaction);
+      } catch (error) {
+        if (error.code === "IDEMPOTENCY_CONFLICT") throw error;
+      }
+      let record;
+      try { record = (await transaction.collection("records").doc(event.recordId).get()).data; } catch (error) { throw businessError("RECORD_NOT_FOUND"); }
+      if (!record || record.coupleId !== couple._id || record.deletedAt) throw businessError("RECORD_NOT_FOUND");
+      if (record.visibility !== "couple" || !["moment", "mood", "outing"].includes(record.type)) throw businessError("NO_PERMISSION");
+      const payload = { ...(record.payload || {}), reactionsByOpenid: toggleReaction(record.payload && record.payload.reactionsByOpenid, openid, event.reaction) };
+      const updatedAt = new Date();
+      const next = { ...record, payload, updatedAt, version: Number(record.version || 1) + 1 };
+      await transaction.collection("records").doc(record._id).update({ data: { payload, updatedAt, version: next.version } });
+      await transaction.collection("record_reaction_requests").doc(requestId).set({ data: {
+        coupleId: couple._id, ownerOpenid: openid, recordId: record._id, reaction: event.reaction,
+        idempotencyKey: String(event.idempotencyKey).slice(0, 160), record: next, createdAt: updatedAt
+      } });
+      return next;
+    });
+    return success({ record: updated });
+  }
+
   if (action === "get") {
     const record = await assertAccessibleRecord(event.recordId, couple, openid);
     return success({ record });
@@ -294,13 +335,18 @@ async function handle(event, openid) {
 }
 
 exports.main = async (event = {}) => {
+  const startedAt = Date.now();
   const { OPENID } = cloud.getWXContext();
   try {
-    return await handle(event, OPENID);
+    const result = await handle(event, OPENID);
+    console.info("records function completed", { traceId: event._traceId || "", action: event.action || "", code: "OK", durationMs: Date.now() - startedAt });
+    return result;
   } catch (error) {
     console.error("records function failed", {
+      traceId: event._traceId || "",
       action: event.action,
-      code: error.code || error.message
+      code: error.code || error.message,
+      durationMs: Date.now() - startedAt
     });
     return failure(error);
   }

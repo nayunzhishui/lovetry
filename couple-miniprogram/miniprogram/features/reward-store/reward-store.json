@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "奖励商城",
+  "usingComponents": {
+    "archive-card": "/components/archive-card/archive-card",
+    "state-view": "/components/state-view/state-view",
+    "confirm-dialog": "/components/confirm-dialog/confirm-dialog"
+  }
+}

@@ -9,6 +9,7 @@ Page({
     anniversaryDate: "",
     isLoading: false,
     isSaving: false,
+    showLeaveConfirm: false,
     error: ""
   },
 
@@ -136,29 +137,33 @@ Page({
     wx.navigateTo({ url: "/pages/export/export" });
   },
 
+  goNotifications() {
+    wx.navigateTo({ url: "/features/notifications/notifications" });
+  },
+
   goIntegrationTest() {
     wx.navigateTo({ url: "/pages/integration-test/integration-test" });
   },
 
   leaveCouple() {
     if (!this.data.couple || this.data.isSaving) return;
-    wx.showModal({
-      title: "解除当前情侣空间？",
-      content: "解除会归档整个情侣空间，双方都将无法继续查看共享数据。建议先导出备份。",
-      confirmText: "确认解除",
-      confirmColor: "#a8584e",
-      success: (result) => {
-        if (!result.confirm) return;
-        this.setData({ isSaving: true, error: "" });
-        cloudApi.call("couple", { action: "leave", confirmText: "LEAVE_COUPLE" })
-          .then(() => {
-            app.globalData.couple = null;
-            this.setData({ couple: null, spaceName: "", anniversaryDate: "" });
-            wx.showToast({ title: "已解除" });
-          })
-          .catch((error) => this.setData({ error: cloudApi.getErrorMessage(error, "解除失败") }))
-          .finally(() => this.setData({ isSaving: false }));
-      }
-    });
+    this.setData({ showLeaveConfirm: true });
+  },
+
+  cancelLeave() {
+    this.setData({ showLeaveConfirm: false });
+  },
+
+  confirmLeave() {
+    if (!this.data.couple || this.data.isSaving) return;
+    this.setData({ showLeaveConfirm: false, isSaving: true, error: "" });
+    cloudApi.call("couple", { action: "leave", confirmText: "LEAVE_COUPLE" })
+      .then(() => {
+        app.globalData.couple = null;
+        this.setData({ couple: null, spaceName: "", anniversaryDate: "" });
+        wx.showToast({ title: "已解除" });
+      })
+      .catch((error) => this.setData({ error: cloudApi.getErrorMessage(error, "解除失败") }))
+      .finally(() => this.setData({ isSaving: false }));
   }
 });

@@ -1,3 +1,4 @@
 {
-  "navigationBarTitleText": "番茄钟"
+  "navigationBarTitleText": "番茄钟",
+  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
 }

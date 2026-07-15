@@ -1,6 +1,6 @@
 <view class="page">
   <view class="hero">
-    <view class="dual-rail"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view>
+    <twin-rail />
     <view class="eyebrow">OUR CALENDAR</view>
     <view class="title">共同日历</view>
     <view class="subtitle">共享安排会汇合在这里，私密记录只留在自己的轨道。</view>

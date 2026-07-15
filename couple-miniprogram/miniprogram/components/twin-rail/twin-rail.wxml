@@ -1,0 +1,5 @@
+<view class="twin-rail twin-rail--{{mode}}" aria-label="{{label}}">
+  <view class="twin-rail__line twin-rail__line--a"></view>
+  <view class="twin-rail__meeting"></view>
+  <view class="twin-rail__line twin-rail__line--b"></view>
+</view>

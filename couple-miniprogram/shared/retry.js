@@ -24,11 +24,12 @@ function runWithTimeout(operation, timeoutMs) {
 const READ_ACTIONS = {
   login: new Set([""]),
   couple: new Set(["mine"]),
-  records: new Set(["list", "get", "stats"]),
+  records: new Set(["list", "feed", "get", "stats"]),
   plans: new Set(["list", "get", "randomMenu"]),
-  rewards: new Set(["summary", "list", "pendingTasks"]),
+  rewards: new Set(["summary", "list", "pendingTasks", "listCatalog", "listInventory"]),
   media: new Set(["listAlbums", "listAssets"]),
-  dashboard: new Set(["summary", "calendar", "search", "export", "health"])
+  notifications: new Set(["getPreferences", "list", "preview"]),
+  dashboard: new Set(["summary", "calendar", "search", "sync", "export", "health"])
 };
 
 function getRequestPolicy(name, action = "") {

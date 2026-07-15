@@ -3,5 +3,6 @@
   "navigationBarBackgroundColor": "#F7F3EB",
   "navigationBarTextStyle": "black",
   "backgroundColor": "#F7F3EB",
-  "backgroundTextStyle": "dark"
+  "backgroundTextStyle": "dark",
+  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
 }

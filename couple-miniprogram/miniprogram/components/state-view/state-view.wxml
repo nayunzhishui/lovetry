@@ -1,0 +1,1 @@
+<view class="state-view" aria-live="polite"><view class="state-view__mark"></view><view class="state-view__title">{{loading ? '正在整理…' : title}}</view><view wx:if="{{description}}" class="state-view__description">{{description}}</view><button wx:if="{{actionText}}" class="state-view__action" bindtap="onAction">{{actionText}}</button></view>

@@ -1,10 +1,6 @@
 <view class="page settings-page">
   <view class="hero">
-    <view class="dual-rail" aria-hidden="true">
-      <view class="dual-rail__line"></view>
-      <view class="dual-rail__meeting"></view>
-      <view class="dual-rail__line"></view>
-    </view>
+    <twin-rail />
     <view class="eyebrow">PRIVATE SPACE</view>
     <view class="title">情侣空间</view>
     <view class="subtitle">两个人共用一个空间。创建后，把加入码单独发给另一半。</view>
@@ -66,8 +62,17 @@
   <view wx:if="{{couple}}" class="panel tools-panel">
     <view class="panel-kicker">DATA & DEVELOPMENT</view>
     <view class="tool-row" bindtap="goExport"><view><view class="label">数据备份</view><view class="hint">导出共享数据和自己的私密记录</view></view><text>›</text></view>
+    <view class="tool-row" bindtap="goNotifications"><view><view class="label">提醒中心</view><view class="hint">任务、纪念日和奖励确认提醒</view></view><text>›</text></view>
     <view class="tool-row" bindtap="goIntegrationTest"><view><view class="label">联调检查</view><view class="hint">检查云函数和数据库连接</view></view><text>›</text></view>
   </view>
 
   <button wx:if="{{couple}}" class="leave-button" disabled="{{isSaving}}" bindtap="leaveCouple">解除当前情侣空间</button>
+  <confirm-dialog
+    open="{{showLeaveConfirm}}"
+    title="解除当前情侣空间？"
+    detail="解除会归档整个情侣空间，双方都将无法继续查看共享数据。建议先导出备份。"
+    confirm-text="确认解除"
+    bindcancel="cancelLeave"
+    bindconfirm="confirmLeave"
+  />
 </view>

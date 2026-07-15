@@ -1,6 +1,6 @@
 <view class="page">
   <view class="hero">
-    <view class="dual-rail"><view class="dual-rail__line"></view><view class="dual-rail__meeting"></view><view class="dual-rail__line"></view></view>
+    <twin-rail />
     <view class="eyebrow">DEVELOPMENT CHECK</view>
     <view class="title">云端联调检查</view>
     <view class="subtitle">这个页面只用于开发验证，不承载正式业务。</view>

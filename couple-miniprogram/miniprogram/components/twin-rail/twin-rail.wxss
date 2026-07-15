@@ -1,0 +1,7 @@
+.twin-rail { display: flex; align-items: center; width: 142rpx; height: 24rpx; margin-bottom: 18rpx; }
+.twin-rail__line { flex: 1; height: 4rpx; }
+.twin-rail__line--a { background: #35658d; }
+.twin-rail__line--b { background: #d46557; }
+.twin-rail__meeting { width: 14rpx; height: 14rpx; margin: 0 8rpx; border: 4rpx solid #f1f4f2; background: #738e78; transform: rotate(45deg); }
+.twin-rail--private .twin-rail__line--b, .twin-rail--private .twin-rail__meeting { opacity: .18; }
+@media (prefers-color-scheme: dark) { .twin-rail__meeting { border-color:#142126; } }

@@ -1,10 +1,6 @@
 <view class="page timeline-page">
   <view class="hero timeline-hero">
-    <view class="dual-rail" aria-hidden="true">
-      <view class="dual-rail__line"></view>
-      <view class="dual-rail__meeting"></view>
-      <view class="dual-rail__line"></view>
-    </view>
+    <twin-rail />
     <view class="eyebrow">TOGETHER, IN TIME</view>
     <view class="title">共同时间线</view>
     <view class="subtitle">两条生活轨迹，在一次次共同经历里相遇。</view>
@@ -29,9 +25,8 @@
       <view class="record-title">{{item.title}}</view>
       <view class="record-meta">{{item.createdAtText}}</view>
       <view class="record-content">{{item.content}}</view>
-      <view wx:if="{{item.type === 'conflict'}}" class="record-extra">
-        <view class="record-extra__label">沟通满意度</view>
-        <view class="record-extra__value">{{item.payload.satisfaction}} / 10</view>
+      <view class="reaction-row">
+        <button wx:for="{{item.reactions}}" wx:for-item="reaction" wx:key="value" class="reaction-chip {{reaction.active ? 'is-active' : ''}}" data-id="{{item._id}}" data-reaction="{{reaction.value}}" bindtap="react">{{reaction.label}}<text wx:if="{{reaction.count}}"> {{reaction.count}}</text></button>
       </view>
     </view>
   </view>

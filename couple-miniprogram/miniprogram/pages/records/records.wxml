@@ -1,10 +1,6 @@
 <view class="page records-page">
   <view class="hero records-hero">
-    <view class="dual-rail" aria-hidden="true">
-      <view class="dual-rail__line"></view>
-      <view class="dual-rail__meeting"></view>
-      <view class="dual-rail__line"></view>
-    </view>
+    <twin-rail />
     <view class="eyebrow">OUR DAILY NOTES</view>
     <view class="title">生活记录</view>
     <view class="subtitle">共享的留在双轨上，私密的只属于你。</view>

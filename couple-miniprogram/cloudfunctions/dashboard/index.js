@@ -97,6 +97,7 @@ async function handle(event, openid) {
       recentRecords: base.records.slice(0, 5),
       todayPlans,
       pendingTasks: base.plans.filter((plan) => plan.type === "task" && plan.status !== "done" && plan.status !== "archived").slice(0, 5),
+      anniversaries: base.plans.filter((plan) => plan.type === "anniversary" && plan.status !== "archived").slice(0, 30),
       wallets: base.wallets,
       stats: {
         recordCount7d: last7Records.length,
@@ -117,9 +118,22 @@ async function handle(event, openid) {
       .filter((record) => inRange(record.startAt || record.createdAt, start, end))
       .map((record) => ({ id: record._id, source: "record", type: record.type, title: record.title, startAt: record.startAt || record.createdAt }));
     const planEvents = base.plans
+      .filter((plan) => plan.type !== "anniversary")
       .filter((plan) => inRange(plan.startAt || plan.endAt || plan.createdAt, start, end))
       .map((plan) => ({ id: plan._id, source: "plan", type: plan.type, title: plan.title, startAt: plan.startAt || plan.endAt || plan.createdAt, status: plan.status }));
     const anniversaryEvents = [];
+    for (const plan of base.plans.filter((item) => item.type === "anniversary" && item.startAt)) {
+      const sourceDate = new Date(plan.startAt);
+      if (plan.payload && plan.payload.repeatYearly === false) {
+        if (inRange(sourceDate, start, end)) anniversaryEvents.push({ id: plan._id, source: "plan", type: "anniversary", title: plan.title, startAt: sourceDate, status: plan.status });
+        continue;
+      }
+      for (let year = start.getFullYear(); year <= end.getFullYear(); year += 1) {
+        let recurring = new Date(year, sourceDate.getMonth(), sourceDate.getDate());
+        if (sourceDate.getMonth() === 1 && sourceDate.getDate() === 29 && recurring.getMonth() !== 1) recurring = new Date(year, 1, 28);
+        if (inRange(recurring, start, end)) anniversaryEvents.push({ id: `${plan._id}-${year}`, planId: plan._id, source: "plan", type: "anniversary", title: plan.title, startAt: recurring, status: plan.status });
+      }
+    }
     if (couple.anniversaryDate) {
       const sourceDate = new Date(`${couple.anniversaryDate}T00:00:00`);
       for (let year = start.getFullYear(); year <= end.getFullYear(); year += 1) {
@@ -159,6 +173,40 @@ async function handle(event, openid) {
       .filter((plan) => `${plan.title} ${plan.detail}`.toLowerCase().includes(keyword))
       .map((plan) => ({ id: plan._id, source: "plan", type: plan.type, title: plan.title, createdAt: plan.createdAt }));
     return success({ results: [...records, ...plans].slice(0, 100) });
+  }
+
+  if (action === "sync") {
+    const now = new Date();
+    const since = event.since ? new Date(event.since) : new Date(now.getTime() - 86400000);
+    const offset = Math.min(Math.max(Number(event.offset) || 0, 0), 5000);
+    if (Number.isNaN(since.getTime()) || since.getTime() > now.getTime() + 300000) {
+      throw businessError("INVALID_SYNC_CURSOR", "同步位置已失效，请刷新页面");
+    }
+    const visibleRecords = _.and(
+      { coupleId: couple._id, updatedAt: _.gt(since) },
+      _.or(
+        { visibility: "couple" },
+        { ownerOpenid: openid },
+        { creatorOpenid: openid },
+        { visibility: _.exists(false) }
+      )
+    );
+    const [recordsResult, plansResult, notificationsResult] = await Promise.all([
+      db.collection("records").where(visibleRecords).orderBy("updatedAt", "asc").skip(offset).limit(101).get(),
+      db.collection("plans").where({ coupleId: couple._id, updatedAt: _.gt(since) }).orderBy("updatedAt", "asc").skip(offset).limit(101).get(),
+      db.collection("notifications").where({ coupleId: couple._id, recipientOpenid: openid, updatedAt: _.gt(since) }).orderBy("updatedAt", "asc").skip(offset).limit(101).get()
+    ]);
+    const hasMore = recordsResult.data.length > 100 || plansResult.data.length > 100 || notificationsResult.data.length > 100;
+    return success({
+      changes: {
+        records: recordsResult.data.filter((record) => canReadRecord(record, openid)).slice(0, 100),
+        plans: plansResult.data.slice(0, 100),
+        notifications: notificationsResult.data.slice(0, 100)
+      },
+      cursor: hasMore ? since.toISOString() : now.toISOString(),
+      hasMore,
+      nextOffset: hasMore ? offset + 100 : 0
+    });
   }
 
   if (action === "export") {
@@ -229,18 +277,21 @@ async function handle(event, openid) {
   }
 
   if (action === "health") {
-    return success({ modules: ["login", "couple", "records", "plans", "rewards", "media", "dashboard"], serverTime: new Date() });
+    return success({ modules: ["login", "couple", "records", "plans", "rewards", "media", "dashboard", "notifications"], serverTime: new Date() });
   }
 
   throw businessError("UNKNOWN_ACTION", "暂不支持这个操作");
 }
 
 exports.main = async (event = {}) => {
+  const startedAt = Date.now();
   const { OPENID } = cloud.getWXContext();
   try {
-    return await handle(event, OPENID);
+    const result = await handle(event, OPENID);
+    console.info("dashboard function completed", { traceId: event._traceId || "", action: event.action || "", code: "OK", durationMs: Date.now() - startedAt });
+    return result;
   } catch (error) {
-    console.error("dashboard function failed", { action: event.action, code: error.code || error.message });
+    console.error("dashboard function failed", { traceId: event._traceId || "", action: event.action, code: error.code || error.message, durationMs: Date.now() - startedAt });
     return failure(error);
   }
 };
