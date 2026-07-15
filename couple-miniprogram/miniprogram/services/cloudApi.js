@@ -1,7 +1,10 @@
+const { executeWithRetry, getRequestPolicy } = require("../../shared/retry");
+
 const ERROR_MESSAGES = {
   CLOUD_UNAVAILABLE: "云服务暂不可用，请稍后重试",
   CALL_FAILED: "请求失败，请稍后重试",
   NETWORK_ERROR: "网络异常，请检查网络后重试",
+  REQUEST_TIMEOUT: "请求超时，请检查网络后重试",
   JOIN_CODE_REQUIRED: "请输入加入码",
   COUPLE_NOT_FOUND: "未找到对应的情侣空间",
   COUPLE_FULL: "该情侣空间已有两位成员",
@@ -45,12 +48,15 @@ function findKnownCode(message) {
 
 function normalizeError(error) {
   if (error && error.name === "CloudApiError") return error;
+  if (error && error.code === "REQUEST_TIMEOUT") {
+    return createApiError("REQUEST_TIMEOUT", "", error);
+  }
 
   const message = error && (error.errMsg || error.message);
   const knownCode = findKnownCode(message);
   if (knownCode) return createApiError(knownCode, "", error);
 
-  const isNetworkError = /network|timeout|request:fail/i.test(String(message || ""));
+  const isNetworkError = /network|timeout|request:fail|callFunction:fail/i.test(String(message || ""));
   return createApiError(isNetworkError ? "NETWORK_ERROR" : "CALL_FAILED", "", error);
 }
 
@@ -72,9 +78,21 @@ function call(name, data) {
     return Promise.reject(createApiError("CLOUD_UNAVAILABLE"));
   }
 
-  return wx.cloud
-    .callFunction({ name, data: data || {} })
-    .then((response) => normalizeResult(response && response.result))
+  const payload = data || {};
+  const policy = getRequestPolicy(name, payload.action || "");
+
+  return executeWithRetry(
+    () => wx.cloud
+      .callFunction({ name, data: payload })
+      .then((response) => normalizeResult(response && response.result)),
+    {
+      ...policy,
+      shouldRetry(error) {
+        const normalized = normalizeError(error);
+        return normalized.code === "NETWORK_ERROR" || normalized.code === "REQUEST_TIMEOUT";
+      }
+    }
+  )
     .catch((error) => Promise.reject(normalizeError(error)));
 }
 

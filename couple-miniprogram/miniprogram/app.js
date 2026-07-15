@@ -4,7 +4,8 @@ const cloudApi = require("./services/cloudApi");
 App({
   globalData: {
     openid: "",
-    couple: null
+    couple: null,
+    isOnline: true
   },
 
   onLaunch() {
@@ -21,7 +22,26 @@ App({
     if (config.envId && !config.envId.startsWith("replace-with")) cloudOptions.env = config.envId;
     wx.cloud.init(cloudOptions);
 
+    this.observeNetwork();
     this.bootstrap();
+  },
+
+  observeNetwork() {
+    wx.getNetworkType({
+      success: ({ networkType }) => {
+        this.globalData.isOnline = networkType !== "none";
+      }
+    });
+    wx.onNetworkStatusChange(({ isConnected }) => {
+      const wasOnline = this.globalData.isOnline;
+      this.globalData.isOnline = isConnected;
+      if (wasOnline && !isConnected) {
+        wx.showToast({ title: "网络已断开，恢复后可重试", icon: "none", duration: 3000 });
+      }
+      if (!wasOnline && isConnected) {
+        wx.showToast({ title: "网络已恢复", icon: "none" });
+      }
+    });
   },
 
   bootstrap() {

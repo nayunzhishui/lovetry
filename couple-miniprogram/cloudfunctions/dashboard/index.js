@@ -1,4 +1,5 @@
 const cloud = require("wx-server-sdk");
+const { validateBackupEnvelope } = require("./backup");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -188,12 +189,10 @@ async function handle(event, openid) {
 
   if (action === "import") {
     const backup = event.backup;
-    if (!backup || Number(backup.schemaVersion) !== 1 || !backup.couple || backup.couple._id !== couple._id) {
-      throw businessError("INVALID_BACKUP", "备份格式不正确，或不属于当前情侣空间");
-    }
+    const recovery = validateBackupEnvelope(backup, couple._id);
     const now = new Date();
     const counts = { records: 0, plans: 0, skipped: 0 };
-    for (const source of (Array.isArray(backup.records) ? backup.records : []).slice(0, 500)) {
+    for (const source of recovery.records) {
       if (!source._id || await alreadyRestored("records", couple._id, source._id)) { counts.skipped += 1; continue; }
       const type = safeText(source.type, 30);
       if (!type) { counts.skipped += 1; continue; }
@@ -210,7 +209,7 @@ async function handle(event, openid) {
       } });
       counts.records += 1;
     }
-    for (const source of (Array.isArray(backup.plans) ? backup.plans : []).slice(0, 500)) {
+    for (const source of recovery.plans) {
       if (!source._id || await alreadyRestored("plans", couple._id, source._id)) { counts.skipped += 1; continue; }
       const type = safeText(source.type, 30);
       if (!type || !safeText(source.title, 80)) { counts.skipped += 1; continue; }

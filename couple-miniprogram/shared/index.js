@@ -5,5 +5,6 @@ module.exports = {
   ...require("./permissions"),
   ...require("./result"),
   ...require("./records"),
-  ...require("./rewards")
+  ...require("./rewards"),
+  ...require("./retry")
 };
