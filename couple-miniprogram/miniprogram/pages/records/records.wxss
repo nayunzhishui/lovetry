@@ -17,15 +17,15 @@
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 62rpx;
+  min-height: 72rpx;
   margin: 0;
   padding: 0 25rpx;
   border: 1rpx solid var(--line);
-  border-radius: 31rpx;
+  border-radius: 36rpx;
   background: var(--surface);
   color: var(--ink-soft);
-  font-size: 23rpx;
-  line-height: 62rpx;
+  font-size: 24rpx;
+  line-height: 72rpx;
 }
 
 .filter-chip--active {
@@ -54,7 +54,7 @@
 .outing-filters { margin: -10rpx 0 28rpx; }
 .date-filter { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14rpx; margin-top: 12rpx; }
 .date-filter .input-like { min-height: 66rpx; padding: 0 18rpx; line-height: 66rpx; }
-.date-filter text { color: var(--amber-deep); font-size: 22rpx; }
+.date-filter button { min-height: 72rpx; margin: 0; padding: 0 18rpx; background: transparent; color: var(--amber-deep); font-size: 23rpx; line-height: 72rpx; }
 .record-category { display: inline-flex; margin-top: 10rpx; padding: 5rpx 12rpx; border-radius: 20rpx; background: var(--surface-muted); color: var(--ink-soft); font-size: 19rpx; }
 
 .stats-item {
@@ -84,8 +84,13 @@
 }
 
 .record-card {
+  display: block;
+  width: auto;
+  margin-right: 0;
   margin-left: 0;
   padding-right: 58rpx;
+  text-align: left;
+  line-height: 1.5;
 }
 
 .record-card--pressed {

@@ -179,7 +179,7 @@ Page({
 
   startTicker() {
     this.stopTicker();
-    this.ticker = setInterval(() => this.syncClock(), 500);
+    this.ticker = setInterval(() => this.syncClock(), 1000);
   },
 
   stopTicker() {

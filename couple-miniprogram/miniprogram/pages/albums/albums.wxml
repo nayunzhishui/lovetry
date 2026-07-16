@@ -9,7 +9,7 @@
 
   <scroll-view wx:if="{{albums.length}}" scroll-x class="album-strip">
     <view class="album-strip__inner">
-      <view wx:for="{{albums}}" wx:key="_id" class="album-pill {{selectedAlbum && selectedAlbum._id === item._id ? 'album-pill--active' : ''}}" data-id="{{item._id}}" bindtap="openAlbum">{{item.title}}</view>
+      <button wx:for="{{albums}}" wx:key="_id" class="album-pill {{selectedAlbum && selectedAlbum._id === item._id ? 'album-pill--active' : ''}}" data-id="{{item._id}}" bindtap="openAlbum">{{item.title}}</button>
     </view>
   </scroll-view>
 
@@ -29,8 +29,8 @@
   <view class="photo-grid">
     <view wx:for="{{assets}}" wx:key="_id" class="photo-wrap">
       <image src="{{item.tempURL}}" mode="aspectFill" class="photo" data-url="{{item.tempURL}}" bindtap="preview" />
-      <view class="photo-delete" data-id="{{item._id}}" bindtap="deleteAsset">删除</view>
-      <view class="photo-cover" data-id="{{item._id}}" bindtap="setCover">{{selectedAlbum.coverAssetId === item._id ? '封面' : '设封面'}}</view>
+      <button class="photo-delete" data-id="{{item._id}}" bindtap="deleteAsset">删除</button>
+      <button class="photo-cover" data-id="{{item._id}}" bindtap="setCover">{{selectedAlbum.coverAssetId === item._id ? '封面' : '设封面'}}</button>
     </view>
   </view>
   <button wx:if="{{hasMore}}" class="button secondary load-more" loading="{{loadingMore}}" disabled="{{loadingMore}}" bindtap="loadMore">加载更多照片</button>

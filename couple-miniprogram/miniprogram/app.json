@@ -19,7 +19,7 @@
   "subpackages": [
     {
       "root": "features",
-      "pages": ["notifications/notifications", "reward-store/reward-store"]
+      "pages": ["notifications/notifications", "reward-store/reward-store", "love-agent/love-agent"]
     }
   ],
   "window": {

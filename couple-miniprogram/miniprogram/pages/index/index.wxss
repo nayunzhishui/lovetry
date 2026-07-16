@@ -107,21 +107,31 @@
 .home-links {
   display: flex;
   justify-content: center;
-  gap: 28rpx;
+  gap: 10rpx;
   padding: 30rpx 0 8rpx;
+}
+
+.home-links button {
+  min-height: 72rpx;
+  margin: 0;
+  padding: 0 18rpx;
+  background: transparent;
   color: var(--amber-deep);
   font-size: 23rpx;
+  line-height: 72rpx;
 }
 
 .moment-panel textarea {
   min-height: 190rpx;
 }
+.nav-item--agent { grid-column: 1 / -1; min-height: 142rpx; border-top-color: var(--moss); }
+.nav-item--agent .nav-mark { background: var(--moss); }
 .relationship-note { display: grid; grid-template-columns: .8fr 1.2fr; gap: 1rpx; margin-top: 14rpx; overflow: hidden; border: 1rpx solid var(--line); border-radius: var(--radius-md); background: var(--line); }
 .relationship-note > view { padding: 20rpx; background: var(--surface); }
 .relationship-note text { display: block; color: var(--ink-strong); font-family: "Songti SC", "STSong", serif; font-size: 28rpx; font-weight: 700; }
 .relationship-note view view { margin-top: 6rpx; color: var(--ink-soft); font-size: 19rpx; }
 .week-summary { margin-top: 10rpx; color: var(--ink-soft); font-size: 20rpx; text-align: right; }
-.anniversary-card { display: flex; align-items: center; justify-content: space-between; gap: 24rpx; }
+.anniversary-card { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 24rpx; margin-right: 0; margin-left: 0; text-align: left; line-height: 1.5; }
 .anniversary-card__count { min-width: 120rpx; color: var(--coral); text-align: right; }
 .anniversary-card__count text { font-family: "Songti SC", STSong, serif; font-size: 58rpx; line-height: 1; }
 .anniversary-card__count view { margin-top: 6rpx; color: var(--ink-soft); font-size: 21rpx; }

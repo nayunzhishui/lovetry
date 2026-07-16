@@ -1,6 +1,6 @@
 .album-strip { margin: 22rpx -28rpx 0; white-space: nowrap; }
 .album-strip__inner { display: inline-flex; gap: 14rpx; padding: 8rpx 28rpx 18rpx; }
-.album-pill { padding: 18rpx 28rpx; border: 1rpx solid var(--line); border-radius: 36rpx; background: var(--surface); color: var(--ink); }
+.album-pill { min-height: 72rpx; margin: 0; padding: 0 28rpx; border: 1rpx solid var(--line); border-radius: 36rpx; background: var(--surface); color: var(--ink); font-size: 26rpx; line-height: 72rpx; }
 .album-pill--active { border-color: var(--ink-strong); background: var(--ink-strong); color: #fff; }
 .album-head { margin-top: 26rpx; }
 .album-tools { display: grid; grid-template-columns: 1fr auto auto; gap: 10rpx; align-items: center; margin-top: 14rpx; }
@@ -9,8 +9,8 @@
 .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10rpx; margin-top: 24rpx; }
 .photo-wrap { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); background: var(--surface-muted); }
 .photo { width: 100%; height: 100%; }
-.photo-delete { position: absolute; right: 8rpx; bottom: 8rpx; padding: 7rpx 12rpx; border-radius: 20rpx; background: rgba(41,43,49,.78); color: #fff; font-size: 20rpx; }
-.photo-cover { position: absolute; left: 8rpx; bottom: 8rpx; padding: 7rpx 12rpx; border-radius: 20rpx; background: rgba(183,121,50,.88); color: #fff; font-size: 20rpx; }
+.photo-delete { position: absolute; right: 6rpx; bottom: 6rpx; min-height: 56rpx; margin: 0; padding: 0 14rpx; border-radius: 28rpx; background: rgba(41,43,49,.84); color: #fff; font-size: 21rpx; line-height: 56rpx; }
+.photo-cover { position: absolute; left: 6rpx; bottom: 6rpx; min-height: 56rpx; margin: 0; padding: 0 14rpx; border-radius: 28rpx; background: rgba(183,121,50,.92); color: #fff; font-size: 21rpx; line-height: 56rpx; }
 .error-banner { margin-top: 24rpx; padding: 22rpx; border-radius: var(--radius-sm); background: #f5e4e1; color: var(--danger); }
 .upload-progress { margin-top: 14rpx; color: var(--ink-soft); font-size: 22rpx; text-align: right; }
 .load-more { margin-top: 20rpx; }

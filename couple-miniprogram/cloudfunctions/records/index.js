@@ -1,6 +1,10 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
-const { recordIdForRequest } = require("./idempotency");
+const {
+  assertRecordRequestCompatible,
+  recordIdForRequest,
+  recordRequestFingerprint
+} = require("./idempotency");
 const { toggleReaction, validateReactionRequest } = require("./reactions");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -155,15 +159,26 @@ async function handle(event, openid) {
     const clientRequestId = trimText(event.record && event.record.clientRequestId, 120);
     if (clientRequestId) {
       const recordId = recordIdForRequest(couple._id, openid, clientRequestId);
-      try {
-        const existing = (await db.collection("records").doc(recordId).get()).data;
-        if (existing && existing.coupleId === couple._id && canRead(existing, openid)) return success({ record: existing, duplicate: true });
-      } catch (error) {
-        // The deterministic record does not exist yet.
-      }
       data.clientRequestId = clientRequestId;
-      await db.collection("records").doc(recordId).set({ data });
-      return success({ record: { _id: recordId, ...data } });
+      data.requestFingerprint = recordRequestFingerprint(normalized);
+      const result = await db.runTransaction(async (transaction) => {
+        let existing = null;
+        try {
+          existing = (await transaction.collection("records").doc(recordId).get()).data;
+        } catch (error) {
+          // The deterministic record does not exist yet.
+        }
+        if (existing) {
+          if (existing.coupleId !== couple._id || !canRead(existing, openid)) {
+            throw businessError("IDEMPOTENCY_CONFLICT");
+          }
+          assertRecordRequestCompatible(existing, normalized);
+          return { record: existing, duplicate: true };
+        }
+        await transaction.collection("records").doc(recordId).set({ data });
+        return { record: { _id: recordId, ...data }, duplicate: false };
+      });
+      return success(result);
     }
     const addResult = await db.collection("records").add({ data });
     return success({ record: { _id: addResult._id, ...data } });

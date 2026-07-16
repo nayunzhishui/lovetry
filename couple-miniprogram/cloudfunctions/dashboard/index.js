@@ -166,19 +166,38 @@ async function handle(event, openid) {
       .filter((record) => !type || record.type === type)
       .filter(dateMatches)
       .filter((record) => `${record.title} ${record.content}`.toLowerCase().includes(keyword))
-      .map((record) => ({ id: record._id, source: "record", type: record.type, title: record.title, createdAt: record.createdAt }));
+      .map((record) => ({
+        id: record._id,
+        source: "record",
+        type: record.type,
+        title: record.title,
+        occurredAt: record.startAt || record.createdAt,
+        createdAt: record.createdAt
+      }));
     const plans = source === "record" ? [] : base.plans
       .filter((plan) => !type || plan.type === type)
       .filter(dateMatches)
       .filter((plan) => `${plan.title} ${plan.detail}`.toLowerCase().includes(keyword))
-      .map((plan) => ({ id: plan._id, source: "plan", type: plan.type, title: plan.title, createdAt: plan.createdAt }));
+      .map((plan) => ({
+        id: plan._id,
+        source: "plan",
+        type: plan.type,
+        title: plan.title,
+        occurredAt: plan.startAt || plan.endAt || plan.createdAt,
+        createdAt: plan.createdAt
+      }));
     return success({ results: [...records, ...plans].slice(0, 100) });
   }
 
   if (action === "sync") {
     const now = new Date();
     const since = event.since ? new Date(event.since) : new Date(now.getTime() - 86400000);
-    const offset = Math.min(Math.max(Number(event.offset) || 0, 0), 5000);
+    const legacyOffset = Math.min(Math.max(Number(event.offset) || 0, 0), 100000);
+    const sourceOffsets = event.offsets && typeof event.offsets === "object" ? event.offsets : {};
+    const offsets = ["records", "plans", "notifications"].reduce((result, key) => {
+      result[key] = Math.min(Math.max(Number(sourceOffsets[key]) || legacyOffset, 0), 100000);
+      return result;
+    }, {});
     if (Number.isNaN(since.getTime()) || since.getTime() > now.getTime() + 300000) {
       throw businessError("INVALID_SYNC_CURSOR", "同步位置已失效，请刷新页面");
     }
@@ -192,20 +211,36 @@ async function handle(event, openid) {
       )
     );
     const [recordsResult, plansResult, notificationsResult] = await Promise.all([
-      db.collection("records").where(visibleRecords).orderBy("updatedAt", "asc").skip(offset).limit(101).get(),
-      db.collection("plans").where({ coupleId: couple._id, updatedAt: _.gt(since) }).orderBy("updatedAt", "asc").skip(offset).limit(101).get(),
-      db.collection("notifications").where({ coupleId: couple._id, recipientOpenid: openid, updatedAt: _.gt(since) }).orderBy("updatedAt", "asc").skip(offset).limit(101).get()
+      db.collection("records").where(visibleRecords).orderBy("updatedAt", "asc").skip(offsets.records).limit(101).get(),
+      db.collection("plans").where({ coupleId: couple._id, updatedAt: _.gt(since) }).orderBy("updatedAt", "asc").skip(offsets.plans).limit(101).get(),
+      db.collection("notifications").where({ coupleId: couple._id, recipientOpenid: openid, updatedAt: _.gt(since) }).orderBy("updatedAt", "asc").skip(offsets.notifications).limit(101).get()
     ]);
-    const hasMore = recordsResult.data.length > 100 || plansResult.data.length > 100 || notificationsResult.data.length > 100;
+    const pages = {
+      records: recordsResult.data.slice(0, 100),
+      plans: plansResult.data.slice(0, 100),
+      notifications: notificationsResult.data.slice(0, 100)
+    };
+    const hasMoreByType = {
+      records: recordsResult.data.length > 100,
+      plans: plansResult.data.length > 100,
+      notifications: notificationsResult.data.length > 100
+    };
+    const hasMore = Object.values(hasMoreByType).some(Boolean);
+    const nextOffsets = {
+      records: offsets.records + pages.records.length,
+      plans: offsets.plans + pages.plans.length,
+      notifications: offsets.notifications + pages.notifications.length
+    };
     return success({
       changes: {
-        records: recordsResult.data.filter((record) => canReadRecord(record, openid)).slice(0, 100),
-        plans: plansResult.data.slice(0, 100),
-        notifications: notificationsResult.data.slice(0, 100)
+        records: pages.records.filter((record) => canReadRecord(record, openid)),
+        plans: pages.plans,
+        notifications: pages.notifications
       },
       cursor: hasMore ? since.toISOString() : now.toISOString(),
       hasMore,
-      nextOffset: hasMore ? offset + 100 : 0
+      hasMoreByType,
+      nextOffsets
     });
   }
 

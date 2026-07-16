@@ -10,6 +10,7 @@
     <view class="empty-title">还没有情侣空间</view>
     <view class="empty-desc">创建或加入一个只属于两个人的空间，再开始同步记录。</view>
     <button class="button" bindtap="goSettings">设置情侣空间</button>
+    <button class="button secondary" bindtap="goLoveAgent">先问恋爱助手</button>
   </view>
 
   <view wx:else>
@@ -36,10 +37,10 @@
       <view><text>{{recentMoodText}}</text><view>最近的心情线索</view></view>
     </view>
     <view wx:if="{{summary.stats}}" class="week-summary">近 7 天：{{summary.stats.recordCount7d}} 条记录 · {{summary.stats.focusMinutes7d}} 分钟专注</view>
-    <view wx:if="{{upcomingAnniversary}}" class="almanac-card anniversary-card" bindtap="goPlans">
+    <button wx:if="{{upcomingAnniversary}}" class="almanac-card anniversary-card" bindtap="goPlans">
       <view><view class="almanac-code">NEXT ANNIVERSARY</view><view class="record-title">{{upcomingAnniversary.title}}</view><view class="record-meta">{{upcomingAnniversary.next.date}}</view></view>
       <view class="anniversary-card__count"><text>{{upcomingAnniversary.next.daysRemaining}}</text><view>{{upcomingAnniversary.next.daysRemaining === 0 ? '今天' : '天后'}}</view></view>
-    </view>
+    </button>
 
     <view class="section-head">
       <view>
@@ -49,42 +50,47 @@
     </view>
 
     <view class="nav-grid">
-      <view class="nav-item" bindtap="goRecords">
+      <button class="nav-item" bindtap="goRecords">
         <view class="nav-mark"></view>
         <view class="nav-title">生活记录</view>
         <view class="nav-desc">心情、睡眠与共同经历</view>
-      </view>
-      <view class="nav-item" bindtap="goCalendar">
+      </button>
+      <button class="nav-item" bindtap="goCalendar">
         <view class="nav-mark"></view>
         <view class="nav-title">共同日历</view>
         <view class="nav-desc">把计划与回忆放在一起</view>
-      </view>
-      <view class="nav-item" bindtap="goPlans">
+      </button>
+      <button class="nav-item" bindtap="goPlans">
         <view class="nav-mark"></view>
         <view class="nav-title">共同计划</view>
         <view class="nav-desc">任务、菜单、旅行和纪念日</view>
-      </view>
-      <view class="nav-item" bindtap="goRewards">
+      </button>
+      <button class="nav-item" bindtap="goRewards">
         <view class="nav-mark"></view>
         <view class="nav-title">奖励账户</view>
         <view class="nav-desc">获得、消费与兑换流水</view>
-      </view>
-      <view class="nav-item" bindtap="goAlbums">
+      </button>
+      <button class="nav-item" bindtap="goAlbums">
         <view class="nav-mark"></view>
         <view class="nav-title">共同相册</view>
         <view class="nav-desc">保存只属于两个人的照片</view>
-      </view>
-      <view class="nav-item" bindtap="goSearch">
+      </button>
+      <button class="nav-item" bindtap="goSearch">
         <view class="nav-mark"></view>
         <view class="nav-title">搜索回忆</view>
         <view class="nav-desc">按关键词找到记录和计划</view>
-      </view>
+      </button>
+      <button class="nav-item nav-item--agent" bindtap="goLoveAgent">
+        <view class="nav-mark"></view>
+        <view class="nav-title">恋爱助手 · AI</view>
+        <view class="nav-desc">基于本地恋爱知识库，帮你梳理沟通、边界和相处问题</view>
+      </button>
     </view>
 
     <view class="home-links">
-      <text bindtap="goConflict">沟通复盘</text>
-      <text bindtap="goTimeline">共同时间线</text>
-      <text bindtap="goSettings">情侣空间</text>
+      <button bindtap="goConflict">沟通复盘</button>
+      <button bindtap="goTimeline">共同时间线</button>
+      <button bindtap="goSettings">情侣空间</button>
     </view>
   </view>
 

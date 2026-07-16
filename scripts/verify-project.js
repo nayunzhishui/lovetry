@@ -66,9 +66,28 @@ const directCloudCalls = walk(miniprogramRoot, (target) => target.endsWith(".js"
   .filter((file) => fs.readFileSync(file, "utf8").includes("wx.cloud.callFunction"));
 if (directCloudCalls.length) failures.push(`页面绕过服务层调用云函数: ${directCloudCalls.map(relative).join(", ")}`);
 
+const subpackageRoots = new Set((appConfig.subpackages || []).map((group) => path.join(miniprogramRoot, group.root)));
+const mainPackageFiles = walk(miniprogramRoot, () => true)
+  .filter((file) => ![...subpackageRoots].some((subpackageRoot) => file.startsWith(`${subpackageRoot}${path.sep}`)));
+const mainPackageBytes = mainPackageFiles.reduce((sum, file) => sum + fs.statSync(file).size, 0);
+const internalMainPackageBudget = 1024 * 1024;
+if (mainPackageBytes > internalMainPackageBudget) {
+  failures.push(`主包源码超过内部 1 MiB 预算: ${(mainPackageBytes / 1024).toFixed(1)} KiB`);
+}
+
+const tappableNonControls = walk(miniprogramRoot, (target) => target.endsWith(".wxml"))
+  .flatMap((file) => {
+    const matches = fs.readFileSync(file, "utf8").match(/<(view|text)\b[^>]*\bbindtap=/g) || [];
+    return matches.map(() => relative(file));
+  })
+  .filter((file) => !file.endsWith("components/confirm-dialog/confirm-dialog.wxml"));
+if (tappableNonControls.length) {
+  failures.push(`可点击区域应优先使用 button: ${[...new Set(tappableNonControls)].join(", ")}`);
+}
+
 if (failures.length) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));
   process.exit(1);
 }
 
-console.log(`验证通过：${pages.length} 个页面、${functions.length} 个云函数、${walk(root, (target) => target.endsWith(".js")).length} 个 JS 文件。`);
+console.log(`验证通过：${pages.length} 个页面、${functions.length} 个云函数、${walk(root, (target) => target.endsWith(".js")).length} 个 JS 文件；主包源码 ${(mainPackageBytes / 1024).toFixed(1)} KiB。`);

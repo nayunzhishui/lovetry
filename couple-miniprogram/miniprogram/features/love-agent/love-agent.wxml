@@ -1,0 +1,45 @@
+<view class="page agent-page">
+  <view class="hero agent-hero">
+    <twin-rail />
+    <view class="eyebrow">AI · KNOWLEDGE GROUNDED</view>
+    <view class="title">恋爱助手</view>
+    <view class="subtitle">把难开口的问题说清楚一点。助手会先查本地恋爱知识库，再给你可执行的沟通建议。</view>
+  </view>
+
+  <view class="panel trust-card">
+    <view class="panel-kicker">PRIVATE BY DEFAULT</view>
+    <view class="panel-title">本次对话不写入情侣记录</view>
+    <view class="hint">它是 AI，不是心理咨询师；只处理你主动输入的内容，不自动读取伴侣记录，也不会替你发送消息或做关系决定。</view>
+  </view>
+
+  <view wx:if="{{messages.length === 0}}" class="starter">
+    <view class="section-heading"><text>可以从这些问题开始</text></view>
+    <button wx:for="{{suggestions}}" wx:key="*this" class="suggestion" data-question="{{item}}" bindtap="useSuggestion">{{item}}<text>›</text></button>
+  </view>
+
+  <view class="conversation">
+    <view wx:for="{{messages}}" wx:key="id" class="message message--{{item.role}}">
+      <view class="message__label">{{item.role === 'assistant' ? '恋爱助手 · AI' : '我'}}</view>
+      <text class="message__content" user-select>{{item.content}}</text>
+      <view wx:if="{{item.sources.length}}" class="sources">
+        <view class="sources__title">参考的知识条目</view>
+        <view wx:for="{{item.sources}}" wx:for-item="source" wx:key="id" class="source">
+          <view class="source__code">{{source.id}} · {{source.category}}</view>
+          <view class="source__title">{{source.title}}</view>
+          <view class="source__excerpt">{{source.excerpt}}</view>
+        </view>
+      </view>
+      <button wx:if="{{item.role === 'assistant'}}" class="message__copy" data-content="{{item.content}}" bindtap="copyAnswer">复制回答</button>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="agent-state" aria-live="polite"><view class="state-pulse"></view><text>正在检索并组织回答…</text></view>
+  <view wx:if="{{error}}" class="error-banner" aria-live="polite">{{error}}</view>
+
+  <view class="composer">
+    <view class="composer__head"><text>{{modeText}}</text><button wx:if="{{messages.length}}" bindtap="clearConversation">清空本次对话</button></view>
+    <textarea value="{{question}}" maxlength="600" auto-height placeholder="描述一件具体的事：发生了什么、你最担心什么、你希望有什么变化…" bindinput="onInput" />
+    <button class="button" loading="{{loading}}" disabled="{{loading || question.length < 2}}" bindtap="ask">让助手帮我梳理</button>
+    <view class="caveat">AI 可能理解不完整。重要决定请结合真实沟通与可信任的现实支持。</view>
+  </view>
+</view>

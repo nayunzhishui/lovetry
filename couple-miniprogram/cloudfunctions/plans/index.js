@@ -1,4 +1,10 @@
 const cloud = require("wx-server-sdk");
+const {
+  assertVersion,
+  markDeleted,
+  setStatus,
+  toggleChecklist
+} = require("./mutations");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -151,41 +157,58 @@ async function handle(event, openid) {
   }
 
   if (action === "setStatus") {
-    const current = await getPlan(event.planId, couple);
     if (!STATUSES.has(event.status)) throw businessError("INVALID_PLAN", "状态不正确");
-    const updatedAt = new Date();
-    const completedAt = event.status === "done" ? updatedAt : null;
-    await db.collection("plans").doc(current._id).update({
-      data: { status: event.status, completedAt, updatedAt, version: _.inc(1) }
+    const updated = await db.runTransaction(async (transaction) => {
+      let current;
+      try { current = (await transaction.collection("plans").doc(event.planId).get()).data; }
+      catch (error) { throw businessError("PLAN_NOT_FOUND"); }
+      if (!current || current.coupleId !== couple._id || current.deletedAt) throw businessError("PLAN_NOT_FOUND");
+      assertVersion(current, event.version);
+      const next = setStatus(current, event.status, new Date());
+      await transaction.collection("plans").doc(current._id).update({
+        data: {
+          status: next.status,
+          completedAt: next.completedAt,
+          updatedAt: next.updatedAt,
+          version: next.version
+        }
+      });
+      return next;
     });
-    return success({ plan: { ...current, status: event.status, completedAt, updatedAt } });
+    return success({ plan: updated });
   }
 
   if (action === "toggleChecklist") {
-    const current = await getPlan(event.planId, couple);
-    const checklist = current.payload && Array.isArray(current.payload.checklist)
-      ? current.payload.checklist.map((item) => ({ title: text(item.title, 80), done: Boolean(item.done) }))
-      : [];
     const index = Number(event.index);
-    if (!Number.isInteger(index) || index < 0 || index >= checklist.length) {
-      throw businessError("INVALID_PLAN", "清单项不存在");
-    }
-    checklist[index].done = !checklist[index].done;
-    const updatedAt = new Date();
-    const payload = { ...(current.payload || {}), checklist };
-    await db.collection("plans").doc(current._id).update({
-      data: { payload, updatedAt, version: _.inc(1) }
+    const updated = await db.runTransaction(async (transaction) => {
+      let current;
+      try { current = (await transaction.collection("plans").doc(event.planId).get()).data; }
+      catch (error) { throw businessError("PLAN_NOT_FOUND"); }
+      if (!current || current.coupleId !== couple._id || current.deletedAt) throw businessError("PLAN_NOT_FOUND");
+      assertVersion(current, event.version);
+      const next = toggleChecklist(current, index, new Date());
+      await transaction.collection("plans").doc(current._id).update({
+        data: { payload: next.payload, updatedAt: next.updatedAt, version: next.version }
+      });
+      return next;
     });
-    return success({ plan: { ...current, payload, updatedAt, version: Number(current.version || 1) + 1 } });
+    return success({ plan: updated });
   }
 
   if (action === "delete") {
-    const current = await getPlan(event.planId, couple);
-    const deletedAt = new Date();
-    await db.collection("plans").doc(current._id).update({
-      data: { deletedAt, updatedAt: deletedAt, version: _.inc(1) }
+    const deleted = await db.runTransaction(async (transaction) => {
+      let current;
+      try { current = (await transaction.collection("plans").doc(event.planId).get()).data; }
+      catch (error) { throw businessError("PLAN_NOT_FOUND"); }
+      if (!current || current.coupleId !== couple._id || current.deletedAt) throw businessError("PLAN_NOT_FOUND");
+      assertVersion(current, event.version);
+      const next = markDeleted(current, new Date());
+      await transaction.collection("plans").doc(current._id).update({
+        data: { deletedAt: next.deletedAt, updatedAt: next.updatedAt, version: next.version }
+      });
+      return next;
     });
-    return success({ planId: current._id, deletedAt });
+    return success({ planId: deleted._id, deletedAt: deleted.deletedAt });
   }
 
   if (action === "randomMenu") {

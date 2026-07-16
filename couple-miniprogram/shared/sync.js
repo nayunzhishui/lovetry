@@ -17,12 +17,24 @@ function summarizeSyncChanges(changes) {
 
 function mergeSyncChanges(current = {}, next = {}) {
   return ["records", "plans", "notifications"].reduce((result, key) => {
-    result[key] = [
+    const combined = [
       ...(Array.isArray(current[key]) ? current[key] : []),
       ...(Array.isArray(next[key]) ? next[key] : [])
     ];
+    const byId = new Map();
+    combined.forEach((item, index) => {
+      byId.set(item && item._id ? item._id : `${key}:${index}`, item);
+    });
+    result[key] = [...byId.values()];
     return result;
   }, {});
 }
 
-module.exports = { mergeSyncChanges, parseSyncCursor, summarizeSyncChanges };
+function normalizeSyncOffsets(offsets = {}) {
+  return ["records", "plans", "notifications"].reduce((result, key) => {
+    result[key] = Math.min(Math.max(Number(offsets && offsets[key]) || 0, 0), 100000);
+    return result;
+  }, {});
+}
+
+module.exports = { mergeSyncChanges, normalizeSyncOffsets, parseSyncCursor, summarizeSyncChanges };

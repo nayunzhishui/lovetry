@@ -26,7 +26,7 @@
     <scroll-view scroll-x show-scrollbar="{{false}}"><view class="filter-row">
       <button wx:for="{{outingCategories}}" wx:key="*this" class="filter-chip {{outingCategory === item ? 'filter-chip--active' : ''}}" data-category="{{item}}" bindtap="selectOutingCategory">{{item || '全部分类'}}</button>
     </view></scroll-view>
-    <view class="date-filter"><picker mode="date" value="{{filterDate}}" bindchange="selectFilterDate"><view class="input-like">{{filterDate || '按日期筛选'}}</view></picker><text wx:if="{{filterDate}}" bindtap="clearFilterDate">清除</text></view>
+    <view class="date-filter"><picker mode="date" value="{{filterDate}}" bindchange="selectFilterDate"><view class="input-like">{{filterDate || '按日期筛选'}}</view></picker><button wx:if="{{filterDate}}" bindtap="clearFilterDate">清除</button></view>
   </view>
 
   <view wx:if="{{stats}}" class="stats-strip">
@@ -57,7 +57,7 @@
   </view>
 
   <view wx:else class="record-list">
-    <view
+    <button
       wx:for="{{records}}"
       wx:key="_id"
       class="record record-card"
@@ -74,6 +74,6 @@
       <view wx:if="{{item.categoryText}}" class="record-category">{{item.categoryText}}</view>
       <view wx:if="{{item.contentPreview}}" class="record-content">{{item.contentPreview}}</view>
       <view class="record-arrow" aria-hidden="true">›</view>
-    </view>
+    </button>
   </view>
 </view>

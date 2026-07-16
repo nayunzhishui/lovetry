@@ -60,10 +60,16 @@
   </view>
 
   <view wx:if="{{couple}}" class="panel tools-panel">
-    <view class="panel-kicker">DATA & DEVELOPMENT</view>
-    <view class="tool-row" bindtap="goExport"><view><view class="label">数据备份</view><view class="hint">导出共享数据和自己的私密记录</view></view><text>›</text></view>
-    <view class="tool-row" bindtap="goNotifications"><view><view class="label">提醒中心</view><view class="hint">任务、纪念日和奖励确认提醒</view></view><text>›</text></view>
-    <view class="tool-row" bindtap="goIntegrationTest"><view><view class="label">联调检查</view><view class="hint">检查云函数和数据库连接</view></view><text>›</text></view>
+    <view class="panel-kicker">DATA & REMINDERS</view>
+    <button class="tool-row" bindtap="goExport"><view><view class="label">数据备份</view><view class="hint">导出共享数据和自己的私密记录</view></view><text>›</text></button>
+    <button class="tool-row" bindtap="goNotifications"><view><view class="label">提醒中心</view><view class="hint">任务、纪念日和奖励确认提醒</view></view><text>›</text></button>
+    <button wx:if="{{showDeveloperTools}}" class="tool-row" bindtap="goIntegrationTest"><view><view class="label">联调检查</view><view class="hint">检查云函数和数据库连接</view></view><text>›</text></button>
+  </view>
+
+  <view wx:if="{{couple}}" class="panel privacy-panel">
+    <view class="panel-kicker">PRIVACY BY DEFAULT</view>
+    <view class="panel-title">敏感记录默认只对自己可见</view>
+    <view class="hint">心情、沟通复盘、睡眠、生理期和专注记录会先保存为私密内容；你可在编辑时主动改为两人共享。</view>
   </view>
 
   <button wx:if="{{couple}}" class="leave-button" disabled="{{isSaving}}" bindtap="leaveCouple">解除当前情侣空间</button>

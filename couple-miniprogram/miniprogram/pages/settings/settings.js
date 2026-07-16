@@ -1,5 +1,6 @@
 const app = getApp();
 const cloudApi = require("../../services/cloudApi");
+const config = require("../../config");
 
 Page({
   data: {
@@ -10,6 +11,7 @@ Page({
     isLoading: false,
     isSaving: false,
     showLeaveConfirm: false,
+    showDeveloperTools: config.enableDeveloperTools === true,
     error: ""
   },
 

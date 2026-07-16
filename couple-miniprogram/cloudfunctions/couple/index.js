@@ -203,15 +203,17 @@ async function handle(event, openid) {
     if (couple.members.length >= 2) throw businessError("COUPLE_FULL");
     const code = await createUniqueCode();
     const updatedAt = new Date();
+    const inviteExpiresAt = new Date(updatedAt.getTime() + INVITE_TTL_MS);
+    const version = Number(couple.version || 0) + 1;
     await db.collection("couples").doc(couple._id).update({
       data: {
         code,
-        inviteExpiresAt: new Date(updatedAt.getTime() + INVITE_TTL_MS),
+        inviteExpiresAt,
         updatedAt,
-        version: _.inc(1)
+        version
       }
     });
-    return success({ couple: { ...couple, code, updatedAt } });
+    return success({ couple: { ...couple, code, inviteExpiresAt, updatedAt, version } });
   }
 
   if (action === "updateProfile") {
@@ -219,10 +221,11 @@ async function handle(event, openid) {
     if (!couple) throw businessError("COUPLE_NOT_FOUND");
     const profile = sanitizeProfile(event.profile || {});
     const updatedAt = new Date();
+    const version = Number(couple.version || 0) + 1;
     await db.collection("couples").doc(couple._id).update({
-      data: { ...profile, updatedAt, version: _.inc(1) }
+      data: { ...profile, updatedAt, version }
     });
-    return success({ couple: { ...couple, ...profile, updatedAt } });
+    return success({ couple: { ...couple, ...profile, updatedAt, version } });
   }
 
   if (action === "leave") {

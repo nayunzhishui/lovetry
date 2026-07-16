@@ -202,16 +202,16 @@ function updatePlan(planId, version, plan) {
   return plans("update", { planId, version, plan }).then((result) => result.plan || null);
 }
 
-function setPlanStatus(planId, status) {
-  return plans("setStatus", { planId, status }).then((result) => result.plan || null);
+function setPlanStatus(planId, status, version) {
+  return plans("setStatus", { planId, status, version }).then((result) => result.plan || null);
 }
 
-function togglePlanChecklist(planId, index) {
-  return call("plans", { action: "toggleChecklist", planId, index }).then((data) => data.plan);
+function togglePlanChecklist(planId, index, version) {
+  return call("plans", { action: "toggleChecklist", planId, index, version }).then((data) => data.plan);
 }
 
-function deletePlan(planId) {
-  return plans("delete", { planId }).then((result) => result.planId || planId);
+function deletePlan(planId, version) {
+  return plans("delete", { planId, version }).then((result) => result.planId || planId);
 }
 
 function randomMenu(excludeIds) {
@@ -325,8 +325,8 @@ function searchAll(keyword, options) {
   return searchDashboard(keyword, options);
 }
 
-function syncSince(since, offset = 0) {
-  return dashboard("sync", { since, offset });
+function syncSince(since, offsets = {}) {
+  return dashboard("sync", { since, offsets });
 }
 
 function exportData() {
@@ -367,6 +367,14 @@ function listNotifications() {
 
 function markNotificationRead(notificationId) {
   return notifications("markRead", { notificationId });
+}
+
+function askLoveAgent(question, history) {
+  return call("love-agent", {
+    action: "ask",
+    question,
+    history: Array.isArray(history) ? history : []
+  });
 }
 
 function getErrorMessage(error, fallback) {
@@ -443,5 +451,6 @@ module.exports = {
   materializeMyNotifications,
   listNotifications,
   markNotificationRead,
+  askLoveAgent,
   getErrorMessage
 };

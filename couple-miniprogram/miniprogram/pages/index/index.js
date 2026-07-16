@@ -161,6 +161,10 @@ Page({
     wx.navigateTo({ url: "/pages/search/search" });
   },
 
+  goLoveAgent() {
+    wx.navigateTo({ url: "/features/love-agent/love-agent" });
+  },
+
   submitMoment() {
     if (this.data.isSaving) return;
 

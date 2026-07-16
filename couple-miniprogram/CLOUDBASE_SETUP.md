@@ -4,9 +4,21 @@
 
 1. 用微信开发者工具导入本目录，填写真实小程序 AppID；
 2. 开通云开发环境；开发阶段可保持 `miniprogram/config.js` 占位值，此时使用开发者工具当前云环境；发布前改为真实环境 ID；
-3. 创建集合：`couples`、`memberships`、`records`、`plans`、`wallets`、`reward_transactions`、`reward_items`、`reward_inventory`、`albums`、`media_assets`、`notification_preferences`、`notifications`、`record_reaction_requests`；
+3. 创建集合：`couples`、`memberships`、`records`、`plans`、`wallets`、`reward_transactions`、`reward_items`、`reward_inventory`、`albums`、`media_assets`、`notification_preferences`、`notifications`、`record_reaction_requests`、`agent_usage`；
 4. 数据库设置为“仅云函数可读写”；云存储读取保持私有，写入只允许已登录用户向本人路径上传；
-5. 依次上传并部署 `login`、`couple`、`records`、`plans`、`rewards`、`media`、`dashboard`、`notifications`，选择“云端安装依赖”。
+5. 依次上传并部署 `login`、`couple`、`records`、`plans`、`rewards`、`media`、`dashboard`、`notifications`、`love-agent`，选择“云端安装依赖”。
+
+## 1.1 恋爱助手模型配置
+
+- 不配置模型密钥时，`love-agent` 会使用本地知识库生成可执行的降级回答；
+- 需要生成式回答时，只在 `love-agent` 云函数环境变量中配置 `OPENAI_API_KEY`，不得写入小程序代码、Git 或前端存储；
+- `LOVE_AGENT_MODEL` 可选，默认 `gpt-5.6-luna`；
+- `LOVE_AGENT_API_BASE` 可选，默认 `https://api.openai.com/v1`，仅用于经过审核的 Responses API 兼容服务；
+- 模型请求使用 Responses API，并设置 `store: false`；
+- 每个 OpenID 每天最多触发 50 次真实模型请求，本地知识库模式不消耗此配额；
+- 云函数日志只记录追踪 ID、状态码、模式和耗时，不记录问题正文或回答。
+
+依赖安全说明：截至本次检查，npm 上 `wx-server-sdk` 最新版仍为 `4.0.2`，其传递依赖会触发 npm audit 告警；audit 给出的自动方案是降级到旧主版本，未在本项目中盲目执行。上线前应继续关注微信云开发 SDK 的修复版本，并在测试环境完成兼容验证后统一升级所有云函数。
 
 ## 2. 推荐索引
 
@@ -33,6 +45,7 @@
 | notification_preferences | `coupleId`、`ownerOpenid` | 用户提醒偏好 |
 | notifications | `coupleId`、`recipientOpenid`、`updatedAt asc` | 增量同步与提醒列表 |
 | record_reaction_requests | `coupleId`、`recordId`、`actorOpenid` | 轻回应幂等请求 |
+| agent_usage | 文档 ID 为 OpenID 与日期哈希 | 恋爱助手每日模型调用配额 |
 
 加入码的全局唯一由云函数生成前检查；CloudBase 控制台若支持唯一索引，应为 `couples.code` 增加唯一索引。
 
@@ -48,7 +61,7 @@
 
 ## 4. 部署后验收
 
-1. 在“设置 → 云端联调检查”运行八模块检查；
+1. 仅在体验版调试阶段将 `miniprogram/config.js` 的 `enableDeveloperTools` 设为 `true`，再从“设置 → 联调检查”运行现有业务模块检查；发布前恢复为 `false`；
 2. 账号 A 创建空间，账号 B 使用 8 位加入码加入；
 3. 验证共享记录同步、私密记录对 B 不可见；
 4. 账号 C 尝试加入，必须返回空间已满；
@@ -56,6 +69,7 @@
 6. 上传、预览、删除图片，并验证账号 C 无法访问；
 7. 导出 JSON，恢复一次后再次恢复，第二次应全部跳过；
 8. 分别在 iOS、Android 真机检查安全区、日期和计时恢复。
+9. 分别验证恋爱助手本地知识库模式、真实模型模式、每日配额、无情侣空间访问和危险情境安全响应。
 
 ## 5. 发布前人工项
 

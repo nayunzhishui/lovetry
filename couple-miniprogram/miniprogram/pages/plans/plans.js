@@ -291,11 +291,12 @@ Page({
 
   deletePlan(event) {
     const planId = event.currentTarget.dataset.id;
-    if (!planId || this.data.changingPlanId) return;
+    const current = this.data.plans.find((plan) => plan._id === planId);
+    if (!current || this.data.changingPlanId) return;
     wx.showModal({ title: "删除这项计划？", content: "删除后不会再出现在共同计划和日历中。", confirmText: "删除", success: (result) => {
       if (!result.confirm) return;
       this.setData({ changingPlanId: planId });
-      cloudApi.deletePlan(planId)
+      cloudApi.deletePlan(planId, current.version)
         .then(() => this.setData({ plans: this.data.plans.filter((item) => item._id !== planId) }))
         .catch((error) => this.setData({ error: cloudApi.getErrorMessage(error, "计划删除失败") }))
         .finally(() => this.setData({ changingPlanId: "" }));
@@ -310,10 +311,10 @@ Page({
 
     this.setData({ changingPlanId: planId, error: "" });
     cloudApi
-      .setPlanStatus(planId, status)
-      .then(() => {
+      .setPlanStatus(planId, status, current.version)
+      .then((updated) => {
         const plans = this.data.plans.map((plan) =>
-          plan._id === planId ? decoratePlan({ ...plan, status }) : plan
+          plan._id === planId ? decoratePlan(updated) : plan
         );
         this.setData({ plans });
         wx.showToast({ title: status === "done" ? "已完成" : "已重新打开" });
@@ -354,9 +355,10 @@ Page({
   toggleChecklist(event) {
     const planId = event.currentTarget.dataset.id;
     const index = Number(event.currentTarget.dataset.index);
-    if (!planId || !Number.isInteger(index) || this.data.changingPlanId) return;
+    const current = this.data.plans.find((plan) => plan._id === planId);
+    if (!current || !Number.isInteger(index) || this.data.changingPlanId) return;
     this.setData({ changingPlanId: planId, error: "" });
-    cloudApi.togglePlanChecklist(planId, index)
+    cloudApi.togglePlanChecklist(planId, index, current.version)
       .then((updated) => {
         this.setData({ plans: this.data.plans.map((plan) => plan._id === planId ? decoratePlan(updated) : plan) });
       })

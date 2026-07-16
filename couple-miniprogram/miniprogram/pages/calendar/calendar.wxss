@@ -13,7 +13,7 @@
 }
 .calendar-filters { margin: -4rpx 0 18rpx; white-space: nowrap; }
 .calendar-filters__inner { display: inline-flex; gap: 10rpx; }
-.filter-chip { min-height: 58rpx; margin: 0; padding: 0 22rpx; border: 1rpx solid var(--line); border-radius: 30rpx; background: var(--surface); color: var(--ink-soft); font-size: 22rpx; line-height: 58rpx; }
+.filter-chip { min-height: 72rpx; margin: 0; padding: 0 24rpx; border: 1rpx solid var(--line); border-radius: 36rpx; background: var(--surface); color: var(--ink-soft); font-size: 24rpx; line-height: 72rpx; }
 .filter-chip--active { border-color: var(--ink-strong); background: var(--ink-strong); color: #fff; }
 
 .month-button {
@@ -43,7 +43,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   aspect-ratio: 1;
+  margin: 0;
+  padding: 0;
   border-radius: 18rpx;
   background: var(--surface);
   color: var(--ink);
@@ -51,6 +54,7 @@
 
 .day--blank {
   background: transparent;
+  opacity: 1;
 }
 
 .day--selected {
@@ -69,10 +73,16 @@
 
 .event-row {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 16rpx;
+  margin: 0;
   padding: 18rpx 0;
   border-bottom: 1rpx solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  line-height: 1.5;
 }
 
 .event-row:last-child {

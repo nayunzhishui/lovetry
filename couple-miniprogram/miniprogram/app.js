@@ -1,6 +1,6 @@
 const config = require("./config");
 const cloudApi = require("./services/cloudApi");
-const { mergeSyncChanges, summarizeSyncChanges } = require("../shared/sync");
+const { mergeSyncChanges, normalizeSyncOffsets, summarizeSyncChanges } = require("../shared/sync");
 
 const SYNC_CURSOR_KEY = "lovetry_sync_cursor_v1";
 
@@ -76,10 +76,10 @@ App({
     this.syncing = true;
     let since = "";
     try { since = wx.getStorageSync(SYNC_CURSOR_KEY) || ""; } catch (error) { /* use default server window */ }
-    const loadPage = (offset = 0, changes = {}) => cloudApi.syncSince(since, offset)
+    const loadPage = (offsets = {}, changes = {}, pageCount = 0) => cloudApi.syncSince(since, normalizeSyncOffsets(offsets))
       .then((page) => {
         const merged = mergeSyncChanges(changes, page.changes);
-        if (page.hasMore && page.nextOffset <= 5000) return loadPage(page.nextOffset, merged);
+        if (page.hasMore && pageCount < 99) return loadPage(page.nextOffsets, merged, pageCount + 1);
         return { ...page, changes: merged };
       });
     return loadPage()

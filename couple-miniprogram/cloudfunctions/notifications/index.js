@@ -1,6 +1,11 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
 const { buildReminderCandidates } = require("./schedule");
+const {
+  defaults,
+  mergePreferences,
+  registerSubscription
+} = require("./preferences");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -34,10 +39,6 @@ function preferenceId(coupleId, openid) {
   return `${coupleId}_${openid}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
-function defaults(coupleId, openid) {
-  return { coupleId, ownerOpenid: openid, taskDue: true, anniversary: true, rewardApproval: true, enabled: true };
-}
-
 async function getPreferences(couple, openid) {
   const id = preferenceId(couple._id, openid);
   try {
@@ -61,26 +62,33 @@ async function handle(event, openid) {
     const source = event.preferences;
     if (!source || typeof source !== "object") throw businessError("INVALID_PREFERENCES");
     const id = preferenceId(couple._id, openid);
-    const data = {
-      ...defaults(couple._id, openid),
-      taskDue: source.taskDue !== false,
-      anniversary: source.anniversary !== false,
-      rewardApproval: source.rewardApproval !== false,
-      enabled: source.enabled !== false,
-      updatedAt: new Date()
-    };
-    await db.collection("notification_preferences").doc(id).set({ data });
+    const data = await db.runTransaction(async (transaction) => {
+      let current = { _id: id, ...defaults(couple._id, openid) };
+      try {
+        current = { ...current, ...(await transaction.collection("notification_preferences").doc(id).get()).data };
+      } catch (error) {
+        // First preference write.
+      }
+      const next = mergePreferences(current, source, couple._id, openid, new Date());
+      await transaction.collection("notification_preferences").doc(id).set({ data: next });
+      return next;
+    });
     return success({ preferences: { _id: id, ...data } });
   }
 
   if (event.action === "registerSubscription") {
     const id = preferenceId(couple._id, openid);
     const templateIds = Array.isArray(event.templateIds) ? event.templateIds.map(String).filter(Boolean).slice(0, 3) : [];
-    const current = await getPreferences(couple, openid);
-    const { _id, ...savedPreferences } = current;
-    await db.collection("notification_preferences").doc(id).set({ data: {
-      ...savedPreferences, templateIds, consentedAt: new Date(), updatedAt: new Date()
-    } });
+    await db.runTransaction(async (transaction) => {
+      let current = { _id: id, ...defaults(couple._id, openid) };
+      try {
+        current = { ...current, ...(await transaction.collection("notification_preferences").doc(id).get()).data };
+      } catch (error) {
+        // First preference write.
+      }
+      const data = registerSubscription(current, templateIds, new Date());
+      await transaction.collection("notification_preferences").doc(id).set({ data });
+    });
     return success({ registered: templateIds.length });
   }
 

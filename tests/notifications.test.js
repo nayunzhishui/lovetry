@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { buildReminderCandidates, reminderKey } = require("../couple-miniprogram/shared/notifications");
+const { mergePreferences, registerSubscription } = require("../couple-miniprogram/cloudfunctions/notifications/preferences");
 
 test("生成到期任务和临近纪念日提醒且键值稳定", () => {
   const plans = [
@@ -26,4 +27,45 @@ test("生成等待伴侣兑现的奖励提醒", () => {
     scheduledDate: "2026-07-15",
     daysRemaining: 0
   }]);
+});
+
+test("更新提醒开关时保留订阅授权元数据", () => {
+  const consentedAt = new Date("2026-07-15T08:00:00.000Z");
+  const updatedAt = new Date("2026-07-16T08:00:00.000Z");
+  const preferences = mergePreferences({
+    _id: "couple-a_user-a",
+    coupleId: "couple-a",
+    ownerOpenid: "user-a",
+    templateIds: ["template-a"],
+    consentedAt
+  }, {
+    taskDue: false,
+    anniversary: true,
+    rewardApproval: false,
+    enabled: true
+  }, "couple-a", "user-a", updatedAt);
+
+  assert.deepEqual(preferences.templateIds, ["template-a"]);
+  assert.equal(preferences.consentedAt, consentedAt);
+  assert.equal(preferences.taskDue, false);
+  assert.equal(preferences.rewardApproval, false);
+  assert.equal(preferences.updatedAt, updatedAt);
+});
+
+test("登记订阅时保留既有提醒开关且限制模板数量", () => {
+  const now = new Date("2026-07-16T08:00:00.000Z");
+  const preferences = registerSubscription({
+    _id: "couple-a_user-a",
+    coupleId: "couple-a",
+    ownerOpenid: "user-a",
+    taskDue: false,
+    anniversary: true,
+    rewardApproval: false,
+    enabled: true
+  }, ["a", "b", "", "c", "d"], now);
+
+  assert.equal(preferences.taskDue, false);
+  assert.equal(preferences.rewardApproval, false);
+  assert.deepEqual(preferences.templateIds, ["a", "b", "c"]);
+  assert.equal(preferences.consentedAt, now);
 });

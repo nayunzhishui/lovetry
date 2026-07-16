@@ -1,6 +1,14 @@
 .error-banner { margin-top: 24rpx; padding: 22rpx; border-radius: var(--radius-sm); background: #f5e4e1; color: var(--danger); }
 .filter-row { display: flex; gap: 10rpx; margin: 18rpx 0; }
-.filter-chip { flex: 1; min-height: 58rpx; margin: 0; border: 1rpx solid var(--line); border-radius: 30rpx; background: transparent; color: var(--ink-soft); font-size: 22rpx; line-height: 58rpx; }
+.filter-chip { flex: 1; min-height: 76rpx; margin: 0; border: 1rpx solid var(--line); border-radius: 38rpx; background: transparent; color: var(--ink-soft); font-size: 24rpx; line-height: 76rpx; }
 .filter-chip--active { background: var(--ink-strong); color: #fff; }
+.type-picker { display: flex; align-items: center; justify-content: space-between; min-height: 84rpx; margin-top: 18rpx; padding: 0 22rpx; color: var(--ink-soft); font-size: 25rpx; }
+.type-picker text:last-child { color: var(--ink-strong); font-weight: 650; }
 .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14rpx; margin-top: 18rpx; }
-.date-row .input-like { min-height: 72rpx; line-height: 72rpx; text-align: center; }
+.date-row .input-like { min-height: 80rpx; line-height: 80rpx; text-align: center; }
+.search-actions { display: grid; grid-template-columns: .8fr 1.2fr; gap: 14rpx; margin-top: 24rpx; }
+.search-actions .button { width: 100%; }
+.result-card { display: block; width: 100%; margin-right: 0; margin-left: 0; text-align: left; line-height: 1.5; }
+.result-card__meta { display: flex; justify-content: space-between; gap: 18rpx; margin-bottom: 10rpx; color: var(--amber-deep); font-size: 22rpx; font-weight: 650; }
+.result-card__meta text:last-child { color: var(--ink-soft); font-weight: 400; }
+.result-card__arrow { margin-top: 18rpx; color: var(--cobalt); font-size: 23rpx; }

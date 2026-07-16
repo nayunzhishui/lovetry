@@ -108,13 +108,20 @@
 
 .tool-row {
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
+  margin: 0;
   padding: 24rpx 0;
   border-bottom: 1rpx solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  line-height: 1.5;
 }
 
 .tool-row:last-child { border-bottom: 0; }
 .tool-row > text { color: var(--ink-soft); font-size: 38rpx; }
+.privacy-panel { border-left-color: var(--moss); }
 .leave-button { margin-top: 34rpx; background: transparent; color: var(--danger); font-size: 24rpx; }
