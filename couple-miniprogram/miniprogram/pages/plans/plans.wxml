@@ -28,13 +28,18 @@
     </button>
   </view>
 
-  <view class="panel create-panel">
+  <button wx:if="{{!composerOpen}}" class="composer-launch" bindtap="openComposer">
+    <view><view class="composer-launch__eyebrow">ADD {{activeConfig.eyebrow}}</view><view class="composer-launch__title">新增{{activeConfig.label}}</view><view class="composer-launch__desc">{{draftStatusText || '清单优先展示，需要时再展开表单'}}</view></view>
+    <view class="composer-launch__mark" aria-hidden="true">＋</view>
+  </button>
+
+  <view wx:if="{{composerOpen}}" class="panel create-panel">
     <view class="panel-head">
       <view>
         <view class="panel-kicker">{{activeConfig.eyebrow}}</view>
         <view class="panel-title">{{editingId ? '编辑' : '新增'}}{{activeConfig.label}}</view>
       </view>
-      <view class="status status--warm">共同可见</view>
+      <view class="composer-head-actions"><view class="status status--warm">共同可见</view><button class="composer-close" disabled="{{isSubmitting}}" bindtap="closeComposer">{{editingId ? '取消编辑' : '收起'}}</button></view>
     </view>
 
     <view wx:if="{{draftStatusText && !editingId}}" class="draft-ribbon {{draftRestored ? 'draft-ribbon--restored' : ''}}">
@@ -170,7 +175,8 @@
 
   <view wx:elif="{{plans.length === 0}}" class="empty">
     <view class="empty-title">还没有{{activeConfig.label}}</view>
-    <view class="empty-desc">从上方写下第一项，两个人会看到同一份清单。</view>
+    <view class="empty-desc">添加第一项后，两个人会看到同一份清单。</view>
+    <button class="button compact state-action" bindtap="openComposer">添加第一项</button>
   </view>
 
   <view wx:else class="plan-list">

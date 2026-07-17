@@ -28,15 +28,20 @@
     </view>
 
     <view wx:if="{{summary}}" class="today-strip">
-      <view class="today-metric"><view class="today-metric__value">{{summary.pendingTasks.length}}</view><view class="today-metric__label">待完成任务</view></view>
-      <view class="today-metric"><view class="today-metric__value">{{summary.todayPlans.length}}</view><view class="today-metric__label">今日安排</view></view>
-      <view class="today-metric"><view class="today-metric__value">{{walletText || '0'}}</view><view class="today-metric__label">两人积分</view></view>
+      <button class="today-metric" bindtap="goPendingTasks"><view class="today-metric__value">{{summary.pendingTasks.length}}</view><view class="today-metric__label">待完成任务</view></button>
+      <button class="today-metric" bindtap="goTodayAgenda"><view class="today-metric__value">{{summary.todayPlans.length}}</view><view class="today-metric__label">今日安排</view></button>
+      <button class="today-metric" bindtap="goRewards"><view class="today-metric__value">{{walletText || '0'}}</view><view class="today-metric__label">两人积分</view></button>
     </view>
     <view wx:if="{{summary}}" class="relationship-note">
       <view><text>{{togetherDays || '—'}}</text><view>{{togetherDays ? '在一起的第几天' : '设置纪念日后显示天数'}}</view></view>
       <view><text>{{recentMoodText}}</text><view>最近的心情线索</view></view>
     </view>
     <view wx:if="{{summary.stats}}" class="week-summary">近 7 天：{{summary.stats.recordCount7d}} 条记录 · {{summary.stats.focusMinutes7d}} 分钟专注</view>
+    <view class="today-actions">
+      <button bindtap="goMood"><view class="today-actions__mark today-actions__mark--me"></view><view><text>记录心情</text><view>留下一条自己的感受</view></view></button>
+      <button bindtap="goTodayPlan"><view class="today-actions__mark today-actions__mark--us"></view><view><text>安排今天</text><view>给两个人留出时间</view></view></button>
+      <button bindtap="goConflict"><view class="today-actions__mark today-actions__mark--talk"></view><view><text>沟通复盘</text><view>把事实与需要分开写</view></view></button>
+    </view>
     <button wx:if="{{upcomingAnniversary}}" class="almanac-card anniversary-card" bindtap="goPlans">
       <view><view class="almanac-code">NEXT ANNIVERSARY</view><view class="record-title">{{upcomingAnniversary.title}}</view><view class="record-meta">{{upcomingAnniversary.next.date}}</view></view>
       <view class="anniversary-card__count"><text>{{upcomingAnniversary.next.daysRemaining}}</text><view>{{upcomingAnniversary.next.daysRemaining === 0 ? '今天' : '天后'}}</view></view>

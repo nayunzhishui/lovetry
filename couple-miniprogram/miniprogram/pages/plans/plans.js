@@ -98,7 +98,8 @@ Page({
     error: "",
     templates: templatesFor("plan", "task"),
     draftRestored: false,
-    draftStatusText: ""
+    draftStatusText: "",
+    composerOpen: false
   },
 
   onLoad(options = {}) {
@@ -114,7 +115,8 @@ Page({
       activeType,
       activeConfig: PLAN_TYPES.find((item) => item.value === activeType),
       templates: templatesFor("plan", activeType),
-      form
+      form,
+      composerOpen: Boolean(initialDate || options.compose === "1")
     });
   },
 
@@ -203,6 +205,22 @@ Page({
     this.schedulePlanDraft();
   },
 
+  openComposer() {
+    this.setData({ composerOpen: true }, () => {
+      wx.pageScrollTo({ selector: ".create-panel", duration: 250 });
+    });
+  },
+
+  closeComposer() {
+    if (this.data.isSubmitting) return;
+    if (this.data.editingId) {
+      this.cancelEdit();
+      return;
+    }
+    if (this.draftDirty) this.persistPlanDraft();
+    this.setData({ composerOpen: false });
+  },
+
   planDraftScope() {
     return `plan:new:${this.data.activeType}`;
   },
@@ -226,12 +244,14 @@ Page({
 
   restorePlanDraft() {
     const saved = formDraft.load(this.planDraftScope());
-    if (!saved) return;
+    if (!saved) return false;
     this.setData({
       form: { ...emptyForm(), ...saved.data },
       draftRestored: true,
-      draftStatusText: "已恢复上次未完成的计划"
+      draftStatusText: "已恢复上次未完成的计划",
+      composerOpen: true
     });
+    return true;
   },
 
   clearPlanDraftBackup() {
@@ -340,7 +360,17 @@ Page({
           : [decoratePlan(created), ...this.data.plans];
         if (!wasEditing) formDraft.clear(this.planDraftScope());
         this.draftDirty = false;
-        this.setData({ plans, form: emptyForm(), editingId: "", editingVersion: 0, draftRestored: false, draftStatusText: "" });
+        this.setData({
+          plans,
+          form: emptyForm(),
+          editingId: "",
+          editingVersion: 0,
+          draftRestored: false,
+          draftStatusText: "",
+          composerOpen: false
+        }, () => {
+          if (wasEditing) this.restorePlanDraft();
+        });
         wx.showToast({ title: wasEditing ? "修改已保存" : "已加入共同计划" });
       })
       .catch((error) => {
@@ -366,6 +396,7 @@ Page({
     this.setData({
       editingId: plan._id,
       editingVersion: Number(plan.version || 1),
+      composerOpen: true,
       form: {
         title: plan.title || "", detail: plan.detail || "",
         startDate: inputDate(plan.startAt), endDate: inputDate(plan.endAt),
@@ -380,13 +411,18 @@ Page({
         reminderDays: plan.payload && plan.payload.reminderDays !== undefined ? String(plan.payload.reminderDays) : "3",
         repeatYearly: !(plan.payload && plan.payload.repeatYearly === false)
       }
-    });
-    wx.pageScrollTo({ scrollTop: 180, duration: 250 });
+    }, () => wx.pageScrollTo({ selector: ".create-panel", duration: 250 }));
   },
 
   cancelEdit() {
-    this.setData({ editingId: "", editingVersion: 0, form: emptyForm(), draftRestored: false, draftStatusText: "" });
-    this.restorePlanDraft();
+    this.setData({
+      editingId: "",
+      editingVersion: 0,
+      form: emptyForm(),
+      draftRestored: false,
+      draftStatusText: "",
+      composerOpen: false
+    }, () => this.restorePlanDraft());
   },
 
   deletePlan(event) {

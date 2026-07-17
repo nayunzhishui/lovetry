@@ -23,14 +23,21 @@
     </button>
   </view>
 
-  <view wx:if="{{loading}}" class="empty"><view class="empty-desc">正在整理这个月的记录…</view></view>
-  <view wx:if="{{error}}" class="error-banner">{{error}}</view>
-  <view wx:elif="{{!loading && selectedEvents.length === 0}}" class="empty"><view class="empty-title">这一天还没有安排</view><view class="empty-desc">可以直接为 {{selectedKey}} 留下记录或安排。</view><view class="calendar-empty-actions"><button class="button secondary compact" bindtap="addRecordForSelectedDay">添加记录</button><button class="button secondary compact" bindtap="addPlanForSelectedDay">添加计划</button></view></view>
-  <view wx:else class="panel">
-    <view class="panel-kicker">{{selectedKey}}</view>
-    <button wx:for="{{selectedEvents}}" wx:key="id" class="event-row" data-id="{{item.id}}" bindtap="openEvent">
-      <view class="status">{{item.type}}</view>
-      <view class="event-title">{{item.title}}</view>
-    </button>
+  <view wx:if="{{loading}}" class="empty" aria-live="polite"><view class="empty-desc">正在整理这个月的记录…</view></view>
+  <view wx:elif="{{error}}" class="error-banner" aria-live="polite"><view>{{error}}</view><button class="button secondary compact" bindtap="retryMonth">重新加载</button></view>
+  <view wx:else class="panel calendar-agenda">
+    <view class="calendar-agenda__head">
+      <view><view class="panel-kicker">SELECTED DAY</view><view class="calendar-agenda__date">{{selectedKey}}</view></view>
+      <view class="calendar-agenda__count">{{selectedEvents.length}} 项</view>
+    </view>
+    <view class="calendar-quick-actions"><button class="button secondary compact" bindtap="addRecordForSelectedDay">记下这一天</button><button class="button secondary compact" bindtap="addPlanForSelectedDay">安排这一天</button></view>
+    <view wx:if="{{selectedEvents.length === 0}}" class="calendar-agenda__empty"><view class="empty-title">这一天还是空白</view><view class="empty-desc">从上面的入口留下回忆或安排。</view></view>
+    <block wx:else>
+      <button wx:for="{{selectedEvents}}" wx:key="id" class="event-row" data-id="{{item.id}}" bindtap="openEvent">
+        <view class="event-time">{{item.timeText || '全天'}}</view>
+        <view class="event-main"><view class="event-title">{{item.title}}</view><view class="event-meta">{{item.typeLabel}} · {{item.sourceLabel}}<text wx:if="{{item.statusLabel}}"> · {{item.statusLabel}}</text></view></view>
+        <view class="event-arrow" aria-hidden="true">›</view>
+      </button>
+    </block>
   </view>
 </view>

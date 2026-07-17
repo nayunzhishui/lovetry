@@ -7,6 +7,7 @@ module.exports = {
   ...require("./constants"),
   ...require("./duration"),
   ...require("./form-assist"),
+  ...require("./calendar-view"),
   ...require("./errors"),
   ...require("./permissions"),
   ...require("./result"),

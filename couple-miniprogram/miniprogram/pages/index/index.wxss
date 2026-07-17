@@ -87,11 +87,15 @@
 }
 
 .today-metric {
+  width: 100%;
+  min-height: 116rpx;
+  margin: 0;
   padding: 24rpx 12rpx;
   border: 1rpx solid rgba(133, 80, 31, 0.09);
   border-radius: var(--radius-sm);
   background: var(--surface);
   text-align: center;
+  line-height: 1.35;
 }
 
 .today-metric__value {
@@ -134,7 +138,20 @@
 .relationship-note text { display: block; color: var(--ink-strong); font-family: "Songti SC", "STSong", serif; font-size: 28rpx; font-weight: 700; }
 .relationship-note view view { margin-top: 6rpx; color: var(--ink-soft); font-size: 19rpx; }
 .week-summary { margin-top: 10rpx; color: var(--ink-soft); font-size: 20rpx; text-align: right; }
+.today-actions { display: grid; gap: 8rpx; margin-top: 20rpx; padding: 8rpx; border: 1rpx solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+.today-actions button { display: flex; align-items: center; gap: 16rpx; min-height: 88rpx; margin: 0; padding: 12rpx 14rpx; border-radius: var(--radius-sm); background: transparent; color: var(--ink-strong); line-height: 1.35; text-align: left; }
+.today-actions__mark { flex: 0 0 8rpx; width: 8rpx; height: 48rpx; border-radius: 4rpx; background: var(--cobalt); }
+.today-actions__mark--us { background: linear-gradient(to bottom, var(--cobalt) 0 45%, var(--coral) 45% 55%, var(--sage) 55%); }
+.today-actions__mark--talk { background: var(--coral); }
+.today-actions text { display: block; font-size: 23rpx; font-weight: 700; }
+.today-actions button view view { margin-top: 3rpx; color: var(--ink-soft); font-size: 19rpx; }
 .anniversary-card { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 24rpx; margin-right: 0; margin-left: 0; text-align: left; line-height: 1.5; }
 .anniversary-card__count { min-width: 120rpx; color: var(--coral); text-align: right; }
 .anniversary-card__count text { font-family: "Songti SC", STSong, serif; font-size: 58rpx; line-height: 1; }
 .anniversary-card__count view { margin-top: 6rpx; color: var(--ink-soft); font-size: 21rpx; }
+
+@media (max-width: 340px) {
+  .today-strip { grid-template-columns: 1fr; }
+  .today-metric { display: flex; min-height: 80rpx; align-items: center; justify-content: space-between; padding: 16rpx 20rpx; text-align: left; }
+  .today-metric__label { margin-top: 0; }
+}

@@ -1,4 +1,5 @@
 const api = require("../../services/cloudApi");
+const { presentCalendarEvents } = require("../../../shared/calendar-view");
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -13,6 +14,18 @@ function monthRange(date) {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
   const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   return { start, end };
+}
+
+function changeMonth(page, offset) {
+  const month = new Date(page.data.month);
+  month.setDate(1);
+  month.setMonth(month.getMonth() + offset);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(page.data.selectedKey || ""));
+  const preferredDay = match ? Number(match[3]) : 1;
+  const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const selectedKey = dateKey(new Date(month.getFullYear(), month.getMonth(), Math.min(preferredDay, lastDay)));
+  page.setData({ selectedKey });
+  page.loadMonth(month);
 }
 
 function buildDays(month, events, today = new Date()) {
@@ -57,7 +70,7 @@ Page({
     this.setData({ loading: true, error: "" });
     try {
       const { start, end } = monthRange(month);
-      const events = await api.getCalendarEvents(start.toISOString(), end.toISOString());
+      const events = presentCalendarEvents(await api.getCalendarEvents(start.toISOString(), end.toISOString()));
       const visibleEvents = this.filterEvents(events, this.data.activeFilter);
       const days = buildDays(month, visibleEvents);
       const selected = days.find((day) => day.key === this.data.selectedKey);
@@ -89,15 +102,11 @@ Page({
   },
 
   previousMonth() {
-    const month = new Date(this.data.month);
-    month.setMonth(month.getMonth() - 1, 1);
-    this.loadMonth(month);
+    changeMonth(this, -1);
   },
 
   nextMonth() {
-    const month = new Date(this.data.month);
-    month.setMonth(month.getMonth() + 1, 1);
-    this.loadMonth(month);
+    changeMonth(this, 1);
   },
 
   goToday() {
@@ -105,6 +114,10 @@ Page({
     const key = dateKey(now);
     this.setData({ selectedKey: key, todayKey: key });
     this.loadMonth(now);
+  },
+
+  retryMonth() {
+    this.loadMonth(new Date(this.data.month));
   },
 
   addRecordForSelectedDay() {

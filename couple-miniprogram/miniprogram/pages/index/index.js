@@ -3,6 +3,11 @@ const cloudApi = require("../../services/cloudApi");
 const formDraft = require("../../services/formDraft");
 const { nextAnniversary } = require("../../../shared/anniversary");
 
+function todayText() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 Page({
   data: {
     couple: null,
@@ -177,6 +182,22 @@ Page({
 
   goConflict() {
     wx.navigateTo({ url: "/pages/record-form/record-form?type=conflict" });
+  },
+
+  goMood() {
+    wx.navigateTo({ url: "/pages/record-form/record-form?type=mood" });
+  },
+
+  goTodayPlan() {
+    wx.navigateTo({ url: `/pages/plans/plans?type=event&date=${todayText()}` });
+  },
+
+  goPendingTasks() {
+    wx.navigateTo({ url: "/pages/plans/plans?type=task" });
+  },
+
+  goTodayAgenda() {
+    wx.switchTab({ url: "/pages/calendar/calendar" });
   },
 
   goTimeline() {
