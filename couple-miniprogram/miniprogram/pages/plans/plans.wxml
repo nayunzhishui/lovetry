@@ -37,6 +37,20 @@
       <view class="status status--warm">共同可见</view>
     </view>
 
+    <view wx:if="{{draftStatusText && !editingId}}" class="draft-ribbon {{draftRestored ? 'draft-ribbon--restored' : ''}}">
+      <view><view class="draft-ribbon__title">{{draftStatusText}}</view><view class="draft-ribbon__desc">按计划类型分别保留，正式保存后自动清除。</view></view>
+      <button wx:if="{{draftRestored}}" bindtap="clearPlanDraftBackup">移除备份</button>
+    </view>
+
+    <view wx:if="{{templates.length && !editingId}}" class="template-section">
+      <view class="label">从模板开始</view>
+      <view class="template-list">
+        <button wx:for="{{templates}}" wx:key="id" class="template-card" data-id="{{item.id}}" bindtap="applyPlanTemplate">
+          <view>{{item.label}}</view><text>{{item.description}}</text>
+        </button>
+      </view>
+    </view>
+
     <view class="field">
       <view class="label">名称</view>
       <input
@@ -132,6 +146,7 @@
       {{isSubmitting ? '正在保存…' : editingId ? '保存修改' : '加入共同计划'}}
     </button>
     <button wx:if="{{editingId}}" class="button secondary" disabled="{{isSubmitting}}" bindtap="cancelEdit">取消编辑</button>
+    <view wx:if="{{!editingId}}" class="submit-hint">{{draftStatusText || '输入后会自动保留本机草稿'}}</view>
   </view>
 
   <view class="list-head">

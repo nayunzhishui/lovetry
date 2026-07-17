@@ -72,6 +72,7 @@
         <view class="field">
           <view class="label">积分</view>
           <input type="number" value="{{grantForm.amount}}" placeholder="填写正整数" data-form="grantForm" data-field="amount" bindinput="onFormInput" />
+          <view class="quick-amounts"><button wx:for="{{quickAmounts}}" wx:key="*this" class="quick-amount {{grantForm.amount == item ? 'quick-amount--active' : ''}}" data-amount="{{item}}" bindtap="selectQuickAmount">{{item}}</button></view>
         </view>
         <button class="button" disabled="{{isSubmitting || !partnerOpenid}}" bindtap="submitGrant">
           {{isSubmitting ? '正在记录…' : partnerOpenid ? '送给伴侣' : '等待伴侣加入'}}
@@ -86,6 +87,7 @@
         <view class="field">
           <view class="label">使用积分</view>
           <input type="number" value="{{spendForm.amount}}" placeholder="不能超过当前余额" data-form="spendForm" data-field="amount" bindinput="onFormInput" />
+          <view class="quick-amounts"><button wx:for="{{quickAmounts}}" wx:key="*this" class="quick-amount {{spendForm.amount == item ? 'quick-amount--active' : ''}}" data-amount="{{item}}" bindtap="selectQuickAmount">{{item}}</button></view>
         </view>
         <button class="button" disabled="{{isSubmitting}}" bindtap="submitSpend">
           {{isSubmitting ? '正在记录…' : '确认使用积分'}}

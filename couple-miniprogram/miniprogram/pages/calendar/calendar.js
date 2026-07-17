@@ -15,7 +15,7 @@ function monthRange(date) {
   return { start, end };
 }
 
-function buildDays(month, events) {
+function buildDays(month, events, today = new Date()) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const total = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const cells = [];
@@ -24,7 +24,7 @@ function buildDays(month, events) {
     const date = new Date(month.getFullYear(), month.getMonth(), day);
     const key = dateKey(date);
     const dayEvents = events.filter((event) => dateKey(event.startAt) === key);
-    cells.push({ key, day, eventCount: dayEvents.length, events: dayEvents });
+    cells.push({ key, day, eventCount: dayEvents.length, events: dayEvents, isToday: key === dateKey(today) });
   }
   return cells;
 }
@@ -42,13 +42,14 @@ Page({
     activeFilter: "",
     selectedKey: "",
     selectedEvents: [],
+    todayKey: "",
     loading: false,
     error: ""
   },
 
   onLoad() {
     const now = new Date();
-    this.setData({ selectedKey: dateKey(now) });
+    this.setData({ selectedKey: dateKey(now), todayKey: dateKey(now) });
     this.loadMonth(now);
   },
 
@@ -99,6 +100,21 @@ Page({
     this.loadMonth(month);
   },
 
+  goToday() {
+    const now = new Date();
+    const key = dateKey(now);
+    this.setData({ selectedKey: key, todayKey: key });
+    this.loadMonth(now);
+  },
+
+  addRecordForSelectedDay() {
+    wx.navigateTo({ url: `/pages/record-form/record-form?type=moment&date=${this.data.selectedKey}` });
+  },
+
+  addPlanForSelectedDay() {
+    wx.navigateTo({ url: `/pages/plans/plans?type=event&date=${this.data.selectedKey}` });
+  },
+
   selectDay(event) {
     const key = event.currentTarget.dataset.key;
     const day = this.data.days.find((item) => item.key === key);
@@ -111,6 +127,6 @@ Page({
     if (!item) return;
     wx.navigateTo({ url: item.source === "record"
       ? `/pages/record-detail/record-detail?id=${encodeURIComponent(item.id)}`
-      : "/pages/plans/plans" });
+      : `/pages/plans/plans?type=${encodeURIComponent(item.type || "task")}&date=${this.data.selectedKey}` });
   }
 });

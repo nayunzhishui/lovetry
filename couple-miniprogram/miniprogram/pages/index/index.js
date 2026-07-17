@@ -1,5 +1,6 @@
 const app = getApp();
 const cloudApi = require("../../services/cloudApi");
+const formDraft = require("../../services/formDraft");
 const { nextAnniversary } = require("../../../shared/anniversary");
 
 Page({
@@ -15,10 +16,16 @@ Page({
     content: "",
     isLoading: false,
     isSaving: false,
-    error: ""
+    error: "",
+    momentDraftStatus: "",
+    momentDraftRestored: false
   },
 
   onShow() {
+    if (!this.momentDraftInitialized) {
+      this.momentDraftInitialized = true;
+      this.restoreMomentDraft();
+    }
     this.stopSyncTimer();
     this.loadCouple();
     this.syncTimer = setInterval(() => this.runSync(), 30000);
@@ -26,10 +33,13 @@ Page({
 
   onHide() {
     this.stopSyncTimer();
+    if (this.momentDraftDirty) this.persistMomentDraft();
   },
 
   onUnload() {
     this.stopSyncTimer();
+    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
+    if (this.momentDraftDirty) this.persistMomentDraft();
   },
 
   stopSyncTimer() {
@@ -115,10 +125,46 @@ Page({
 
   onTitleInput(event) {
     this.setData({ title: event.detail.value });
+    this.scheduleMomentDraft();
   },
 
   onContentInput(event) {
     this.setData({ content: event.detail.value });
+    this.scheduleMomentDraft();
+  },
+
+  scheduleMomentDraft() {
+    this.momentDraftDirty = true;
+    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
+    this.setData({ momentDraftStatus: "正在保留草稿…" });
+    this.momentDraftTimer = setTimeout(() => this.persistMomentDraft(), 450);
+  },
+
+  persistMomentDraft() {
+    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
+    this.momentDraftTimer = null;
+    const saved = formDraft.save("home:moment", { title: this.data.title, content: this.data.content });
+    this.momentDraftDirty = false;
+    this.setData({ momentDraftStatus: saved ? "草稿已保存在本机" : "本机草稿暂未保存" });
+  },
+
+  restoreMomentDraft() {
+    const saved = formDraft.load("home:moment");
+    if (!saved) return;
+    this.setData({
+      title: saved.data.title || "",
+      content: saved.data.content || "",
+      momentDraftStatus: "已恢复上次未完成内容",
+      momentDraftRestored: true
+    });
+  },
+
+  clearMomentDraft() {
+    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
+    this.momentDraftTimer = null;
+    formDraft.clear("home:moment");
+    this.momentDraftDirty = false;
+    this.setData({ momentDraftStatus: "已移除本机草稿备份", momentDraftRestored: false });
   },
 
   goSettings() {
@@ -183,8 +229,11 @@ Page({
         payload: {}
       })
       .then(() => {
+        if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
+        formDraft.clear("home:moment");
+        this.momentDraftDirty = false;
         wx.showToast({ title: "已保存" });
-        this.setData({ title: "", content: "" });
+        this.setData({ title: "", content: "", momentDraftStatus: "", momentDraftRestored: false });
       })
       .catch((error) => {
         const message = cloudApi.getErrorMessage(error, "记录保存失败，请稍后重试");

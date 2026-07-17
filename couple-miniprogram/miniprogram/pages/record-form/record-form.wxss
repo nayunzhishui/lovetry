@@ -1,5 +1,16 @@
 .form-hero { padding-bottom: 18rpx; }
 .form-panel { margin-top: 4rpx; }
+.draft-ribbon { display: flex; align-items: center; justify-content: space-between; gap: 18rpx; margin-bottom: 26rpx; padding: 18rpx 20rpx; border-left: 5rpx solid var(--sage); background: var(--surface-muted); }
+.draft-ribbon--restored { border-left-color: var(--cobalt); }
+.draft-ribbon__title { color: var(--ink-strong); font-size: 23rpx; font-weight: 700; }
+.draft-ribbon__desc { margin-top: 4rpx; color: var(--ink-soft); font-size: 19rpx; line-height: 1.45; }
+.draft-ribbon button { flex: 0 0 auto; min-height: 58rpx; margin: 0; padding: 0 14rpx; background: transparent; color: var(--cobalt); font-size: 20rpx; line-height: 58rpx; }
+.template-section { margin: 4rpx 0 26rpx; }
+.template-list { display: grid; gap: 10rpx; margin-top: 12rpx; }
+.template-card { min-height: 84rpx; margin: 0; padding: 14rpx 18rpx; border: 1rpx dashed var(--line); background: var(--surface-muted); color: var(--ink-strong); line-height: 1.35; text-align: left; }
+.template-card view { font-size: 23rpx; font-weight: 700; }
+.template-card text { display: block; margin-top: 4rpx; color: var(--ink-soft); font-size: 19rpx; }
+.submit-hint { margin-top: 12rpx; color: var(--ink-soft); font-size: 19rpx; text-align: center; }
 .picker-value {
   display: flex;
   align-items: center;

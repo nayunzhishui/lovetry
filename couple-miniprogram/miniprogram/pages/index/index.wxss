@@ -75,6 +75,9 @@
 .moment-panel {
   margin-top: 46rpx;
 }
+.moment-draft { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-top: 18rpx; padding: 14rpx 18rpx; border-left: 4rpx solid var(--cobalt); background: var(--surface-muted); color: var(--ink-soft); font-size: 21rpx; }
+.moment-draft button { min-height: 56rpx; margin: 0; padding: 0 12rpx; background: transparent; color: var(--cobalt); font-size: 20rpx; line-height: 56rpx; }
+.moment-draft-hint { margin-top: 12rpx; color: var(--ink-soft); font-size: 19rpx; line-height: 1.5; text-align: center; }
 
 .today-strip {
   display: grid;

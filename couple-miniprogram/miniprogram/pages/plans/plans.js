@@ -1,4 +1,6 @@
 const cloudApi = require("../../services/cloudApi");
+const formDraft = require("../../services/formDraft");
+const { applyFormTemplate, templatesFor } = require("../../../shared/form-assist");
 
 const PLAN_TYPES = [
   { value: "task", label: "任务", eyebrow: "TO DO", titlePlaceholder: "例如：周六一起整理房间" },
@@ -93,12 +95,42 @@ Page({
     isSubmitting: false,
     changingPlanId: "",
     isPicking: false,
-    error: ""
+    error: "",
+    templates: templatesFor("plan", "task"),
+    draftRestored: false,
+    draftStatusText: ""
+  },
+
+  onLoad(options = {}) {
+    const activeType = PLAN_TYPES.some((item) => item.value === options.type) ? options.type : "task";
+    const initialDate = /^\d{4}-\d{2}-\d{2}$/.test(String(options.date || "")) ? options.date : "";
+    const form = emptyForm();
+    if (initialDate) {
+      form.startDate = initialDate;
+      form.endDate = initialDate;
+    }
+    this.initialDate = initialDate;
+    this.setData({
+      activeType,
+      activeConfig: PLAN_TYPES.find((item) => item.value === activeType),
+      templates: templatesFor("plan", activeType),
+      form
+    });
   },
 
   onShow() {
+    if (!this.draftInitialized) {
+      this.draftInitialized = true;
+      this.restorePlanDraft();
+      if (this.initialDate) this.setData({ "form.startDate": this.initialDate, "form.endDate": this.initialDate });
+    }
     this.loadContext();
     this.loadPlans();
+  },
+
+  onUnload() {
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    if (this.draftDirty && !this.data.editingId) this.persistPlanDraft();
   },
 
   loadContext() {
@@ -115,7 +147,20 @@ Page({
     const activeType = event.currentTarget.dataset.type;
     if (!activeType || activeType === this.data.activeType || this.data.isLoading) return;
     const activeConfig = PLAN_TYPES.find((item) => item.value === activeType);
-    this.setData({ activeType, activeConfig, form: emptyForm(), pickedMenu: null, editingId: "", editingVersion: 0, error: "" });
+    if (this.draftDirty && !this.data.editingId) this.persistPlanDraft();
+    this.setData({
+      activeType,
+      activeConfig,
+      form: emptyForm(),
+      pickedMenu: null,
+      editingId: "",
+      editingVersion: 0,
+      error: "",
+      templates: templatesFor("plan", activeType),
+      draftRestored: false,
+      draftStatusText: ""
+    });
+    this.restorePlanDraft();
     this.loadPlans();
   },
 
@@ -144,15 +189,64 @@ Page({
   onFieldInput(event) {
     const field = event.currentTarget.dataset.field;
     this.setData({ [`form.${field}`]: event.detail.value });
+    this.schedulePlanDraft();
   },
 
   onDateChange(event) {
     const field = event.currentTarget.dataset.field;
     this.setData({ [`form.${field}`]: event.detail.value });
+    this.schedulePlanDraft();
   },
 
   onAssigneeChange(event) {
     this.setData({ "form.assigneeIndex": Number(event.detail.value) });
+    this.schedulePlanDraft();
+  },
+
+  planDraftScope() {
+    return `plan:new:${this.data.activeType}`;
+  },
+
+  schedulePlanDraft() {
+    if (this.data.editingId) return;
+    this.draftDirty = true;
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.setData({ draftStatusText: "正在保留草稿…" });
+    this.draftTimer = setTimeout(() => this.persistPlanDraft(), 450);
+  },
+
+  persistPlanDraft() {
+    if (this.data.editingId) return;
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.draftTimer = null;
+    const saved = formDraft.save(this.planDraftScope(), this.data.form);
+    this.draftDirty = false;
+    this.setData({ draftStatusText: saved ? "计划草稿已保存在本机" : "本机草稿暂未保存" });
+  },
+
+  restorePlanDraft() {
+    const saved = formDraft.load(this.planDraftScope());
+    if (!saved) return;
+    this.setData({
+      form: { ...emptyForm(), ...saved.data },
+      draftRestored: true,
+      draftStatusText: "已恢复上次未完成的计划"
+    });
+  },
+
+  clearPlanDraftBackup() {
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.draftTimer = null;
+    formDraft.clear(this.planDraftScope());
+    this.draftDirty = false;
+    this.setData({ draftRestored: false, draftStatusText: "已移除本机草稿备份" });
+  },
+
+  applyPlanTemplate(event) {
+    const form = applyFormTemplate(this.data.form, this.data.templates, event.currentTarget.dataset.id);
+    this.setData({ form });
+    this.schedulePlanDraft();
+    wx.showToast({ title: "模板已填入，可继续修改", icon: "none" });
   },
 
   buildPlan() {
@@ -239,10 +333,14 @@ Page({
       : cloudApi.createPlan(plan);
     request
       .then((created) => {
+        if (this.draftTimer) clearTimeout(this.draftTimer);
+        this.draftTimer = null;
         const plans = wasEditing
           ? this.data.plans.map((item) => item._id === created._id ? decoratePlan(created) : item)
           : [decoratePlan(created), ...this.data.plans];
-        this.setData({ plans, form: emptyForm(), editingId: "", editingVersion: 0 });
+        if (!wasEditing) formDraft.clear(this.planDraftScope());
+        this.draftDirty = false;
+        this.setData({ plans, form: emptyForm(), editingId: "", editingVersion: 0, draftRestored: false, draftStatusText: "" });
         wx.showToast({ title: wasEditing ? "修改已保存" : "已加入共同计划" });
       })
       .catch((error) => {
@@ -258,6 +356,7 @@ Page({
   startEdit(event) {
     const plan = this.data.plans.find((item) => item._id === event.currentTarget.dataset.id);
     if (!plan || this.data.isSubmitting) return;
+    if (this.draftDirty) this.persistPlanDraft();
     const members = (this.data.couple && this.data.couple.members) || [];
     const partner = members.find((member) => member !== this.data.openid);
     let assigneeIndex = 2;
@@ -286,7 +385,8 @@ Page({
   },
 
   cancelEdit() {
-    this.setData({ editingId: "", editingVersion: 0, form: emptyForm() });
+    this.setData({ editingId: "", editingVersion: 0, form: emptyForm(), draftRestored: false, draftStatusText: "" });
+    this.restorePlanDraft();
   },
 
   deletePlan(event) {

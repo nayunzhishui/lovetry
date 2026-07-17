@@ -98,6 +98,9 @@
     <view class="panel-kicker">NEW MOMENT</view>
     <view class="panel-title">留下一段共同经历</view>
     <view class="subtitle">不必写得完整，先记下你最想保留的细节。</view>
+    <view wx:if="{{momentDraftStatus}}" class="moment-draft">
+      <text>{{momentDraftStatus}}</text><button wx:if="{{momentDraftRestored}}" bindtap="clearMomentDraft">移除备份</button>
+    </view>
     <view class="field">
       <view class="label">标题</view>
       <input value="{{title}}" maxlength="40" placeholder="例如：第一次一起做饭" bindinput="onTitleInput" />
@@ -107,5 +110,6 @@
       <textarea value="{{content}}" maxlength="1000" auto-height placeholder="发生了什么？当时有什么感受？" bindinput="onContentInput" />
     </view>
     <button class="button" bindtap="submitMoment">保存这段经历</button>
+    <view class="moment-draft-hint">输入后自动保留本机草稿，云端保存成功后清除。</view>
   </view>
 </view>

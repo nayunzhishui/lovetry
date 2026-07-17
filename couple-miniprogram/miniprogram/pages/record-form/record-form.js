@@ -1,4 +1,6 @@
 const cloudApi = require("../../services/cloudApi");
+const formDraft = require("../../services/formDraft");
+const { applyFormTemplate, templatesFor } = require("../../../shared/form-assist");
 
 const TYPES = [
   { value: "moment", label: "生活日记" },
@@ -29,6 +31,13 @@ const DEFAULT_TITLES = {
   period: "生理期记录",
   game: "游戏记录"
 };
+
+const DRAFT_FIELDS = [
+  "title", "content", "visibility", "startDate", "startTime", "endDate", "endTime",
+  "moodLevel", "tagsText", "feelings", "needs", "communication", "agreement",
+  "satisfaction", "outingCategoryIndex", "location", "amount", "outingRating",
+  "sleepQuality", "periodFlowIndex", "participants"
+];
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -74,6 +83,15 @@ function splitTags(value) {
     .slice(0, 8);
 }
 
+function emptyRecordFields() {
+  return {
+    title: "", content: "", moodLevel: 3, tagsText: "", feelings: "", needs: "",
+    communication: "", agreement: "", satisfaction: 5, outingCategoryIndex: 0,
+    location: "", amount: "", outingRating: 3, sleepQuality: 3, periodFlowIndex: 1,
+    participants: "", originalPayload: {}
+  };
+}
+
 Page({
   data: {
     typeOptions: TYPES,
@@ -111,7 +129,10 @@ Page({
     isLoading: false,
     isSubmitting: false,
     error: "",
-    originalPayload: {}
+    originalPayload: {},
+    templates: templatesFor("record", "mood"),
+    draftRestored: false,
+    draftStatusText: ""
   },
 
   onLoad(options) {
@@ -120,6 +141,7 @@ Page({
     const start = toParts(null, now);
     const end = toParts(null, later);
     const requestedType = TYPES.some((item) => item.value === options.type) ? options.type : "mood";
+    const requestedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(options.date || "")) ? options.date : "";
     this.setData({
       startDate: start.date,
       startTime: start.time,
@@ -130,7 +152,15 @@ Page({
     if (options.id) {
       this.setData({ recordId: options.id });
       this.loadRecord(options.id);
+    } else {
+      this.restoreDraft();
+      if (requestedDate) this.setData({ startDate: requestedDate, endDate: requestedDate });
     }
+  },
+
+  onUnload() {
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    if (this.draftDirty && !this.draftCommitted) this.persistDraft();
   },
 
   applyType(type, resetVisibility) {
@@ -141,7 +171,10 @@ Page({
       typeIndex: index,
       typeLabel: TYPES[index].label,
       contentLabel: meta.contentLabel,
-      contentPlaceholder: meta.placeholder
+      contentPlaceholder: meta.placeholder,
+      templates: templatesFor("record", type),
+      draftRestored: false,
+      draftStatusText: ""
     };
     if (resetVisibility) next.visibility = meta.visibility;
     this.setData(next);
@@ -151,28 +184,84 @@ Page({
   onTypeChange(event) {
     if (this.data.recordId) return;
     const item = TYPES[Number(event.detail.value)] || TYPES[0];
+    if (this.draftDirty) this.persistDraft();
+    this.setData(emptyRecordFields());
     this.applyType(item.value, true);
+    this.restoreDraft();
   },
 
   onInput(event) {
     this.setData({ [event.currentTarget.dataset.key]: event.detail.value });
+    this.scheduleDraftSave();
   },
 
   onNumberInput(event) {
     this.setData({ [event.currentTarget.dataset.key]: Number(event.detail.value) || 0 });
+    this.scheduleDraftSave();
   },
 
   onPickerChange(event) {
     this.setData({ [event.currentTarget.dataset.key]: Number(event.detail.value) });
+    this.scheduleDraftSave();
   },
 
   onDateTimeChange(event) {
     this.setData({ [event.currentTarget.dataset.key]: event.detail.value });
     this.updateDuration();
+    this.scheduleDraftSave();
   },
 
   selectVisibility(event) {
     this.setData({ visibility: event.currentTarget.dataset.value });
+    this.scheduleDraftSave();
+  },
+
+  draftScope() {
+    return `record:${this.data.recordId || "new"}:${this.data.type}`;
+  },
+
+  scheduleDraftSave() {
+    this.draftDirty = true;
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.setData({ draftStatusText: "正在保留草稿…" });
+    this.draftTimer = setTimeout(() => this.persistDraft(), 450);
+  },
+
+  persistDraft() {
+    if (this.draftCommitted) return;
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.draftTimer = null;
+    const data = DRAFT_FIELDS.reduce((result, field) => ({ ...result, [field]: this.data[field] }), {});
+    const saved = formDraft.save(this.draftScope(), data);
+    this.draftDirty = false;
+    this.setData({ draftStatusText: saved ? "草稿已保存在本机" : "本机草稿暂未保存" });
+  },
+
+  restoreDraft() {
+    const saved = formDraft.load(this.draftScope());
+    if (!saved) return;
+    const data = DRAFT_FIELDS.reduce((result, field) => {
+      if (Object.prototype.hasOwnProperty.call(saved.data, field)) result[field] = saved.data[field];
+      return result;
+    }, {});
+    this.setData({ ...data, draftRestored: true, draftStatusText: "已恢复上次未完成内容" });
+    this.updateDuration();
+  },
+
+  clearDraftBackup() {
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.draftTimer = null;
+    formDraft.clear(this.draftScope());
+    this.draftDirty = false;
+    this.setData({ draftRestored: false, draftStatusText: "已移除本机草稿备份" });
+  },
+
+  applyTemplate(event) {
+    const next = applyFormTemplate({}, this.data.templates, event.currentTarget.dataset.id);
+    if (!Object.keys(next).length) return;
+    this.setData(next);
+    this.scheduleDraftSave();
+    wx.showToast({ title: "模板已填入，可继续修改", icon: "none" });
   },
 
   updateDuration() {
@@ -225,6 +314,7 @@ Page({
           originalPayload: payload
         });
         this.applyType(record.type, false);
+        this.restoreDraft();
       })
       .catch((error) => {
         this.setData({ error: cloudApi.getErrorMessage(error, "记录加载失败，请返回后重试") });
@@ -310,6 +400,9 @@ Page({
       : cloudApi.createRecord(record);
     request
       .then(() => {
+        this.draftCommitted = true;
+        if (this.draftTimer) clearTimeout(this.draftTimer);
+        formDraft.clear(this.draftScope());
         wx.showToast({ title: this.data.recordId ? "修改已保存" : "记录已保存" });
         setTimeout(() => wx.navigateBack(), 450);
       })

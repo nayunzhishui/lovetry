@@ -57,6 +57,7 @@ Page({
     actionMode: "grant",
     grantForm: { title: "", amount: "" },
     spendForm: { title: "", amount: "" },
+    quickAmounts: [5, 10, 20, 50],
     isLoading: false,
     isLoadingTransactions: false,
     isSubmitting: false,
@@ -144,6 +145,13 @@ Page({
     const form = event.currentTarget.dataset.form;
     const field = event.currentTarget.dataset.field;
     this.setData({ [`${form}.${field}`]: event.detail.value });
+  },
+
+  selectQuickAmount(event) {
+    if (this.data.isSubmitting) return;
+    const amount = String(Number(event.currentTarget.dataset.amount) || "");
+    const form = this.data.actionMode === "grant" ? "grantForm" : "spendForm";
+    this.setData({ [`${form}.amount`]: amount });
   },
 
   validateForm(form) {

@@ -65,3 +65,27 @@
 - 通过冷静的年鉴排版承载长期记录，避免一次性模板感；
 - 工程层保留事务、权限、幂等、备份和自动测试优势。
 
+## P8 高频录入体验复查（2026-07-18）
+
+### 新证据
+
+- Rainbow Cats 把任务/商品“预设”作为快速新增能力，同时保留搜索、明确时间记录和状态动作；适合借鉴其减少重复输入的方式，不复制硬编码身份与旧式滑动操作：<https://github.com/UxxHans/Rainbow-Cats-Personal-WeChat-MiniProgram>；
+- Love Diary 用 `wx.setStorageSync` / `wx.getStorageSync` 保存日记、心情等本地数据，证明原生小程序本机恢复路径足够轻量；但其全部数据只在本机、需要手动同步，本项目只将它用于未提交草稿，正式数据仍以 CloudBase 为准：<https://github.com/xuewen-1/love-diary>；
+- Our Nest 将动态、相册和纪念日集中在情侣空间，并采用 WeUI 保持原生反馈一致；本项目继续保留自有视觉，仅吸收清晰状态与创建入口：<https://github.com/rick-ben/our-nest>；
+- TDesign MiniProgram 提供成体系的表单、日历、上传和状态组件，说明高频表单需要一致的加载、空、失败和触控规范：<https://github.com/Tencent/tdesign-miniprogram>；
+- Super Productivity 把任务、时间盒和专注记录串成连续工作流；本项目对应地保留任务—日历—番茄钟关联：<https://github.com/super-productivity/super-productivity>。
+
+### 本轮采用
+
+- 所有记录类型和计划类型按类型隔离本机草稿，7 天后自动失效；
+- 页面明确显示“正在保留/已保存/已恢复”，不让本地持久化成为隐藏行为；
+- 提供克制的结构化模板，填入后可自由修改，不替用户制造真实内容；
+- 日历空日期直接创建当天记录或事件，减少返回首页再选择日期的路径；
+- 奖励金额提供常用档位，同时保留自由输入。
+
+### 明确不采用
+
+- 不把正式业务数据降级为仅本地存储；
+- 不复制 GPL 项目代码；
+- 不引入整套 TDesign/WeUI，避免包体和视觉冲突；
+- 不使用粉色爱心、表情堆叠或隐藏手势作为主要交互。

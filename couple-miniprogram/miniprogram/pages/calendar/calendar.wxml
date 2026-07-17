@@ -8,7 +8,7 @@
 
   <view class="calendar-head">
     <button class="month-button" bindtap="previousMonth">‹</button>
-    <view class="panel-title">{{monthLabel}}</view>
+    <view class="calendar-head__center"><view class="panel-title">{{monthLabel}}</view><button class="today-button" bindtap="goToday">回到今天</button></view>
     <button class="month-button" bindtap="nextMonth">›</button>
   </view>
   <scroll-view scroll-x class="calendar-filters" show-scrollbar="{{false}}"><view class="calendar-filters__inner">
@@ -17,7 +17,7 @@
 
   <view class="week-row"><view wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this" class="week-cell">{{item}}</view></view>
   <view class="calendar-grid">
-    <button wx:for="{{days}}" wx:key="key" class="day {{item.blank ? 'day--blank' : ''}} {{selectedKey === item.key ? 'day--selected' : ''}}" disabled="{{item.blank}}" data-key="{{item.key}}" bindtap="selectDay">
+    <button wx:for="{{days}}" wx:key="key" class="day {{item.blank ? 'day--blank' : ''}} {{item.isToday ? 'day--today' : ''}} {{selectedKey === item.key ? 'day--selected' : ''}}" disabled="{{item.blank}}" data-key="{{item.key}}" bindtap="selectDay">
       <text wx:if="{{!item.blank}}">{{item.day}}</text>
       <view wx:if="{{item.eventCount}}" class="event-dot"></view>
     </button>
@@ -25,7 +25,7 @@
 
   <view wx:if="{{loading}}" class="empty"><view class="empty-desc">正在整理这个月的记录…</view></view>
   <view wx:if="{{error}}" class="error-banner">{{error}}</view>
-  <view wx:elif="{{!loading && selectedEvents.length === 0}}" class="empty"><view class="empty-title">这一天还没有安排</view><view class="empty-desc">可以从计划或记录页面添加。</view></view>
+  <view wx:elif="{{!loading && selectedEvents.length === 0}}" class="empty"><view class="empty-title">这一天还没有安排</view><view class="empty-desc">可以直接为 {{selectedKey}} 留下记录或安排。</view><view class="calendar-empty-actions"><button class="button secondary compact" bindtap="addRecordForSelectedDay">添加记录</button><button class="button secondary compact" bindtap="addPlanForSelectedDay">添加计划</button></view></view>
   <view wx:else class="panel">
     <view class="panel-kicker">{{selectedKey}}</view>
     <button wx:for="{{selectedEvents}}" wx:key="id" class="event-row" data-id="{{item.id}}" bindtap="openEvent">

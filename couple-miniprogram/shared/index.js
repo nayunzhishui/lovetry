@@ -6,6 +6,7 @@ module.exports = {
   ...require("./sync"),
   ...require("./constants"),
   ...require("./duration"),
+  ...require("./form-assist"),
   ...require("./errors"),
   ...require("./permissions"),
   ...require("./result"),

@@ -11,6 +11,8 @@
   margin: 14rpx 0 22rpx;
   text-align: center;
 }
+.calendar-head__center { display: flex; flex-direction: column; align-items: center; gap: 4rpx; }
+.today-button { min-height: 48rpx; margin: 0; padding: 0 14rpx; background: transparent; color: var(--cobalt); font-size: 19rpx; line-height: 48rpx; }
 .calendar-filters { margin: -4rpx 0 18rpx; white-space: nowrap; }
 .calendar-filters__inner { display: inline-flex; gap: 10rpx; }
 .filter-chip { min-height: 72rpx; margin: 0; padding: 0 24rpx; border: 1rpx solid var(--line); border-radius: 36rpx; background: var(--surface); color: var(--ink-soft); font-size: 24rpx; line-height: 72rpx; }
@@ -61,6 +63,8 @@
   background: var(--ink-strong);
   color: #fff;
 }
+.day--today { box-shadow: inset 0 0 0 2rpx var(--cobalt); }
+.day--today.day--selected { box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, .7); }
 
 .event-dot {
   position: absolute;
@@ -101,3 +105,5 @@
   background: #f5e4e1;
   color: var(--danger);
 }
+.calendar-empty-actions { display: flex; justify-content: center; gap: 12rpx; margin-top: 22rpx; }
+.calendar-empty-actions .button { width: auto; margin: 0; }

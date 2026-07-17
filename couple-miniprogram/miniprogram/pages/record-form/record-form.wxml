@@ -12,11 +12,25 @@
   </view>
 
   <view wx:else class="panel form-panel">
+    <view wx:if="{{draftStatusText}}" class="draft-ribbon {{draftRestored ? 'draft-ribbon--restored' : ''}}">
+      <view><view class="draft-ribbon__title">{{draftStatusText}}</view><view class="draft-ribbon__desc">草稿只保存在当前设备，正式保存后自动清除。</view></view>
+      <button wx:if="{{draftRestored}}" bindtap="clearDraftBackup">移除备份</button>
+    </view>
+
     <view class="field">
       <view class="label">记录类型</view>
       <picker mode="selector" range="{{typeOptions}}" range-key="label" value="{{typeIndex}}" disabled="{{!!recordId}}" bindchange="onTypeChange">
         <view class="input-like picker-value">{{typeLabel}}<text>{{recordId ? '编辑时不可更换' : '点击更换'}}</text></view>
       </picker>
+    </view>
+
+    <view wx:if="{{templates.length}}" class="template-section">
+      <view class="label">快速开始</view>
+      <view class="template-list">
+        <button wx:for="{{templates}}" wx:key="id" class="template-card" data-id="{{item.id}}" bindtap="applyTemplate">
+          <view>{{item.label}}</view><text>{{item.description}}</text>
+        </button>
+      </view>
     </view>
 
     <view class="field">
@@ -87,5 +101,6 @@
 
     <view wx:if="{{error}}" class="form-error" aria-live="polite">{{error}}</view>
     <button class="button" disabled="{{isSubmitting}}" bindtap="submit">{{isSubmitting ? '正在保存…' : '保存记录'}}</button>
+    <view class="submit-hint">{{draftStatusText || '输入内容后会自动保留本机草稿'}}</view>
   </view>
 </view>
