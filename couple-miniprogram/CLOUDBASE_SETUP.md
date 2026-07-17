@@ -10,13 +10,45 @@
 
 ## 1.1 恋爱助手模型配置
 
-- 不配置模型密钥时，`love-agent` 会使用本地知识库生成可执行的降级回答；
-- 需要生成式回答时，只在 `love-agent` 云函数环境变量中配置 `OPENAI_API_KEY`，不得写入小程序代码、Git 或前端存储；
-- `LOVE_AGENT_MODEL` 可选，默认 `gpt-5.6-luna`；
-- `LOVE_AGENT_API_BASE` 可选，默认 `https://api.openai.com/v1`，仅用于经过审核的 Responses API 兼容服务；
-- 模型请求使用 Responses API，并设置 `store: false`；
-- 每个 OpenID 每天最多触发 50 次真实模型请求，本地知识库模式不消耗此配额；
-- 云函数日志只记录追踪 ID、状态码、模式和耗时，不记录问题正文或回答。
+不配置模型密钥时，`love-agent` 会继续使用本地知识库。密钥只能放在 `love-agent` 云函数环境变量中，不得写入小程序代码、Git 或前端存储。
+
+| 环境变量 | 默认值 | 说明 |
+|---|---|---|
+| `LOVE_AGENT_API_KEY` | 空 | 推荐的通用模型密钥；未设置时兼容读取 `OPENAI_API_KEY` |
+| `LOVE_AGENT_API_STYLE` | `responses` | `responses` 或 `chat_completions` |
+| `LOVE_AGENT_API_BASE` | `https://api.openai.com/v1` | API 基础地址，可指向经过审核的 OpenAI 兼容网关 |
+| `LOVE_AGENT_API_PATH` | 按协议生成 | 可选相对路径覆盖，例如 `/responses` |
+| `LOVE_AGENT_MODEL` | `gpt-5.6-luna` | 服务实际支持的模型 ID |
+| `LOVE_AGENT_TIMEOUT_MS` | `12000` | 3000～30000 毫秒 |
+| `LOVE_AGENT_MAX_OUTPUT_TOKENS` | `900` | 64～2000 |
+| `LOVE_AGENT_CHAT_TOKEN_FIELD` | `max_tokens` | Chat Completions 可改为 `max_completion_tokens` 以适配新模型 |
+| `LOVE_AGENT_ALLOW_INSECURE_HTTP` | `false` | 只允许本地调试临时设为 `true`；生产必须使用 HTTPS |
+
+OpenAI Responses API 示例：
+
+```text
+LOVE_AGENT_API_KEY=<在 CloudBase 控制台填写，不写入文件>
+LOVE_AGENT_API_STYLE=responses
+LOVE_AGENT_API_BASE=https://api.openai.com/v1
+LOVE_AGENT_MODEL=gpt-5.6-luna
+```
+
+OpenAI 兼容 Chat Completions 网关示例：
+
+```text
+LOVE_AGENT_API_KEY=<网关密钥>
+LOVE_AGENT_API_STYLE=chat_completions
+LOVE_AGENT_API_BASE=https://gateway.example.com/v1
+LOVE_AGENT_MODEL=<网关支持的模型 ID>
+```
+
+如直接使用 OpenAI Chat Completions 新模型，再设置 `LOVE_AGENT_CHAT_TOKEN_FIELD=max_completion_tokens`；旧式兼容网关通常保持默认 `max_tokens`。
+
+- Responses 请求固定设置 `store: false`；
+- 恋爱助手页面会显示“未配置/已配置/已连接/连接失败”，点击“测试 API”会发起一次短请求并计入每日配额；
+- 每个 OpenID 每天最多触发 50 次真实模型请求，本地知识库模式不消耗配额；
+- 模型失败会自动回退本地知识库，并向用户明确说明已降级；
+- 云函数日志只记录追踪 ID、错误类别、状态码、模式和耗时，不记录问题正文、回答或密钥。
 
 依赖安全说明：截至本次检查，npm 上 `wx-server-sdk` 最新版仍为 `4.0.2`，其传递依赖会触发 npm audit 告警；audit 给出的自动方案是降级到旧主版本，未在本项目中盲目执行。上线前应继续关注微信云开发 SDK 的修复版本，并在测试环境完成兼容验证后统一升级所有云函数。
 

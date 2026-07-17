@@ -1,9 +1,17 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const http = require("node:http");
 
 const { fallbackAnswer } = require("../couple-miniprogram/cloudfunctions/love-agent/fallback");
 const { buildInput, normalizeHistory, sanitizeCitations } = require("../couple-miniprogram/cloudfunctions/love-agent/prompt");
-const { extractOutputText } = require("../couple-miniprogram/cloudfunctions/love-agent/provider");
+const {
+  buildProviderRequest,
+  extractChatCompletionText,
+  extractOutputText,
+  generateAnswer,
+  getProviderConfig,
+  getProviderStatus
+} = require("../couple-miniprogram/cloudfunctions/love-agent/provider");
 const { retrieveArticles } = require("../couple-miniprogram/cloudfunctions/love-agent/retrieval");
 const { assessRisk, safetyResponse } = require("../couple-miniprogram/cloudfunctions/love-agent/safety");
 
@@ -42,6 +50,109 @@ test("Responses API 原始响应可以提取回答文本", () => {
       content: [{ type: "output_text", text: "先暂停，再约定回来沟通。" }]
     }]
   }), "先暂停，再约定回来沟通。");
+});
+
+test("模型适配层支持 Responses 与 Chat Completions 两种兼容协议", () => {
+  const responses = buildProviderRequest({
+    config: { style: "responses", model: "model-r", maxOutputTokens: 500 },
+    instructions: "系统约束",
+    input: "用户问题"
+  });
+  assert.deepEqual(responses, {
+    model: "model-r",
+    instructions: "系统约束",
+    input: "用户问题",
+    max_output_tokens: 500,
+    store: false
+  });
+
+  const chat = buildProviderRequest({
+    config: { style: "chat_completions", model: "model-c", maxOutputTokens: 300 },
+    instructions: "系统约束",
+    input: "用户问题"
+  });
+  assert.deepEqual(chat, {
+    model: "model-c",
+    messages: [
+      { role: "system", content: "系统约束" },
+      { role: "user", content: "用户问题" }
+    ],
+    max_tokens: 300
+  });
+  assert.equal(extractChatCompletionText({
+    choices: [{ message: { content: "先确认感受，再讨论具体请求。" } }]
+  }), "先确认感受，再讨论具体请求。");
+});
+
+test("模型配置支持通用 API 密钥且状态不泄露密钥和完整地址", () => {
+  const config = getProviderConfig({
+    LOVE_AGENT_API_KEY: "secret-value",
+    LOVE_AGENT_API_STYLE: "chat_completions",
+    LOVE_AGENT_API_BASE: "https://gateway.example.com/v1/",
+    LOVE_AGENT_MODEL: "compatible-model",
+    LOVE_AGENT_TIMEOUT_MS: "8000"
+  });
+  assert.equal(config.apiKey, "secret-value");
+  assert.equal(config.endpointUrl, "https://gateway.example.com/v1/chat/completions");
+  assert.deepEqual(getProviderStatus(config), {
+    configured: true,
+    style: "chat_completions",
+    model: "compatible-model",
+    host: "gateway.example.com"
+  });
+  assert.doesNotMatch(JSON.stringify(getProviderStatus(config)), /secret-value|\/v1/);
+});
+
+test("Chat Completions 可切换新模型的输出令牌字段", () => {
+  const config = getProviderConfig({
+    LOVE_AGENT_API_KEY: "secret-value",
+    LOVE_AGENT_API_STYLE: "chat_completions",
+    LOVE_AGENT_CHAT_TOKEN_FIELD: "max_completion_tokens"
+  });
+  const body = buildProviderRequest({ config, instructions: "约束", input: "问题" });
+  assert.equal(body.max_completion_tokens, 900);
+  assert.equal(Object.prototype.hasOwnProperty.call(body, "max_tokens"), false);
+});
+
+test("模型适配层可以调用 OpenAI 兼容 API 并携带服务端密钥", async () => {
+  let received = null;
+  const server = http.createServer((request, response) => {
+    let raw = "";
+    request.on("data", (chunk) => { raw += chunk; });
+    request.on("end", () => {
+      received = {
+        authorization: request.headers.authorization,
+        path: request.url,
+        body: JSON.parse(raw)
+      };
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({
+        id: "chatcmpl-local",
+        choices: [{ message: { content: "连接成功" } }]
+      }));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const address = server.address();
+    const result = await generateAnswer({ instructions: "约束", input: "测试" }, {
+      LOVE_AGENT_API_KEY: "server-only-key",
+      LOVE_AGENT_API_STYLE: "chat_completions",
+      LOVE_AGENT_API_BASE: `http://127.0.0.1:${address.port}/v1`,
+      LOVE_AGENT_ALLOW_INSECURE_HTTP: "true",
+      LOVE_AGENT_MODEL: "local-model"
+    });
+    assert.deepEqual(result, {
+      answer: "连接成功",
+      model: "local-model",
+      responseId: "chatcmpl-local"
+    });
+    assert.equal(received.authorization, "Bearer server-only-key");
+    assert.equal(received.path, "/v1/chat/completions");
+    assert.equal(received.body.messages[1].content, "测试");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("模型不能引用本次检索范围之外的知识条目", () => {

@@ -30,11 +30,18 @@
 
 | 变量 | 必填 | 说明 |
 |---|---|---|
-| `OPENAI_API_KEY` | 否 | 不配置时使用本地知识库模式 |
+| `LOVE_AGENT_API_KEY` | 否 | 推荐；不配置时兼容读取 `OPENAI_API_KEY`，两者都没有则使用本地知识库 |
+| `LOVE_AGENT_API_STYLE` | 否 | `responses`（默认）或 `chat_completions` |
 | `LOVE_AGENT_MODEL` | 否 | 默认 `gpt-5.6-luna` |
 | `LOVE_AGENT_API_BASE` | 否 | 默认 `https://api.openai.com/v1` |
+| `LOVE_AGENT_API_PATH` | 否 | 覆盖默认 `/responses` 或 `/chat/completions` 相对路径 |
+| `LOVE_AGENT_TIMEOUT_MS` | 否 | 默认 12000，限制为 3000～30000 毫秒 |
+| `LOVE_AGENT_MAX_OUTPUT_TOKENS` | 否 | 默认 900，限制为 64～2000 |
+| `LOVE_AGENT_CHAT_TOKEN_FIELD` | 否 | 默认 `max_tokens`；新模型可设为 `max_completion_tokens` |
 
-实现使用 OpenAI Responses API 的 `instructions`、`input`、`max_output_tokens` 和 `store` 参数。参考：[Responses API 创建响应](https://developers.openai.com/api/reference/resources/responses/methods/create)、[文本生成指南](https://developers.openai.com/api/docs/guides/text)、[模型目录](https://developers.openai.com/api/docs/models)。
+适配层支持 OpenAI Responses 与常见 Chat Completions 兼容接口；Responses 使用 `instructions`、`input`、`max_output_tokens` 和 `store: false`，Chat Completions 使用 `messages` 与 `max_tokens`。参考：[Responses API 创建响应](https://developers.openai.com/api/reference/resources/responses/methods/create)、[文本生成指南](https://developers.openai.com/api/docs/guides/text)、[模型目录](https://developers.openai.com/api/docs/models)。
+
+页面只读取脱敏连接状态（是否配置、协议、模型和主机），不会获得密钥或完整 API 路径。“测试 API”会执行一次最小生成请求，用于区分密钥、地址、限流和超时问题。
 
 ## 5. 数据与成本控制
 

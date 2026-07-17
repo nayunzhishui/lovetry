@@ -12,6 +12,15 @@
     <view class="hint">它是 AI，不是心理咨询师；只处理你主动输入的内容，不自动读取伴侣记录，也不会替你发送消息或做关系决定。</view>
   </view>
 
+  <view class="panel provider-card">
+    <view class="provider-card__copy">
+      <view class="panel-kicker">MODEL CONNECTION</view>
+      <view class="provider-card__status">{{providerStatusText}}</view>
+      <view class="hint">{{providerDetailText}}</view>
+    </view>
+    <button wx:if="{{providerConfigured}}" class="provider-card__button" loading="{{providerTesting}}" disabled="{{providerTesting}}" bindtap="testProviderConnection">测试 API</button>
+  </view>
+
   <view wx:if="{{messages.length === 0}}" class="starter">
     <view class="section-heading"><text>可以从这些问题开始</text></view>
     <button wx:for="{{suggestions}}" wx:key="*this" class="suggestion" data-question="{{item}}" bindtap="useSuggestion">{{item}}<text>›</text></button>

@@ -377,6 +377,13 @@ function askLoveAgent(question, history) {
   });
 }
 
+function getLoveAgentProviderStatus(probe) {
+  return call("love-agent", {
+    action: "providerStatus",
+    probe: Boolean(probe)
+  });
+}
+
 function getErrorMessage(error, fallback) {
   if (error && error.code === "CALL_FAILED" && fallback) return fallback;
   if (error && error.userMessage) return error.userMessage;
@@ -452,5 +459,6 @@ module.exports = {
   listNotifications,
   markNotificationRead,
   askLoveAgent,
+  getLoveAgentProviderStatus,
   getErrorMessage
 };

@@ -14,7 +14,52 @@ Page({
     messages: [],
     loading: false,
     error: "",
-    modeText: "知识库已就绪"
+    modeText: "知识库已就绪",
+    providerConfigured: false,
+    providerTesting: false,
+    providerStatusText: "正在检查模型配置…",
+    providerDetailText: ""
+  },
+
+  onLoad() {
+    this.refreshProviderStatus(false);
+  },
+
+  refreshProviderStatus(probe) {
+    if (this.data.providerTesting) return;
+    if (probe) this.setData({ providerTesting: true, providerStatusText: "正在测试 API 连接…" });
+    api.getLoveAgentProviderStatus(probe)
+      .then((status) => {
+        const connectionText = {
+          connected: "模型 API 连接正常",
+          configured: "模型 API 已配置，尚未测试",
+          not_configured: "未配置模型 API，当前使用本地知识库",
+          invalid_configuration: "模型 API 配置无效",
+          authentication_failed: "API 密钥验证失败",
+          endpoint_not_found: "API 地址或协议不匹配",
+          rate_limited: "API 请求受限，请稍后重试",
+          timeout: "API 连接超时",
+          unavailable: "模型 API 暂时不可用"
+        };
+        const detail = status.configured
+          ? `${status.model || "自定义模型"} · ${status.style === "chat_completions" ? "Chat Completions" : "Responses"}`
+          : "无需密钥也可使用内置恋爱知识库";
+        this.setData({
+          providerConfigured: Boolean(status.configured),
+          providerStatusText: connectionText[status.connection] || "模型连接状态未知",
+          providerDetailText: detail
+        });
+        if (probe) wx.showToast({
+          title: status.connection === "connected" ? "API 连接正常" : "连接测试未通过",
+          icon: status.connection === "connected" ? "success" : "none"
+        });
+      })
+      .catch(() => this.setData({ providerStatusText: "模型连接状态检查失败" }))
+      .finally(() => this.setData({ providerTesting: false }));
+  },
+
+  testProviderConnection() {
+    this.refreshProviderStatus(true);
   },
 
   onInput(event) {
@@ -60,7 +105,8 @@ Page({
             sources: result.sources || [],
             modeText
           }],
-          modeText
+          modeText,
+          error: result.providerNotice || ""
         });
         setTimeout(() => wx.pageScrollTo({ scrollTop: 99999, duration: 250 }), 50);
       })

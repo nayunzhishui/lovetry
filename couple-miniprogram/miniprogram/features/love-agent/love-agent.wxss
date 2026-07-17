@@ -1,6 +1,10 @@
 .agent-page { padding-bottom: calc(330rpx + env(safe-area-inset-bottom)); }
 .agent-hero { padding-bottom: 18rpx; }
 .trust-card { border-left-color: var(--moss); background: var(--surface-muted); box-shadow: none; }
+.provider-card { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; }
+.provider-card__copy { min-width: 0; flex: 1; }
+.provider-card__status { margin-top: 6rpx; color: var(--ink-strong); font-size: 26rpx; font-weight: 700; }
+.provider-card__button { min-width: 150rpx; min-height: 72rpx; margin: 0; padding: 0 18rpx; border: 1rpx solid var(--line); background: transparent; color: var(--cobalt); font-size: 22rpx; line-height: 72rpx; }
 .starter { margin-top: 36rpx; }
 .suggestion { display: flex; width: 100%; min-height: 84rpx; align-items: center; justify-content: space-between; margin: 12rpx 0 0; padding: 0 22rpx; border: 1rpx solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink-strong); font-size: 25rpx; line-height: 1.5; text-align: left; }
 .suggestion text { color: var(--cobalt); font-size: 34rpx; }
