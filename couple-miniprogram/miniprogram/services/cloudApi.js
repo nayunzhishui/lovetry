@@ -25,6 +25,8 @@ const ERROR_MESSAGES = {
   TASK_NOT_FOUND: "未找到可结算的已完成任务",
   REWARD_ALREADY_SETTLED: "这项奖励已经结算",
   INVALID_REWARD_ITEM: "请填写有效的奖励名称和积分",
+  UNSAFE_REWARD_ITEM: "这类约定不能作为积分奖励，请改为双方自愿沟通",
+  REWARD_REVIEW_REQUIRED: "奖励需要由伴侣确认后才能兑换",
   REWARD_ITEM_NOT_FOUND: "奖励商品不存在或已下架",
   INVENTORY_NOT_FOUND: "仓库条目不存在",
   INVALID_REWARD_STATE: "奖励状态不能这样变更",
@@ -250,6 +252,10 @@ function createRewardItem(item) {
   return rewards("createItem", { item }).then((result) => result.item);
 }
 
+function reviewRewardItem(itemId, status) {
+  return rewards("reviewItem", { itemId, status }).then((result) => result.item);
+}
+
 function archiveRewardItem(itemId) {
   return rewards("archiveItem", { itemId });
 }
@@ -369,11 +375,12 @@ function markNotificationRead(notificationId) {
   return notifications("markRead", { notificationId });
 }
 
-function askLoveAgent(question, history) {
+function askLoveAgent(question, history, context) {
   return call("love-agent", {
     action: "ask",
     question,
-    history: Array.isArray(history) ? history : []
+    history: Array.isArray(history) ? history : [],
+    context: context || null
   });
 }
 
@@ -429,6 +436,7 @@ module.exports = {
   listPendingRewardTasks,
   listRewardCatalog,
   createRewardItem,
+  reviewRewardItem,
   archiveRewardItem,
   redeemRewardItem,
   listRewardInventory,

@@ -21,6 +21,23 @@
     <button wx:if="{{providerCanProbe}}" class="provider-card__button" loading="{{providerTesting}}" disabled="{{providerTesting}}" bindtap="testProviderConnection">检查连接</button>
   </view>
 
+  <view class="context-slip {{selectedContext ? 'context-slip--selected' : ''}}">
+    <view class="context-slip__rails"><view></view><view></view></view>
+    <view class="context-slip__body">
+      <view class="panel-kicker">仅本次使用 · 由你选择</view>
+      <view wx:if="{{selectedContext}}"><view class="context-slip__title">{{selectedContext.typeLabel}} · {{selectedContext.label}}</view><view class="context-slip__preview">{{selectedContext.preview}}</view><view class="context-slip__actions"><button bindtap="openContextPicker">更换</button><button bindtap="clearContext">移除</button></view></view>
+      <view wx:else><view class="context-slip__title">需要时，带上一条自己的记录</view><view class="hint">只有点击选择后，预览中的内容才会临时用于下一次回答；健康记录和伴侣记录不会出现在这里。</view><button class="context-slip__add" bindtap="openContextPicker">选择自己的记录</button></view>
+    </view>
+  </view>
+
+  <view wx:if="{{contextPickerOpen}}" class="context-picker">
+    <view class="context-picker__head"><view><view class="panel-kicker">TEMPORARY CONTEXT</view><view class="panel-title">选择一条自己的记录</view></view><button bindtap="closeContextPicker">关闭</button></view>
+    <view wx:if="{{contextLoading}}" class="hint">正在读取可选择的记录…</view>
+    <view wx:elif="{{contextError}}" class="inline-error">{{contextError}}</view>
+    <state-view wx:elif="{{!contextCandidates.length}}" title="没有可选择的记录" description="这里只显示你本人创建的生活、心情和沟通记录。" />
+    <button wx:for="{{contextCandidates}}" wx:key="key" class="context-option" data-index="{{index}}" bindtap="selectContext"><view>{{item.typeLabel}} · {{item.label}}</view><text>{{item.preview}}</text></button>
+  </view>
+
   <view wx:if="{{messages.length === 0}}" class="starter">
     <view class="section-heading"><text>按一个结构开始</text></view>
     <view class="prompt-frame-list"><button wx:for="{{promptFrames}}" wx:key="id" class="prompt-frame" data-id="{{item.id}}" bindtap="usePromptFrame"><view>{{item.label}}</view><text>{{item.description}}</text></button></view>
@@ -32,6 +49,7 @@
     <view wx:for="{{messages}}" wx:key="id" class="message message--{{item.role}}">
       <view class="message__head"><view class="message__label">{{item.role === 'assistant' ? '恋爱助手 · AI' : '我'}}</view><view wx:if="{{item.role === 'assistant' && item.modeText}}" class="message__mode">{{item.modeText}}</view></view>
       <text class="message__content" user-select>{{item.content}}</text>
+      <view wx:if="{{item.role === 'user' && item.contextLabel}}" class="message__context">本次带入：{{item.contextLabel}}</view>
       <view wx:if="{{item.sources.length}}" class="sources">
         <view class="sources__title">参考的知识条目</view>
         <view wx:for="{{item.sources}}" wx:for-item="source" wx:key="id" class="source">
@@ -41,6 +59,7 @@
         </view>
       </view>
       <button wx:if="{{item.role === 'assistant'}}" class="message__copy" data-content="{{item.content}}" bindtap="copyAnswer">复制回答</button>
+      <button wx:if="{{item.role === 'assistant'}}" class="message__draft" data-id="{{item.id}}" bindtap="saveAnswerDraft">保存为私密沟通草稿</button>
     </view>
   </view>
 

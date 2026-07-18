@@ -4,6 +4,10 @@
 .reward-item { display: grid; grid-template-columns: 1fr auto; gap: 24rpx; align-items: center; }
 .reward-item__action { min-width: 132rpx; color: var(--brass); font-family: Menlo, Consolas, monospace; text-align: right; }
 .reward-item__action .button { margin-top: 14rpx; }
+.reward-item__status { margin-bottom: 9rpx; color: var(--moss); font-size: 20rpx; font-weight: 700; letter-spacing: 1rpx; }
+.reward-item__status--pending { color: var(--brass); }
+.reward-review { display: flex; flex-direction: column; align-items: flex-end; }
+.reward-review .text-action { text-align: right; }
 .text-action { width:auto; min-height:52rpx; margin:14rpx 0 0; padding:0; background:transparent; color:var(--ink-soft); font-size:21rpx; line-height:52rpx; text-align:left; text-decoration:underline; }
 .inventory-item { position: relative; overflow: hidden; }
 .archive-stamp { position: absolute; top: 20rpx; right: 20rpx; padding: 7rpx 13rpx; border: 2rpx solid currentColor; color: var(--moss); font-size: 19rpx; letter-spacing: 2rpx; transform: rotate(2deg); }

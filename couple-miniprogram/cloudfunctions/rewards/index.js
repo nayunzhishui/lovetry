@@ -1,5 +1,6 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
+const { normalizeRewardItem, transitionRewardItem } = require("./reward-policy");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -16,6 +17,8 @@ const ERROR_MESSAGES = {
   IDEMPOTENCY_KEY_REQUIRED: "请求标识缺失，请重试",
   IDEMPOTENCY_CONFLICT: "重复请求的内容不一致",
   INVALID_REWARD_ITEM: "请填写有效的奖励名称和积分",
+  UNSAFE_REWARD_ITEM: "这类约定不能作为积分奖励，请改为双方自愿沟通",
+  REWARD_REVIEW_REQUIRED: "奖励需要由伴侣确认后才能兑换",
   REWARD_ITEM_NOT_FOUND: "奖励商品不存在或已下架",
   INVENTORY_NOT_FOUND: "仓库条目不存在",
   INVALID_REWARD_STATE: "奖励状态不能这样变更",
@@ -58,25 +61,6 @@ function amount(value) {
     throw businessError("INVALID_AMOUNT");
   }
   return parsed;
-}
-
-function normalizeRewardItem(input) {
-  const item = input || {};
-  const title = String(item.title || "").trim().slice(0, 80);
-  if (!title) throw businessError("INVALID_REWARD_ITEM");
-  const points = amount(item.points);
-  return { title, detail: String(item.detail || "").trim().slice(0, 500), points };
-}
-
-async function getRewardItem(itemId, couple) {
-  try {
-    const item = (await db.collection("reward_items").doc(itemId).get()).data;
-    if (!item || item.coupleId !== couple._id || item.status !== "active") throw businessError("REWARD_ITEM_NOT_FOUND");
-    return item;
-  } catch (error) {
-    if (error.code) throw error;
-    throw businessError("REWARD_ITEM_NOT_FOUND");
-  }
 }
 
 async function ensureWallet(couple, openid) {
@@ -228,22 +212,48 @@ async function handle(event, openid) {
   }
 
   if (action === "listCatalog") {
-    const result = await db.collection("reward_items").where({ coupleId: couple._id, status: "active" }).orderBy("createdAt", "desc").limit(100).get();
-    return success({ items: result.data });
+    const results = await Promise.all(["active", "proposed"].map((status) =>
+      db.collection("reward_items").where({ coupleId: couple._id, status }).orderBy("createdAt", "desc").limit(100).get()
+    ));
+    const items = results.flatMap((result) => result.data).sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ).slice(0, 100);
+    return success({ items });
   }
 
   if (action === "createItem") {
     const now = new Date();
-    const data = { coupleId: couple._id, ...normalizeRewardItem(event.item), status: "active", createdBy: openid, createdAt: now, updatedAt: now };
+    const data = { coupleId: couple._id, ...normalizeRewardItem(event.item), createdBy: openid, createdAt: now, updatedAt: now };
     const result = await db.collection("reward_items").add({ data });
     return success({ item: { _id: result._id, ...data } });
   }
 
+  if (action === "reviewItem") {
+    const item = await db.runTransaction(async (transaction) => {
+      let current;
+      try { current = (await transaction.collection("reward_items").doc(event.itemId).get()).data; }
+      catch (error) { throw businessError("REWARD_ITEM_NOT_FOUND"); }
+      if (!current || current.coupleId !== couple._id || current.status !== "proposed") throw businessError("REWARD_ITEM_NOT_FOUND");
+      const actorRole = current.createdBy === openid ? "creator" : "partner";
+      const status = transitionRewardItem(current.status, event.status, actorRole);
+      const updatedAt = new Date();
+      await transaction.collection("reward_items").doc(current._id).update({ data: { status, reviewedBy: openid, updatedAt } });
+      return { ...current, status, reviewedBy: openid, updatedAt };
+    });
+    return success({ item });
+  }
+
   if (action === "archiveItem") {
-    const item = await getRewardItem(event.itemId, couple);
-    if (item.createdBy !== openid) throw businessError("NO_PERMISSION");
-    const updatedAt = new Date();
-    await db.collection("reward_items").doc(item._id).update({ data: { status: "archived", updatedAt } });
+    const item = await db.runTransaction(async (transaction) => {
+      let current;
+      try { current = (await transaction.collection("reward_items").doc(event.itemId).get()).data; }
+      catch (error) { throw businessError("REWARD_ITEM_NOT_FOUND"); }
+      if (!current || current.coupleId !== couple._id || !["active", "proposed"].includes(current.status)) throw businessError("REWARD_ITEM_NOT_FOUND");
+      transitionRewardItem(current.status, "archived", current.createdBy === openid ? "creator" : "partner");
+      const updatedAt = new Date();
+      await transaction.collection("reward_items").doc(current._id).update({ data: { status: "archived", updatedAt } });
+      return { ...current, status: "archived", updatedAt };
+    });
     return success({ itemId: item._id });
   }
 

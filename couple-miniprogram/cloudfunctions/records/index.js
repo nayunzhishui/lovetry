@@ -187,14 +187,17 @@ async function handle(event, openid) {
   if (action === "list") {
     const limit = Math.min(Math.max(Number(event.limit) || 30, 1), 50);
     const offset = Math.max(Number(event.offset) || 0, 0);
-    const filters = [
-      { coupleId: couple._id },
-      _.or(
+    const visibilityFilter = event.ownerOnly
+      ? _.or({ ownerOpenid: openid }, { creatorOpenid: openid })
+      : _.or(
         { visibility: "couple" },
         { ownerOpenid: openid },
         { creatorOpenid: openid },
         { visibility: _.exists(false) }
-      ),
+      );
+    const filters = [
+      { coupleId: couple._id },
+      visibilityFilter,
       _.or({ deletedAt: null }, { deletedAt: _.exists(false) })
     ];
     if (event.type && RECORD_TYPES.has(event.type)) filters.push({ type: event.type });

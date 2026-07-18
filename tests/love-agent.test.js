@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const http = require("node:http");
 
 const { fallbackAnswer } = require("../couple-miniprogram/cloudfunctions/love-agent/fallback");
-const { buildInput, buildInstructions, normalizeHistory, sanitizeCitations } = require("../couple-miniprogram/cloudfunctions/love-agent/prompt");
+const { agentQueryText, buildInput, buildInstructions, normalizeHistory, normalizeSelectedContext, sanitizeCitations } = require("../couple-miniprogram/cloudfunctions/love-agent/prompt");
 const {
   buildProviderRequest,
   extractChatCompletionText,
@@ -42,6 +42,18 @@ test("模型输入限制历史长度且包含知识上下文", () => {
   }));
   assert.equal(normalizeHistory(history).length, 6);
   assert.match(buildInput("现在怎么办", history, "[K01] 沟通"), /\[K01\]/);
+});
+
+test("只有经过限制的显式上下文会进入本次模型输入", () => {
+  const context = normalizeSelectedContext({ type: "conflict", label: "昨晚沟通", content: "我们因为回消息速度有分歧" });
+  assert.deepEqual(context, { type: "conflict", label: "昨晚沟通", content: "我们因为回消息速度有分歧" });
+  assert.match(buildInput("怎么开口", [], "[K01] 沟通", context), /用户主动选择的临时记录/);
+  assert.equal(normalizeSelectedContext({ type: "period", label: "健康记录", content: "内容" }), null);
+});
+
+test("临时记录中的危险信息同样进入安全分流", () => {
+  const context = normalizeSelectedContext({ type: "conflict", label: "昨晚", content: "他掐我脖子还把门锁上" });
+  assert.equal(assessRisk(agentQueryText("我现在该怎么办", context)), "immediate_danger");
 });
 
 test("模型不会把单方叙述当作伴侣动机或心理事实", () => {

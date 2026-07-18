@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "恋爱助手",
   "usingComponents": {
-    "twin-rail": "/components/twin-rail/twin-rail"
+    "twin-rail": "/components/twin-rail/twin-rail",
+    "state-view": "/components/state-view/state-view"
   }
 }

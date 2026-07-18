@@ -1,6 +1,8 @@
 const cloudApi = require("../../services/cloudApi");
 const formDraft = require("../../services/formDraft");
+const agentHandoff = require("../../services/agentHandoff");
 const { applyFormTemplate, templatesFor } = require("../../../shared/form-assist");
+const { handoffToConflictPatch } = require("../../../shared/agent-context");
 
 const TYPES = [
   { value: "moment", label: "生活日记" },
@@ -132,7 +134,8 @@ Page({
     originalPayload: {},
     templates: templatesFor("record", "mood"),
     draftRestored: false,
-    draftStatusText: ""
+    draftStatusText: "",
+    agentSuggestion: null
   },
 
   onLoad(options) {
@@ -154,6 +157,9 @@ Page({
       this.loadRecord(options.id);
     } else {
       this.restoreDraft();
+      if (requestedType === "conflict" && options.source === "agent") {
+        this.setData({ agentSuggestion: agentHandoff.load() });
+      }
       if (requestedDate) this.setData({ startDate: requestedDate, endDate: requestedDate });
     }
   },
@@ -254,6 +260,27 @@ Page({
     formDraft.clear(this.draftScope());
     this.draftDirty = false;
     this.setData({ draftRestored: false, draftStatusText: "已移除本机草稿备份" });
+  },
+
+  importAgentSuggestion() {
+    const patch = handoffToConflictPatch(this.data.agentSuggestion);
+    if (!patch) return;
+    const append = (current, incoming) => [String(current || "").trim(), incoming].filter(Boolean).join("\n\n");
+    this.setData({
+      title: this.data.title || patch.title,
+      content: append(this.data.content, patch.content),
+      communication: append(this.data.communication, patch.communication),
+      visibility: "private",
+      agentSuggestion: null,
+      draftStatusText: "AI 建议已加入私密草稿，请核对并改成自己的话"
+    });
+    agentHandoff.clear();
+    this.scheduleDraftSave();
+  },
+
+  dismissAgentSuggestion() {
+    agentHandoff.clear();
+    this.setData({ agentSuggestion: null });
   },
 
   applyTemplate(event) {

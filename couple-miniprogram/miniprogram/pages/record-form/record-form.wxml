@@ -12,6 +12,13 @@
   </view>
 
   <view wx:else class="panel form-panel">
+    <view wx:if="{{agentSuggestion}}" class="agent-import">
+      <view class="panel-kicker">AI DRAFT · PRIVATE FIRST</view>
+      <view class="agent-import__title">有一份待确认的沟通建议</view>
+      <view class="agent-import__preview">{{agentSuggestion.answer}}</view>
+      <view class="agent-import__note">导入后仍是仅自己可见的本机草稿，不会自动发给伴侣。请核对并改成自己的话。</view>
+      <view class="agent-import__actions"><button bindtap="dismissAgentSuggestion">暂不导入</button><button class="button" bindtap="importAgentSuggestion">加入私密草稿</button></view>
+    </view>
     <view wx:if="{{draftStatusText}}" class="draft-ribbon {{draftRestored ? 'draft-ribbon--restored' : ''}}">
       <view><view class="draft-ribbon__title">{{draftStatusText}}</view><view class="draft-ribbon__desc">草稿只保存在当前设备，正式保存后自动清除。</view></view>
       <button wx:if="{{draftRestored}}" bindtap="clearDraftBackup">移除备份</button>

@@ -1,7 +1,7 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
 const { fallbackAnswer } = require("./fallback");
-const { buildInput, buildInstructions, normalizeHistory, sanitizeCitations } = require("./prompt");
+const { agentQueryText, buildInput, buildInstructions, normalizeHistory, normalizeSelectedContext, sanitizeCitations } = require("./prompt");
 const { generateAnswer, getProviderConfig, getProviderStatus } = require("./provider");
 const { knowledgeContext, retrieveArticles, sourcesForClient } = require("./retrieval");
 const { assessRisk, safetyResponse } = require("./safety");
@@ -102,8 +102,10 @@ async function handle(event, openid) {
 
   const question = String(event.question || "").trim().slice(0, 600);
   if (question.length < 2) throw businessError("INVALID_QUESTION");
-  const risk = assessRisk(question);
-  const articles = retrieveArticles(question, 4);
+  const selectedContext = normalizeSelectedContext(event.context);
+  const queryText = agentQueryText(question, selectedContext);
+  const risk = assessRisk(queryText);
+  const articles = retrieveArticles(queryText, 4);
   const sources = sourcesForClient(articles);
   if (risk !== "none") {
     return success({
@@ -123,7 +125,7 @@ async function handle(event, openid) {
     try {
       generated = await generateAnswer({
         instructions: buildInstructions(),
-        input: buildInput(question, history, knowledgeContext(articles))
+        input: buildInput(question, history, knowledgeContext(articles), selectedContext)
       });
     } catch (error) {
       providerFailed = true;

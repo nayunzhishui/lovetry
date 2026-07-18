@@ -7,9 +7,10 @@
 ```bash
 npm ci
 npm run quality
+npm run eval:agent
 ```
 
-`quality` 会执行领域规则测试、JavaScript/JSON 语法检查、页面与组件完整性检查、云函数结构检查、服务层边界检查、交互控件检查和主包源码预算检查。
+`quality` 会执行领域规则测试、100 条恋爱助手安全与检索评测、JavaScript/JSON 语法检查、页面与组件完整性检查、云函数结构检查、服务层边界检查、交互控件检查和主包源码预算检查。
 
 ## 项目入口
 
@@ -17,6 +18,7 @@ npm run quality
 - 云函数：`couple-miniprogram/cloudfunctions/`
 - 共享业务规则：`couple-miniprogram/shared/`
 - 恋爱助手知识库：`couple-miniprogram/cloudfunctions/love-agent/knowledge-base.json`
+- 恋爱助手评测集：`evals/love-agent-scenarios.json`
 - 知识库维护说明：`couple-miniprogram/knowledge-base/README.md`
 - Agent 架构与部署：`couple-miniprogram/LOVE_AGENT.md`
 - 自动测试：`tests/`

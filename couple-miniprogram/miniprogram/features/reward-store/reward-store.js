@@ -1,4 +1,5 @@
 const api = require("../../services/cloudApi");
+const { normalizeRewardItem } = require("../../../shared/reward-store");
 
 function requestKey(itemId) {
   return `reward-item:${itemId}:${Date.now()}:${Math.random().toString(36).slice(2, 9)}`;
@@ -23,7 +24,7 @@ function clearRequestKey(itemId) {
 
 Page({
   data: {
-    mode: "store", loading: false, submitting: false, error: "", openid: "", items: [], inventory: [], archiveItemId: "",
+    mode: "store", loading: false, submitting: false, error: "", openid: "", items: [], inventory: [], archiveItemId: "", archiveIsProposal: false,
     form: { title: "", detail: "", points: "" }
   },
 
@@ -47,10 +48,29 @@ Page({
     if (this.data.submitting) return;
     this.setData({ submitting: true, error: "" });
     try {
-      const item = await api.createRewardItem(this.data.form);
+      const normalized = normalizeRewardItem(this.data.form);
+      const item = await api.createRewardItem(normalized);
       this.setData({ items: [item, ...this.data.items], form: { title: "", detail: "", points: "" } });
-      wx.showToast({ title: "奖励已上架" });
-    } catch (error) { this.setData({ error: api.getErrorMessage(error, "奖励上架失败") }); }
+      wx.showToast({ title: "已等待伴侣确认" });
+    } catch (error) {
+      this.setData({ error: error && error.name === "DomainError" ? error.message : api.getErrorMessage(error, "奖励提案保存失败") });
+    }
+    finally { this.setData({ submitting: false }); }
+  },
+
+  async reviewItem(event) {
+    if (this.data.submitting) return;
+    const itemId = event.currentTarget.dataset.id;
+    const status = event.currentTarget.dataset.status;
+    this.setData({ submitting: true, error: "" });
+    try {
+      const updated = await api.reviewRewardItem(itemId, status);
+      const items = status === "rejected"
+        ? this.data.items.filter((item) => item._id !== itemId)
+        : this.data.items.map((item) => item._id === itemId ? updated : item);
+      this.setData({ items });
+      wx.showToast({ title: status === "active" ? "已同意上架" : "已拒绝提案" });
+    } catch (error) { this.setData({ error: api.getErrorMessage(error, "奖励确认失败") }); }
     finally { this.setData({ submitting: false }); }
   },
 
@@ -81,17 +101,19 @@ Page({
   },
 
   requestArchive(event) {
-    this.setData({ archiveItemId: event.currentTarget.dataset.id || "" });
+    const archiveItemId = event.currentTarget.dataset.id || "";
+    const item = this.data.items.find((candidate) => candidate._id === archiveItemId);
+    this.setData({ archiveItemId, archiveIsProposal: Boolean(item && item.status === "proposed") });
   },
 
   cancelArchive() {
-    this.setData({ archiveItemId: "" });
+    this.setData({ archiveItemId: "", archiveIsProposal: false });
   },
 
   async confirmArchive() {
     const itemId = this.data.archiveItemId;
     if (!itemId || this.data.submitting) return;
-    this.setData({ archiveItemId: "", submitting: true, error: "" });
+    this.setData({ archiveItemId: "", archiveIsProposal: false, submitting: true, error: "" });
     try {
       await api.archiveRewardItem(itemId);
       this.setData({ items: this.data.items.filter((item) => item._id !== itemId) });

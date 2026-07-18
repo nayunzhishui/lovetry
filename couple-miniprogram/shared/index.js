@@ -1,4 +1,5 @@
 module.exports = {
+  ...require("./agent-context"),
   ...require("./agent-experience"),
   ...require("./anniversary"),
   ...require("./backup-manifest"),
