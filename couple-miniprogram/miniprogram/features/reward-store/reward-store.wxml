@@ -1,5 +1,6 @@
 <view class="page reward-store-page">
   <view class="hero almanac-hero"><view class="almanac-code">EXCHANGE / LEDGER</view><view class="title">奖励商城</view><view class="subtitle">把想为彼此兑现的小事，变成有确认、有结果的约定。</view></view>
+  <view class="panel panel--quiet"><view class="panel-title">约定始终可以重新商量</view><view class="hint">只添加双方自愿的小事；任何一方都可以拒绝或调整，不用积分交换隐私、身体接触、道歉或控制权。</view></view>
   <view class="segment-control"><button class="{{mode === 'store' ? 'is-active' : ''}}" data-mode="store" bindtap="switchMode">商城</button><button class="{{mode === 'inventory' ? 'is-active' : ''}}" data-mode="inventory" bindtap="switchMode">仓库</button></view>
 
   <block wx:if="{{mode === 'store'}}">

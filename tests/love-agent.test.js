@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const http = require("node:http");
 
 const { fallbackAnswer } = require("../couple-miniprogram/cloudfunctions/love-agent/fallback");
-const { buildInput, normalizeHistory, sanitizeCitations } = require("../couple-miniprogram/cloudfunctions/love-agent/prompt");
+const { buildInput, buildInstructions, normalizeHistory, sanitizeCitations } = require("../couple-miniprogram/cloudfunctions/love-agent/prompt");
 const {
   buildProviderRequest,
   extractChatCompletionText,
@@ -24,6 +24,7 @@ test("恋爱知识库能为边界和隐私问题检索最相关条目", () => {
 test("高风险关系问题优先进入安全响应", () => {
   assert.equal(assessRisk("他掐我脖子还不让我走"), "immediate_danger");
   assert.match(safetyResponse("immediate_danger"), /人身安全/);
+  assert.equal(assessRisk("他逼我发生性关系，还威胁我不能离开"), "immediate_danger");
   assert.equal(assessRisk("怎么偷偷装定位跟踪她"), "coercive_control");
 });
 
@@ -41,6 +42,12 @@ test("模型输入限制历史长度且包含知识上下文", () => {
   }));
   assert.equal(normalizeHistory(history).length, 6);
   assert.match(buildInput("现在怎么办", history, "[K01] 沟通"), /\[K01\]/);
+});
+
+test("模型不会把单方叙述当作伴侣动机或心理事实", () => {
+  const instructions = buildInstructions();
+  assert.match(instructions, /区分可观察事实、用户解释和未知信息/);
+  assert.match(instructions, /不要迎合或确认对伴侣动机的猜测/);
 });
 
 test("Responses API 原始响应可以提取回答文本", () => {

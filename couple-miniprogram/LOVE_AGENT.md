@@ -18,6 +18,8 @@
 
 对话只保留在当前小程序页面。云函数不写入问题、回答或历史；日志不包含正文。模型请求设置 `store: false`。
 
+页面提供“梳理当前问题”和“准备一次对话”两个可编辑框架，只帮助区分事实、感受、需要、目标与边界；不会覆盖用户已经输入的内容。每条助手回答会固定保留自己的生成模式，后续回答不会改写此前来源。
+
 ## 3. 三种回答模式
 
 - `knowledge`：没有 API 密钥或模型暂时不可用，直接使用本地知识库组织回答；
@@ -41,7 +43,7 @@
 
 适配层支持 OpenAI Responses 与常见 Chat Completions 兼容接口；Responses 使用 `instructions`、`input`、`max_output_tokens` 和 `store: false`，Chat Completions 使用 `messages` 与 `max_tokens`。参考：[Responses API 创建响应](https://developers.openai.com/api/reference/resources/responses/methods/create)、[文本生成指南](https://developers.openai.com/api/docs/guides/text)、[模型目录](https://developers.openai.com/api/docs/models)。
 
-页面只读取脱敏连接状态（是否配置、协议、模型和主机），不会获得密钥或完整 API 路径。“测试 API”会执行一次最小生成请求，用于区分密钥、地址、限流和超时问题。
+页面只读取脱敏状态，并以“增强回答可用/未启用/暂不可用”等产品语言呈现，不向普通用户展示协议、模型、主机、密钥或完整 API 路径。“检查连接”会执行一次最小生成请求，用于区分密钥、地址、限流和超时问题；成功回退本地知识库时使用中性通知，不把有效回答显示为错误。
 
 ## 5. 数据与成本控制
 
@@ -58,9 +60,10 @@
 2. 分配不可复用的稳定 ID；
 3. 写清适用边界和 2～4 个可执行步骤；
 4. 检查是否含诊断、操控、羞辱或未经同意的建议；
-5. 为新主题增加检索测试和安全反例；
-6. 执行 `npm run quality`；
-7. 专业人员复核后再发布。
+5. 区分可观察事实、用户理解与未知信息，不确认未经证实的伴侣动机；
+6. 为新主题增加检索测试和安全反例；
+7. 执行 `npm run quality`；
+8. 专业人员复核后再发布。
 
 ## 7. 上线前评测集
 

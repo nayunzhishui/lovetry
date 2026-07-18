@@ -116,3 +116,34 @@ test("切换日历月份时选中目标月中最接近的日期", (t) => {
   assert.equal(page.data.selectedKey, "2026-02-28");
   assert.equal(page.loadedMonth.getMonth(), 1);
 });
+
+test("恋爱助手降级成功时显示中性通知并保留回答来源", async (t) => {
+  const cloudApi = require("../couple-miniprogram/miniprogram/services/cloudApi");
+  const originalAsk = cloudApi.askLoveAgent;
+  cloudApi.askLoveAgent = () => Promise.resolve({
+    answer: "我们先把事实和猜测分开。",
+    mode: "knowledge",
+    sources: [],
+    providerNotice: "模型 API 暂时不可用，已切换到本地知识库"
+  });
+  let pageDefinition;
+  global.Page = (definition) => { pageDefinition = definition; };
+  global.wx = { pageScrollTo() {} };
+  t.after(() => {
+    cloudApi.askLoveAgent = originalAsk;
+    delete global.Page;
+    delete global.wx;
+    delete require.cache[require.resolve("../couple-miniprogram/miniprogram/features/love-agent/love-agent")];
+  });
+
+  require("../couple-miniprogram/miniprogram/features/love-agent/love-agent");
+  const page = {
+    data: { ...pageDefinition.data, question: "他是不是故意不理我？", messages: [] },
+    setData(next) { this.data = { ...this.data, ...next }; }
+  };
+  pageDefinition.ask.call(page);
+  await new Promise((resolve) => setTimeout(resolve, 70));
+  assert.equal(page.data.error, "");
+  assert.match(page.data.notice, /本地知识库/);
+  assert.equal(page.data.messages[1].modeText, "本地知识库回答");
+});

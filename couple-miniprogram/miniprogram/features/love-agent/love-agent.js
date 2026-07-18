@@ -1,8 +1,13 @@
 const api = require("../../services/cloudApi");
+const {
+  applyPromptFrame,
+  promptFrames,
+  providerPresentation
+} = require("../../../shared/agent-experience");
 
 const suggestions = [
   "吵架以后，我该怎么重新开口？",
-  "对象总想看我手机，我怎么表达边界？",
+  "伴侣总想看我手机，我怎么表达边界？",
   "异地恋怎样安排联系频率更舒服？",
   "最近约会有点重复，怎么增加新鲜感？"
 ];
@@ -11,14 +16,17 @@ Page({
   data: {
     question: "",
     suggestions,
+    promptFrames: promptFrames(),
     messages: [],
     loading: false,
     error: "",
+    notice: "",
     modeText: "知识库已就绪",
-    providerConfigured: false,
+    providerCanProbe: false,
     providerTesting: false,
-    providerStatusText: "正在检查模型配置…",
-    providerDetailText: ""
+    providerStatusText: "正在检查回答来源…",
+    providerDetailText: "",
+    providerTone: "quiet"
   },
 
   onLoad() {
@@ -27,34 +35,26 @@ Page({
 
   refreshProviderStatus(probe) {
     if (this.data.providerTesting) return;
-    if (probe) this.setData({ providerTesting: true, providerStatusText: "正在测试 API 连接…" });
+    if (probe) this.setData({ providerTesting: true, providerStatusText: "正在检查增强回答…" });
     api.getLoveAgentProviderStatus(probe)
       .then((status) => {
-        const connectionText = {
-          connected: "模型 API 连接正常",
-          configured: "模型 API 已配置，尚未测试",
-          not_configured: "未配置模型 API，当前使用本地知识库",
-          invalid_configuration: "模型 API 配置无效",
-          authentication_failed: "API 密钥验证失败",
-          endpoint_not_found: "API 地址或协议不匹配",
-          rate_limited: "API 请求受限，请稍后重试",
-          timeout: "API 连接超时",
-          unavailable: "模型 API 暂时不可用"
-        };
-        const detail = status.configured
-          ? `${status.model || "自定义模型"} · ${status.style === "chat_completions" ? "Chat Completions" : "Responses"}`
-          : "无需密钥也可使用内置恋爱知识库";
+        const presentation = providerPresentation(status);
         this.setData({
-          providerConfigured: Boolean(status.configured),
-          providerStatusText: connectionText[status.connection] || "模型连接状态未知",
-          providerDetailText: detail
+          providerCanProbe: presentation.canProbe,
+          providerStatusText: presentation.title,
+          providerDetailText: presentation.detail,
+          providerTone: presentation.tone
         });
         if (probe) wx.showToast({
-          title: status.connection === "connected" ? "API 连接正常" : "连接测试未通过",
+          title: status.connection === "connected" ? "增强回答连接正常" : "连接检查未通过",
           icon: status.connection === "connected" ? "success" : "none"
         });
       })
-      .catch(() => this.setData({ providerStatusText: "模型连接状态检查失败" }))
+      .catch(() => this.setData({
+        providerStatusText: "暂时无法检查回答来源",
+        providerDetailText: "仍可以继续使用本地知识库",
+        providerTone: "notice"
+      }))
       .finally(() => this.setData({ providerTesting: false }));
   },
 
@@ -68,6 +68,10 @@ Page({
 
   useSuggestion(event) {
     this.setData({ question: event.currentTarget.dataset.question || "" });
+  },
+
+  usePromptFrame(event) {
+    this.setData({ question: applyPromptFrame(this.data.question, event.currentTarget.dataset.id) });
   },
 
   ask() {
@@ -88,6 +92,7 @@ Page({
       messages: [...this.data.messages, userMessage],
       loading: true,
       error: "",
+      notice: "",
       modeText: "正在检索知识库…"
     });
     api.askLoveAgent(question, history)
@@ -106,13 +111,15 @@ Page({
             modeText
           }],
           modeText,
-          error: result.providerNotice || ""
+          notice: result.providerNotice || "",
+          error: ""
         });
         setTimeout(() => wx.pageScrollTo({ scrollTop: 99999, duration: 250 }), 50);
       })
       .catch((error) => {
         this.setData({
           error: api.getErrorMessage(error, "恋爱助手暂时没有回答，请稍后重试"),
+          notice: "",
           modeText: "请求未完成"
         });
       })
@@ -124,6 +131,6 @@ Page({
   },
 
   clearConversation() {
-    this.setData({ messages: [], question: "", error: "", modeText: "知识库已就绪" });
+    this.setData({ messages: [], question: "", error: "", notice: "", modeText: "知识库已就绪" });
   }
 });

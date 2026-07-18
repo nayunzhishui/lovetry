@@ -6,7 +6,6 @@
     "pages/plans/plans",
     "pages/rewards/rewards",
     "pages/albums/albums",
-    "pages/conflict/conflict",
     "pages/timeline/timeline",
     "pages/settings/settings",
     "pages/record-form/record-form",
@@ -41,6 +40,5 @@
     ]
   },
   "style": "v2",
-  "requiredPrivateInfos": ["chooseMedia"],
   "sitemapLocation": "sitemap.json"
 }

@@ -12,23 +12,25 @@
     <view class="hint">它是 AI，不是心理咨询师；只处理你主动输入的内容，不自动读取伴侣记录，也不会替你发送消息或做关系决定。</view>
   </view>
 
-  <view class="panel provider-card">
+  <view class="provider-card provider-card--{{providerTone}}">
     <view class="provider-card__copy">
-      <view class="panel-kicker">MODEL CONNECTION</view>
+      <view class="panel-kicker">回答来源</view>
       <view class="provider-card__status">{{providerStatusText}}</view>
       <view class="hint">{{providerDetailText}}</view>
     </view>
-    <button wx:if="{{providerConfigured}}" class="provider-card__button" loading="{{providerTesting}}" disabled="{{providerTesting}}" bindtap="testProviderConnection">测试 API</button>
+    <button wx:if="{{providerCanProbe}}" class="provider-card__button" loading="{{providerTesting}}" disabled="{{providerTesting}}" bindtap="testProviderConnection">检查连接</button>
   </view>
 
   <view wx:if="{{messages.length === 0}}" class="starter">
+    <view class="section-heading"><text>按一个结构开始</text></view>
+    <view class="prompt-frame-list"><button wx:for="{{promptFrames}}" wx:key="id" class="prompt-frame" data-id="{{item.id}}" bindtap="usePromptFrame"><view>{{item.label}}</view><text>{{item.description}}</text></button></view>
     <view class="section-heading"><text>可以从这些问题开始</text></view>
     <button wx:for="{{suggestions}}" wx:key="*this" class="suggestion" data-question="{{item}}" bindtap="useSuggestion">{{item}}<text>›</text></button>
   </view>
 
   <view class="conversation">
     <view wx:for="{{messages}}" wx:key="id" class="message message--{{item.role}}">
-      <view class="message__label">{{item.role === 'assistant' ? '恋爱助手 · AI' : '我'}}</view>
+      <view class="message__head"><view class="message__label">{{item.role === 'assistant' ? '恋爱助手 · AI' : '我'}}</view><view wx:if="{{item.role === 'assistant' && item.modeText}}" class="message__mode">{{item.modeText}}</view></view>
       <text class="message__content" user-select>{{item.content}}</text>
       <view wx:if="{{item.sources.length}}" class="sources">
         <view class="sources__title">参考的知识条目</view>
@@ -43,6 +45,7 @@
   </view>
 
   <view wx:if="{{loading}}" class="agent-state" aria-live="polite"><view class="state-pulse"></view><text>正在检索并组织回答…</text></view>
+  <view wx:if="{{notice}}" class="notice-banner" aria-live="polite">{{notice}}</view>
   <view wx:if="{{error}}" class="error-banner" aria-live="polite">{{error}}</view>
 
   <view class="composer">

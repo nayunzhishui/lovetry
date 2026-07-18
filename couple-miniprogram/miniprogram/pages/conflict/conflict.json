@@ -1,8 +1,0 @@
-{
-  "navigationBarTitleText": "沟通复盘",
-  "navigationBarBackgroundColor": "#F1F4F2",
-  "navigationBarTextStyle": "black",
-  "backgroundColor": "#F1F4F2",
-  "backgroundTextStyle": "dark",
-  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
-}

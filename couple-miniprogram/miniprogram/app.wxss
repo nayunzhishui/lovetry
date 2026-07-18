@@ -390,7 +390,28 @@ textarea:focus {
 }
 
 @media (prefers-color-scheme: dark) {
-  page { --ink-strong:#eef4f2; --ink:#c8d2cf; --ink-soft:#94a5a2; --paper:#142126; --surface:#1b2a2f; --surface-muted:#22343a; --line:#34494f; --shadow-card:none; }
+  page {
+    --ink-strong: #eef4f2;
+    --ink: #c8d2cf;
+    --ink-soft: #94a5a2;
+    --paper: #142126;
+    --surface: #1b2a2f;
+    --surface-muted: #22343a;
+    --line: #34494f;
+    --cobalt: #8dbce0;
+    --coral: #ff9a8f;
+    --moss: #a7c4aa;
+    --sage: #a7c4aa;
+    --brass: #e0c27c;
+    --amber: #e0c27c;
+    --amber-deep: #e0c27c;
+    --danger: #ff9a8f;
+    --shadow-card: none;
+  }
   input, textarea, .input-like { background:#172429; color:var(--ink-strong); }
   .button.secondary, .panel, .card, .almanac-card, .nav-item { background:var(--surface); }
+  .status { background: #243b35; color: #b7d8bd; }
+  .status--warm { background: #3b3424; color: var(--amber-deep); }
+  .button[disabled] { background: #4b5a5e; color: #d7dfdd; }
+  .error-banner, .form-error, .inline-error, .timer-error { background: #3d292a; color: var(--danger); }
 }
