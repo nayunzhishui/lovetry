@@ -1,8 +1,8 @@
 const cloudApi = require("../../services/cloudApi");
 const formDraft = require("../../services/formDraft");
 const agentHandoff = require("../../services/agentHandoff");
-const { applyFormTemplate, templatesFor } = require("../../../shared/form-assist");
-const { handoffToConflictPatch } = require("../../../shared/agent-context");
+const { applyFormTemplate, templatesFor } = require("../../shared/form-assist");
+const { handoffToConflictPatch } = require("../../shared/agent-context");
 
 const TYPES = [
   { value: "moment", label: "生活日记" },
@@ -11,6 +11,7 @@ const TYPES = [
   { value: "outing", label: "玩乐记录" },
   { value: "sleep", label: "睡眠记录" },
   { value: "period", label: "生理期记录" },
+  { value: "intimacy", label: "亲密记录" },
   { value: "game", label: "游戏记录" }
 ];
 
@@ -21,6 +22,7 @@ const TYPE_META = {
   outing: { contentLabel: "这次经历", placeholder: "吃了什么、去了哪里，发生了哪些值得记住的事", visibility: "couple" },
   sleep: { contentLabel: "睡眠备注", placeholder: "入睡感受、夜间醒来或醒后状态", visibility: "private" },
   period: { contentLabel: "身体记录", placeholder: "可选填身体感受或需要留意的事情", visibility: "private" },
+  intimacy: { contentLabel: "想记下的感受", placeholder: "只写你愿意保存的内容，也可以留空", visibility: "private" },
   game: { contentLabel: "游戏备注", placeholder: "一起玩的趣事、进度或下一次计划", visibility: "couple" }
 };
 
@@ -31,6 +33,7 @@ const DEFAULT_TITLES = {
   outing: "一起出去玩",
   sleep: "睡眠记录",
   period: "生理期记录",
+  intimacy: "亲密记录",
   game: "游戏记录"
 };
 
@@ -38,7 +41,7 @@ const DRAFT_FIELDS = [
   "title", "content", "visibility", "startDate", "startTime", "endDate", "endTime",
   "moodLevel", "tagsText", "feelings", "needs", "communication", "agreement",
   "satisfaction", "outingCategoryIndex", "location", "amount", "outingRating",
-  "sleepQuality", "periodFlowIndex", "participants"
+  "sleepQuality", "periodFlowIndex", "protectionIndex", "comfortIndex", "participants", "repairIndex"
 ];
 
 function pad(value) {
@@ -90,6 +93,7 @@ function emptyRecordFields() {
     title: "", content: "", moodLevel: 3, tagsText: "", feelings: "", needs: "",
     communication: "", agreement: "", satisfaction: 5, outingCategoryIndex: 0,
     location: "", amount: "", outingRating: 3, sleepQuality: 3, periodFlowIndex: 1,
+    protectionIndex: 0, comfortIndex: 0, repairIndex: 0,
     participants: "", originalPayload: {}
   };
 }
@@ -118,6 +122,9 @@ Page({
     communication: "",
     agreement: "",
     satisfaction: 5,
+    repairChoices: ["先记录下来", "准备沟通", "已经沟通", "稍后再谈"],
+    repairValues: ["noted", "preparing", "talked", "later"],
+    repairIndex: 0,
     outingCategories: ["吃饭", "约会", "旅行", "酒店", "其他"],
     outingCategoryIndex: 0,
     location: "",
@@ -126,6 +133,10 @@ Page({
     sleepQuality: 3,
     periodFlows: ["少量", "正常", "较多", "结束"],
     periodFlowIndex: 1,
+    protectionChoices: ["不记录", "已采取", "未采取"],
+    protectionIndex: 0,
+    comfortChoices: ["不记录", "舒适", "一般", "不适"],
+    comfortIndex: 0,
     participants: "",
     durationText: "",
     isLoading: false,
@@ -315,6 +326,9 @@ Page({
           this.data.outingCategories.indexOf(payload.category)
         );
         const periodFlowIndex = Math.max(0, this.data.periodFlows.indexOf(payload.flow));
+        const protectionIndex = Math.max(0, this.data.protectionChoices.indexOf(payload.protection));
+        const comfortIndex = Math.max(0, this.data.comfortChoices.indexOf(payload.comfort));
+        const repairIndex = Math.max(0, this.data.repairValues.indexOf(payload.repairStatus));
         this.setData({
           version: Number(record.version || 1),
           title: record.title || "",
@@ -337,6 +351,9 @@ Page({
           outingRating: Number(payload.rating || 3),
           sleepQuality: Number(payload.quality || 3),
           periodFlowIndex,
+          protectionIndex,
+          comfortIndex,
+          repairIndex,
           participants: payload.participants || "",
           originalPayload: payload
         });
@@ -372,7 +389,8 @@ Page({
         needs: this.data.needs.trim(),
         communication: this.data.communication.trim(),
         agreement: this.data.agreement.trim(),
-        satisfaction: Number(this.data.satisfaction)
+        satisfaction: Number(this.data.satisfaction),
+        repairStatus: this.data.repairValues[this.data.repairIndex]
       };
     } else if (type === "outing") {
       payload = {
@@ -396,6 +414,11 @@ Page({
       endAt = toLocalDate(this.data.endDate, "23:59");
       if (!endAt || endAt < startAt) throw new Error("结束日期不能早于开始日期");
       payload = { flow: this.data.periodFlows[this.data.periodFlowIndex] };
+    } else if (type === "intimacy") {
+      payload = {
+        protection: this.data.protectionChoices[this.data.protectionIndex],
+        comfort: this.data.comfortChoices[this.data.comfortIndex]
+      };
     }
 
     return {

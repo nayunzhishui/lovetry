@@ -29,6 +29,25 @@
     <view class="date-filter"><picker mode="date" value="{{filterDate}}" bindchange="selectFilterDate"><view class="input-like">{{filterDate || '按日期筛选'}}</view></picker><button wx:if="{{filterDate}}" bindtap="clearFilterDate">清除</button></view>
   </view>
 
+  <view wx:if="{{insight}}" class="insight-card">
+    <view class="panel-kicker">{{insight.eyebrow}}</view>
+    <view class="insight-title">{{insight.title}}</view>
+    <view class="insight-metrics">
+      <view wx:for="{{insight.metrics}}" wx:key="label" class="insight-metric">
+        <text>{{item.value}}</text><view>{{item.label}}</view>
+      </view>
+    </view>
+    <view wx:if="{{insight.bars.length}}" class="insight-chart" aria-label="{{insight.unit}}">
+      <view wx:for="{{insight.bars}}" wx:key="key" class="insight-row">
+        <text class="insight-row__label">{{item.label}}</text>
+        <view class="insight-row__track"><view class="insight-row__fill" style="width: {{item.width}}%;"></view></view>
+        <text class="insight-row__value">{{item.valueText}}</text>
+      </view>
+      <view class="insight-unit">{{insight.unit}}</view>
+    </view>
+    <view class="insight-note">{{insight.note}}</view>
+  </view>
+
   <view wx:if="{{stats}}" class="stats-strip">
     <view class="stats-item"><text>{{stats.last7DaysMinutes}}</text><view>近 7 天{{stats.modeLabel}} / 分钟</view></view>
     <view class="stats-divider"></view>

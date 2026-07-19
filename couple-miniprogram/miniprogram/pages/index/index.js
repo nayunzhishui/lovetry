@@ -1,7 +1,7 @@
 const app = getApp();
 const cloudApi = require("../../services/cloudApi");
 const formDraft = require("../../services/formDraft");
-const { nextAnniversary } = require("../../../shared/anniversary");
+const { nextAnniversary } = require("../../shared/anniversary");
 
 function todayText() {
   const date = new Date();
@@ -17,6 +17,7 @@ Page({
     recentMoodText: "",
     upcomingAnniversary: null,
     syncText: "等待首次同步",
+    syncFailed: false,
     title: "",
     content: "",
     isLoading: false,
@@ -54,19 +55,23 @@ Page({
 
   refreshSyncText() {
     if (!app.globalData.isOnline) {
-      this.setData({ syncText: "当前离线 · 恢复网络后自动同步" });
+      this.setData({ syncText: "当前离线 · 恢复网络后自动同步", syncFailed: false });
+      return;
+    }
+    if (app.globalData.syncErrorAt) {
+      this.setData({ syncText: "同步暂未完成 · 点击重试", syncFailed: true });
       return;
     }
     const summary = app.globalData.syncSummary || {};
     if (summary.total > 0) {
-      this.setData({ syncText: `最近同步 · 接收 ${summary.total} 项更新` });
+      this.setData({ syncText: `最近同步 · 接收 ${summary.total} 项更新`, syncFailed: false });
       return;
     }
     const date = new Date(app.globalData.lastSyncAt || "");
     const time = Number.isNaN(date.getTime())
       ? "等待首次同步"
       : `已同步 · ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-    this.setData({ syncText: time });
+    this.setData({ syncText: time, syncFailed: false });
   },
 
   runSync() {
@@ -74,6 +79,15 @@ Page({
     return app.syncChanges({ silent: true }).then((result) => {
       this.refreshSyncText();
       return result;
+    });
+  },
+
+  retrySync() {
+    if (!this.data.couple) return;
+    this.setData({ syncText: "正在重新同步…", syncFailed: false });
+    this.runSync().then((result) => {
+      if (result) wx.showToast({ title: "同步完成" });
+      else this.refreshSyncText();
     });
   },
 

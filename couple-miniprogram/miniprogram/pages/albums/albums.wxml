@@ -4,6 +4,7 @@
   <view class="panel">
     <view class="panel-title">新建相册</view>
     <input value="{{newTitle}}" placeholder="例如：厦门旅行" bindinput="onTitleInput" />
+    <textarea value="{{newDescription}}" maxlength="500" auto-height placeholder="可选：写下这本相册的时间或故事" bindinput="onDescriptionInput" />
     <button class="button" disabled="{{loading || !newTitle}}" bindtap="createAlbum">创建相册</button>
   </view>
 
@@ -19,7 +20,8 @@
   </view>
   <view wx:if="{{selectedAlbum}}" class="album-tools">
     <input value="{{renameTitle}}" maxlength="60" placeholder="相册名称" bindinput="onRenameInput" />
-    <button class="button secondary compact" bindtap="renameAlbum">改名</button>
+    <textarea value="{{editDescription}}" maxlength="500" auto-height placeholder="相册说明（可选）" bindinput="onEditDescriptionInput" />
+    <button class="button secondary compact" bindtap="renameAlbum">保存信息</button>
     <button class="button secondary compact danger-button" bindtap="deleteAlbum">删空相册</button>
   </view>
   <view wx:if="{{uploadProgress}}" class="upload-progress">{{uploadProgress}}</view>
@@ -29,6 +31,7 @@
   <view class="photo-grid">
     <view wx:for="{{assets}}" wx:key="_id" class="photo-wrap">
       <image src="{{item.tempURL}}" mode="aspectFill" class="photo" data-url="{{item.tempURL}}" bindtap="preview" />
+      <view class="photo-date">{{item.createdAtText}}</view>
       <button class="photo-delete" data-id="{{item._id}}" bindtap="deleteAsset">删除</button>
       <button class="photo-cover" data-id="{{item._id}}" bindtap="setCover">{{selectedAlbum.coverAssetId === item._id ? '封面' : '设封面'}}</button>
     </view>

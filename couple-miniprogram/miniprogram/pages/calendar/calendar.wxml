@@ -19,16 +19,24 @@
   <view class="calendar-grid">
     <button wx:for="{{days}}" wx:key="key" class="day {{item.blank ? 'day--blank' : ''}} {{item.isToday ? 'day--today' : ''}} {{selectedKey === item.key ? 'day--selected' : ''}}" disabled="{{item.blank}}" data-key="{{item.key}}" bindtap="selectDay">
       <text wx:if="{{!item.blank}}">{{item.day}}</text>
-      <view wx:if="{{item.eventCount}}" class="event-dot"></view>
+      <view wx:if="{{item.eventCount}}" class="event-dots">
+        <view wx:if="{{item.hasPeriod}}" class="event-dot event-dot--period"></view>
+        <view wx:if="{{item.hasIntimacy}}" class="event-dot event-dot--intimacy"></view>
+        <view wx:if="{{item.hasGeneral}}" class="event-dot"></view>
+      </view>
     </button>
   </view>
 
   <view wx:if="{{loading}}" class="empty" aria-live="polite"><view class="empty-desc">正在整理这个月的记录…</view></view>
-  <view wx:elif="{{error}}" class="error-banner" aria-live="polite"><view>{{error}}</view><button class="button secondary compact" bindtap="retryMonth">重新加载</button></view>
-  <view wx:else class="panel calendar-agenda">
+  <view wx:if="{{error}}" class="error-banner" aria-live="polite"><view>{{error}}</view><button class="button secondary compact" bindtap="retryMonth">重新加载</button></view>
+  <view class="panel calendar-agenda">
     <view class="calendar-agenda__head">
       <view><view class="panel-kicker">SELECTED DAY</view><view class="calendar-agenda__date">{{selectedKey}}</view></view>
       <view class="calendar-agenda__count">{{selectedEvents.length}} 项</view>
+    </view>
+    <view class="body-journal">
+      <view class="body-journal__copy"><view class="panel-kicker">BODY JOURNAL</view><view class="body-journal__title">生理与亲密</view><view class="body-journal__desc">在同一日期下分别记录，默认只对自己可见。</view></view>
+      <view class="body-journal__actions"><button class="body-action body-action--period" bindtap="addPeriodForSelectedDay"><text class="body-action__mark"></text><view><view>记录生理期</view><text>周期与身体感受</text></view></button><button class="body-action body-action--intimacy" bindtap="addIntimacyForSelectedDay"><text class="body-action__mark"></text><view><view>记录亲密</view><text>私密、克制、不评分</text></view></button></view>
     </view>
     <view class="calendar-quick-actions"><button class="button secondary compact" bindtap="addRecordForSelectedDay">记下这一天</button><button class="button secondary compact" bindtap="addPlanForSelectedDay">安排这一天</button></view>
     <view wx:if="{{selectedEvents.length === 0}}" class="calendar-agenda__empty"><view class="empty-title">这一天还是空白</view><view class="empty-desc">从上面的入口留下回忆或安排。</view></view>

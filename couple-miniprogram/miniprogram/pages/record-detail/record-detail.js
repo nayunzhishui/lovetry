@@ -7,10 +7,12 @@ const TYPE_LABELS = {
   outing: "玩乐记录",
   sleep: "睡眠记录",
   period: "生理期记录",
+  intimacy: "亲密记录",
   game: "游戏记录",
   pomodoro: "专注记录"
 };
-const EDITABLE_TYPES = new Set(["mood", "conflict", "outing", "sleep", "period", "game"]);
+const EDITABLE_TYPES = new Set(["mood", "conflict", "outing", "sleep", "period", "intimacy", "game"]);
+const REPAIR_LABELS = { noted: "先记录下来", preparing: "准备沟通", talked: "已经沟通", later: "稍后再谈" };
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -51,6 +53,7 @@ function buildRows(record) {
     rows.push(row("我在意的需要", payload.needs));
     rows.push(row("沟通过程", payload.communication));
     rows.push(row("共同约定", payload.agreement || payload.result));
+    rows.push(row("修复进度", REPAIR_LABELS[payload.repairStatus] || payload.repairStatus));
     rows.push(row("沟通满意度", payload.satisfaction ? `${payload.satisfaction} / 10` : ""));
   } else if (record.type === "outing") {
     rows.push(row("类型", payload.category));
@@ -61,6 +64,9 @@ function buildRows(record) {
     rows.push(row("睡眠时长", minutesText(metrics.durationMinutes)));
   } else if (record.type === "period") {
     rows.push(row("记录状态", payload.flow));
+  } else if (record.type === "intimacy") {
+    rows.push(row("保护措施", payload.protection));
+    rows.push(row("身体感受", payload.comfort));
   } else if (record.type === "game") {
     rows.push(row("参与人", payload.participants));
     rows.push(row("游戏时长", minutesText(metrics.durationMinutes)));

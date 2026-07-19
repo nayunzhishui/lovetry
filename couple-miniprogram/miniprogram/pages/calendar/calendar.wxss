@@ -66,14 +66,21 @@
 .day--today { box-shadow: inset 0 0 0 2rpx var(--cobalt); }
 .day--today.day--selected { box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, .7); }
 
-.event-dot {
+.event-dots {
   position: absolute;
   bottom: 8rpx;
+  display: flex;
+  gap: 5rpx;
+}
+
+.event-dot {
   width: 7rpx;
   height: 7rpx;
   border-radius: 50%;
   background: var(--amber);
 }
+.event-dot--period { background: var(--coral); }
+.event-dot--intimacy { background: var(--cobalt); }
 
 .event-row {
   display: flex;
@@ -103,6 +110,16 @@
 .calendar-agenda__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18rpx; }
 .calendar-agenda__date { margin-top: 6rpx; color: var(--ink-strong); font-family: "Songti SC", "STSong", serif; font-size: 34rpx; font-weight: 700; }
 .calendar-agenda__count { color: var(--ink-soft); font-family: "SFMono-Regular", Consolas, monospace; font-size: 21rpx; }
+.body-journal { margin: 22rpx 0 10rpx; padding: 22rpx; border: 1rpx solid var(--line); border-left: 6rpx solid var(--coral); background: var(--surface-muted); }
+.body-journal__copy { margin-bottom: 16rpx; }
+.body-journal__title { color: var(--ink-strong); font-family: "Songti SC", "STSong", serif; font-size: 29rpx; font-weight: 700; }
+.body-journal__desc { margin-top: 5rpx; color: var(--ink-soft); font-size: 20rpx; line-height: 1.5; }
+.body-journal__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10rpx; }
+.body-action { display: flex; align-items: center; gap: 13rpx; min-height: 98rpx; margin: 0; padding: 15rpx 16rpx; border: 1rpx solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink-strong); text-align: left; line-height: 1.35; }
+.body-action view view { font-size: 23rpx; font-weight: 700; }
+.body-action view text { display: block; margin-top: 4rpx; color: var(--ink-soft); font-size: 18rpx; }
+.body-action__mark { width: 9rpx; height: 48rpx; border-radius: 5rpx; background: var(--coral); }
+.body-action--intimacy .body-action__mark { background: var(--cobalt); }
 .calendar-quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12rpx; margin: 22rpx 0 10rpx; }
 .calendar-quick-actions .button { width: 100%; margin: 0; }
 .calendar-agenda__empty { padding: 38rpx 10rpx 20rpx; text-align: center; }
@@ -123,5 +140,6 @@
 @media (max-width: 340px) {
   .calendar-grid { gap: 5rpx; }
   .day { border-radius: 14rpx; }
+  .body-journal__actions { grid-template-columns: 1fr; }
   .calendar-quick-actions { grid-template-columns: 1fr; }
 }

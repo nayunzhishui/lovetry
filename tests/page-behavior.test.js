@@ -30,9 +30,28 @@ test("首页同步状态能区分离线与远端更新", (t) => {
   app.globalData.syncSummary = { total: 3 };
   pageDefinition.refreshSyncText.call(page);
   assert.equal(page.data.syncText, "最近同步 · 接收 3 项更新");
+
+  app.globalData.syncErrorAt = "2026-07-20T12:00:00.000Z";
+  pageDefinition.refreshSyncText.call(page);
+  assert.match(page.data.syncText, /点击重试/);
+  assert.equal(page.data.syncFailed, true);
 });
 
-test("日历空日期可以直接创建当天记录或事件", (t) => {
+test("十四项功能在首页任务域和表单中保持可发现", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const root = path.resolve(__dirname, "../couple-miniprogram/miniprogram");
+  const home = fs.readFileSync(path.join(root, "pages/index/index.wxml"), "utf8");
+  const recordForm = fs.readFileSync(path.join(root, "pages/record-form/record-form.js"), "utf8");
+  const plans = fs.readFileSync(path.join(root, "pages/plans/plans.js"), "utf8");
+  const app = fs.readFileSync(path.join(root, "app.json"), "utf8");
+
+  for (const label of ["日记", "心情", "玩乐", "睡眠", "生理与亲密", "游戏", "专注", "任务清单", "事件", "菜单", "旅行", "奖励账户", "共同相册", "共同日历"]) {
+    assert.ok(`${home}\n${recordForm}\n${plans}\n${app}`.includes(label), `缺少功能入口：${label}`);
+  }
+});
+
+test("日历日期可以直接记录生理期、亲密事件或普通事项", (t) => {
   let pageDefinition;
   const urls = [];
   global.Page = (definition) => { pageDefinition = definition; };
@@ -45,9 +64,13 @@ test("日历空日期可以直接创建当天记录或事件", (t) => {
 
   require("../couple-miniprogram/miniprogram/pages/calendar/calendar");
   const page = { data: { selectedKey: "2026-07-18" } };
+  pageDefinition.addPeriodForSelectedDay.call(page);
+  pageDefinition.addIntimacyForSelectedDay.call(page);
   pageDefinition.addRecordForSelectedDay.call(page);
   pageDefinition.addPlanForSelectedDay.call(page);
   assert.deepEqual(urls, [
+    "/pages/record-form/record-form?type=period&date=2026-07-18",
+    "/pages/record-form/record-form?type=intimacy&date=2026-07-18",
     "/pages/record-form/record-form?type=moment&date=2026-07-18",
     "/pages/plans/plans?type=event&date=2026-07-18"
   ]);

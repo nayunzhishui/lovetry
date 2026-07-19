@@ -1,5 +1,5 @@
 const api = require("../../services/cloudApi");
-const { presentCalendarEvents } = require("../../../shared/calendar-view");
+const { presentCalendarEvents } = require("../../shared/calendar-view");
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -36,8 +36,24 @@ function buildDays(month, events, today = new Date()) {
   for (let day = 1; day <= total; day += 1) {
     const date = new Date(month.getFullYear(), month.getMonth(), day);
     const key = dateKey(date);
-    const dayEvents = events.filter((event) => dateKey(event.startAt) === key);
-    cells.push({ key, day, eventCount: dayEvents.length, events: dayEvents, isToday: key === dateKey(today) });
+    const dayEvents = events.filter((event) => {
+      if (dateKey(event.startAt) === key) return true;
+      if (event.type !== "period" || !event.endAt) return false;
+      const current = date.getTime();
+      const start = new Date(event.startAt).setHours(0, 0, 0, 0);
+      const end = new Date(event.endAt).setHours(23, 59, 59, 999);
+      return current >= start && current <= end;
+    });
+    cells.push({
+      key,
+      day,
+      eventCount: dayEvents.length,
+      events: dayEvents,
+      hasPeriod: dayEvents.some((event) => event.type === "period"),
+      hasIntimacy: dayEvents.some((event) => event.type === "intimacy"),
+      hasGeneral: dayEvents.some((event) => !["period", "intimacy"].includes(event.type)),
+      isToday: key === dateKey(today)
+    });
   }
   return cells;
 }
@@ -50,6 +66,7 @@ Page({
     events: [],
     filters: [
       { value: "", label: "全部" }, { value: "record", label: "记录" }, { value: "plan", label: "计划" },
+      { value: "period", label: "生理期" }, { value: "intimacy", label: "亲密" },
       { value: "mood", label: "心情" }, { value: "task", label: "任务" }, { value: "anniversary", label: "纪念日" }
     ],
     activeFilter: "",
@@ -67,7 +84,15 @@ Page({
   },
 
   async loadMonth(month) {
-    this.setData({ loading: true, error: "" });
+    const emptyDays = buildDays(month, []);
+    this.setData({
+      loading: true,
+      error: "",
+      month,
+      monthLabel: `${month.getFullYear()} 年 ${month.getMonth() + 1} 月`,
+      days: emptyDays,
+      selectedEvents: []
+    });
     try {
       const { start, end } = monthRange(month);
       const events = presentCalendarEvents(await api.getCalendarEvents(start.toISOString(), end.toISOString()));
@@ -75,8 +100,6 @@ Page({
       const days = buildDays(month, visibleEvents);
       const selected = days.find((day) => day.key === this.data.selectedKey);
       this.setData({
-        month,
-        monthLabel: `${month.getFullYear()} 年 ${month.getMonth() + 1} 月`,
         events,
         days,
         selectedEvents: selected?.events || []
@@ -122,6 +145,14 @@ Page({
 
   addRecordForSelectedDay() {
     wx.navigateTo({ url: `/pages/record-form/record-form?type=moment&date=${this.data.selectedKey}` });
+  },
+
+  addPeriodForSelectedDay() {
+    wx.navigateTo({ url: `/pages/record-form/record-form?type=period&date=${this.data.selectedKey}` });
+  },
+
+  addIntimacyForSelectedDay() {
+    wx.navigateTo({ url: `/pages/record-form/record-form?type=intimacy&date=${this.data.selectedKey}` });
   },
 
   addPlanForSelectedDay() {

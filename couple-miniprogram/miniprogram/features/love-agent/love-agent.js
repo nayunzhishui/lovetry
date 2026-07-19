@@ -4,8 +4,8 @@ const {
   applyPromptFrame,
   promptFrames,
   providerPresentation
-} = require("../../../shared/agent-experience");
-const { contextCandidate, contextPayload } = require("../../../shared/agent-context");
+} = require("../../shared/agent-experience");
+const { contextCandidate, contextPayload } = require("../../shared/agent-context");
 
 const suggestions = [
   "吵架以后，我该怎么重新开口？",

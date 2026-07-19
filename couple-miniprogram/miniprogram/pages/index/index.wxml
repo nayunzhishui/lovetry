@@ -14,7 +14,7 @@
   </view>
 
   <view wx:else>
-    <view class="sync-ribbon"><view class="sync-ribbon__light"></view><text>{{syncText}}</text></view>
+    <button class="sync-ribbon {{syncFailed ? 'sync-ribbon--failed' : ''}}" bindtap="retrySync"><view class="sync-ribbon__light"></view><text>{{syncText}}</text></button>
     <view class="panel space-card">
       <view class="panel-head">
         <view>
@@ -58,7 +58,7 @@
       <button class="nav-item" bindtap="goRecords">
         <view class="nav-mark"></view>
         <view class="nav-title">生活记录</view>
-        <view class="nav-desc">心情、睡眠与共同经历</view>
+        <view class="nav-desc">日记、心情、玩乐、睡眠、生理与亲密、游戏、专注</view>
       </button>
       <button class="nav-item" bindtap="goCalendar">
         <view class="nav-mark"></view>
@@ -68,7 +68,7 @@
       <button class="nav-item" bindtap="goPlans">
         <view class="nav-mark"></view>
         <view class="nav-title">共同计划</view>
-        <view class="nav-desc">任务、菜单、旅行和纪念日</view>
+        <view class="nav-desc">任务清单、事件、菜单、旅行和纪念日</view>
       </button>
       <button class="nav-item" bindtap="goRewards">
         <view class="nav-mark"></view>

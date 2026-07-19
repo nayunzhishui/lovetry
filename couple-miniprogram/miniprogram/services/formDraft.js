@@ -1,4 +1,4 @@
-const { createDraftRepository } = require("../../shared/form-assist");
+const { createDraftRepository } = require("../shared/form-assist");
 
 module.exports = createDraftRepository({
   get(key) { return wx.getStorageSync(key); },

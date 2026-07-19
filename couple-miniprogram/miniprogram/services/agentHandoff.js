@@ -1,4 +1,4 @@
-const { createHandoffRepository } = require("../../shared/agent-context");
+const { createHandoffRepository } = require("../shared/agent-context");
 
 module.exports = createHandoffRepository({
   get(key) { return wx.getStorageSync(key); },

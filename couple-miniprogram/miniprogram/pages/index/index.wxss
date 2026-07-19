@@ -11,6 +11,13 @@
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 21rpx;
   letter-spacing: 1rpx;
+  width: 100%;
+  min-height: 64rpx;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.5;
+  text-align: left;
 }
 
 .sync-ribbon__light {
@@ -20,6 +27,9 @@
   background: var(--moss);
   box-shadow: 0 0 0 6rpx rgba(115, 142, 120, 0.12);
 }
+
+.sync-ribbon--failed { color: var(--danger); }
+.sync-ribbon--failed .sync-ribbon__light { background: var(--danger); box-shadow: 0 0 0 6rpx rgba(168, 88, 78, 0.12); }
 
 .empty--home {
   padding-top: 46rpx;

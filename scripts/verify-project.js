@@ -6,6 +6,8 @@ const root = path.resolve(__dirname, "..");
 const projectRoot = path.join(root, "couple-miniprogram");
 const miniprogramRoot = path.join(projectRoot, "miniprogram");
 const cloudRoot = path.join(projectRoot, "cloudfunctions");
+const sharedRoot = path.join(projectRoot, "shared");
+const runtimeSharedRoot = path.join(miniprogramRoot, "shared");
 const failures = [];
 
 function walk(directory, predicate) {
@@ -65,6 +67,26 @@ const directCloudCalls = walk(miniprogramRoot, (target) => target.endsWith(".js"
   .filter((file) => !file.endsWith(path.join("services", "cloudApi.js")))
   .filter((file) => fs.readFileSync(file, "utf8").includes("wx.cloud.callFunction"));
 if (directCloudCalls.length) failures.push(`页面绕过服务层调用云函数: ${directCloudCalls.map(relative).join(", ")}`);
+
+const runtimeJsFiles = walk(miniprogramRoot, (target) => target.endsWith(".js"));
+for (const file of runtimeJsFiles) {
+  const source = fs.readFileSync(file, "utf8");
+  const matches = source.matchAll(/require\(\s*["'](\.[^"']*)["']\s*\)/g);
+  for (const match of matches) {
+    const resolved = path.resolve(path.dirname(file), match[1]);
+    if (resolved !== miniprogramRoot && !resolved.startsWith(`${miniprogramRoot}${path.sep}`)) {
+      failures.push(`小程序运行时引用越过 miniprogramRoot: ${relative(file)} -> ${match[1]}`);
+    }
+  }
+}
+
+for (const sourceFile of walk(sharedRoot, (target) => target.endsWith(".js"))) {
+  const runtimeFile = path.join(runtimeSharedRoot, path.relative(sharedRoot, sourceFile));
+  requireFile(runtimeFile, "运行时共享模块缺失");
+  if (fs.existsSync(runtimeFile) && fs.readFileSync(sourceFile, "utf8") !== fs.readFileSync(runtimeFile, "utf8")) {
+    failures.push(`运行时共享模块未同步: ${relative(sourceFile)}`);
+  }
+}
 
 const subpackageRoots = new Set((appConfig.subpackages || []).map((group) => path.join(miniprogramRoot, group.root)));
 const mainPackageFiles = walk(miniprogramRoot, () => true)

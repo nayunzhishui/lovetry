@@ -32,6 +32,8 @@
   line-height: 1.65;
 }
 .privacy-note { border-left-color: var(--amber); background: #f5eee4; color: var(--amber-deep); }
+.intimacy-note { margin-top: 26rpx; padding: 22rpx 24rpx; border-left: 5rpx solid var(--coral); background: rgba(212, 101, 87, .08); color: var(--ink); font-size: 23rpx; line-height: 1.65; }
+.intimacy-note__title { margin-bottom: 6rpx; color: var(--ink-strong); font-weight: 700; }
 .time-section { margin-top: 32rpx; padding-top: 28rpx; border-top: 1rpx solid var(--line); }
 .section-label { margin-bottom: 14rpx; color: var(--ink-strong); font-size: 26rpx; font-weight: 650; }
 .date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14rpx; }

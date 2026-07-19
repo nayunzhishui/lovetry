@@ -1,6 +1,6 @@
 const cloudApi = require("../../services/cloudApi");
 const formDraft = require("../../services/formDraft");
-const { applyFormTemplate, templatesFor } = require("../../../shared/form-assist");
+const { applyFormTemplate, templatesFor } = require("../../shared/form-assist");
 
 const PLAN_TYPES = [
   { value: "task", label: "任务", eyebrow: "TO DO", titlePlaceholder: "例如：周六一起整理房间" },
@@ -340,6 +340,13 @@ Page({
     if (!plan.title) {
       wx.showToast({ title: "请先填写名称", icon: "none" });
       return;
+    }
+    if (this.data.activeType === "trip" && this.data.form.budget !== "") {
+      const budget = Number(this.data.form.budget);
+      if (!Number.isFinite(budget) || budget < 0) {
+        wx.showToast({ title: "预算应为不小于 0 的数字", icon: "none" });
+        return;
+      }
     }
     if (plan.startAt && plan.endAt && new Date(plan.endAt) < new Date(plan.startAt)) {
       wx.showToast({ title: "结束日期不能早于开始日期", icon: "none" });

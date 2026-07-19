@@ -1,4 +1,5 @@
 const cloudApi = require("../../services/cloudApi");
+const { buildRecordInsight } = require("../../shared/record-insights");
 
 const TYPE_OPTIONS = [
   { value: "", label: "全部" },
@@ -8,6 +9,7 @@ const TYPE_OPTIONS = [
   { value: "outing", label: "玩乐" },
   { value: "sleep", label: "睡眠" },
   { value: "period", label: "生理期" },
+  { value: "intimacy", label: "亲密" },
   { value: "game", label: "游戏" },
   { value: "pomodoro", label: "专注" }
 ];
@@ -59,6 +61,7 @@ Page({
     outingCategory: "",
     filterDate: "",
     stats: null,
+    insight: null,
     isLoading: true,
     error: ""
   },
@@ -84,7 +87,7 @@ Page({
     this.setData({ isLoading: true, error: "" });
     const type = this.data.selectedType;
     const statsPromise = ["sleep", "game", "pomodoro"].includes(type)
-      ? cloudApi.getRecordStats(type)
+      ? cloudApi.getRecordStats(type).catch(() => null)
       : Promise.resolve(null);
     return Promise.all([
       cloudApi.listRecords({ type: type || undefined, limit: 50 }),
@@ -101,13 +104,16 @@ Page({
             : ""
         } : null;
         const allRecords = records.map(formatRecord);
-        if (requestId === this.requestId) this.setData({ allRecords, records: this.filterRecords(allRecords), stats: statsView });
+        const filteredRecords = this.filterRecords(allRecords);
+        const insight = buildRecordInsight(type, filteredRecords);
+        if (requestId === this.requestId) this.setData({ allRecords, records: filteredRecords, stats: statsView, insight });
       })
       .catch((error) => {
         if (requestId !== this.requestId) return;
         this.setData({
           records: [],
           stats: null,
+          insight: null,
           error: cloudApi.getErrorMessage(error, "记录加载失败，请稍后重试")
         });
       })
@@ -127,17 +133,22 @@ Page({
 
   selectOutingCategory(event) {
     this.setData({ outingCategory: event.currentTarget.dataset.category || "" });
-    this.setData({ records: this.filterRecords(this.data.allRecords) });
+    this.updateOutingView();
   },
 
   selectFilterDate(event) {
     this.setData({ filterDate: event.detail.value });
-    this.setData({ records: this.filterRecords(this.data.allRecords) });
+    this.updateOutingView();
   },
 
   clearFilterDate() {
     this.setData({ filterDate: "" });
-    this.setData({ records: this.filterRecords(this.data.allRecords) });
+    this.updateOutingView();
+  },
+
+  updateOutingView() {
+    const records = this.filterRecords(this.data.allRecords);
+    this.setData({ records, insight: buildRecordInsight("outing", records) });
   },
 
   openRecord(event) {

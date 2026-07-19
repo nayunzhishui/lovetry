@@ -69,7 +69,7 @@
   <view wx:if="{{couple}}" class="panel privacy-panel">
     <view class="panel-kicker">PRIVACY BY DEFAULT</view>
     <view class="panel-title">敏感记录默认只对自己可见</view>
-    <view class="hint">心情、沟通复盘、睡眠、生理期和专注记录会先保存为私密内容；你可在编辑时主动改为两人共享。</view>
+    <view class="hint">心情、沟通复盘、睡眠、生理期、亲密和专注记录会先保存为私密内容；你可在编辑时主动改为两人共享。</view>
   </view>
 
   <button wx:if="{{couple}}" class="leave-button" disabled="{{isSaving}}" bindtap="leaveCouple">解除当前情侣空间</button>

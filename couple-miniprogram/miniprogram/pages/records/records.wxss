@@ -178,3 +178,109 @@
 @media (prefers-reduced-motion: reduce) {
   .state-pulse { animation: none; }
 }
+
+.insight-card {
+  margin: 22rpx 0;
+  padding: 28rpx;
+  border: 1rpx solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.insight-title {
+  margin-top: 6rpx;
+  color: var(--ink-strong);
+  font-family: "Songti SC", "STSong", serif;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.insight-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rpx;
+  margin-top: 22rpx;
+  overflow: hidden;
+  border: 1rpx solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--line);
+}
+
+.insight-metric {
+  min-width: 0;
+  padding: 18rpx 10rpx;
+  background: var(--surface-muted);
+  text-align: center;
+}
+
+.insight-metric text {
+  display: block;
+  overflow: hidden;
+  color: var(--ink-strong);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 25rpx;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insight-metric view {
+  margin-top: 6rpx;
+  color: var(--ink-soft);
+  font-size: 18rpx;
+}
+
+.insight-chart { margin-top: 22rpx; }
+
+.insight-row {
+  display: grid;
+  grid-template-columns: 66rpx 1fr 52rpx;
+  align-items: center;
+  gap: 10rpx;
+  min-height: 36rpx;
+}
+
+.insight-row__label,
+.insight-row__value,
+.insight-unit {
+  color: var(--ink-soft);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 18rpx;
+}
+
+.insight-row__value { text-align: right; }
+
+.insight-row__track {
+  height: 10rpx;
+  overflow: hidden;
+  border-radius: 5rpx;
+  background: var(--surface-muted);
+}
+
+.insight-row__fill {
+  min-width: 8rpx;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cobalt), var(--moss));
+}
+
+.insight-unit {
+  margin-top: 8rpx;
+  text-align: right;
+}
+
+.insight-note {
+  margin-top: 20rpx;
+  padding-left: 16rpx;
+  border-left: 4rpx solid var(--brass);
+  color: var(--ink-soft);
+  font-size: 20rpx;
+  line-height: 1.65;
+}
+
+@media (max-width: 340px) {
+  .insight-metrics { grid-template-columns: 1fr; }
+  .insight-metric { display: flex; align-items: center; justify-content: space-between; text-align: left; }
+  .insight-metric view { margin-top: 0; }
+}

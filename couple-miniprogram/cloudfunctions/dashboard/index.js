@@ -116,7 +116,14 @@ async function handle(event, openid) {
     const base = await loadBase(couple, openid, 300, 300);
     const recordEvents = base.records
       .filter((record) => inRange(record.startAt || record.createdAt, start, end))
-      .map((record) => ({ id: record._id, source: "record", type: record.type, title: record.title, startAt: record.startAt || record.createdAt }));
+      .map((record) => ({
+        id: record._id,
+        source: "record",
+        type: record.type,
+        title: record.title,
+        startAt: record.startAt || record.createdAt,
+        endAt: record.endAt || null
+      }));
     const planEvents = base.plans
       .filter((plan) => plan.type !== "anniversary")
       .filter((plan) => inRange(plan.startAt || plan.endAt || plan.createdAt, start, end))

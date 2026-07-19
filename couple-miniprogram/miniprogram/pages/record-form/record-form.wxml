@@ -61,6 +61,7 @@
       <view class="field"><view class="label">我在意的需要</view><textarea value="{{needs}}" maxlength="600" auto-height placeholder="我希望被理解或一起解决的是……" data-key="needs" bindinput="onInput" /></view>
       <view class="field"><view class="label">沟通过程</view><textarea value="{{communication}}" maxlength="800" auto-height placeholder="彼此怎样表达、倾听，又在哪里停住了" data-key="communication" bindinput="onInput" /></view>
       <view class="field"><view class="label">共同约定</view><textarea value="{{agreement}}" maxlength="800" auto-height placeholder="已经达成什么，还有什么之后再谈" data-key="agreement" bindinput="onInput" /></view>
+      <view class="field"><view class="label">现在进行到哪一步</view><picker mode="selector" range="{{repairChoices}}" value="{{repairIndex}}" data-key="repairIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{repairChoices[repairIndex]}}</view></picker><view class="hint">记录不等于问题已经解决，可以按真实进度稍后更新。</view></view>
       <view class="field"><view class="label">沟通满意度 · {{satisfaction}} / 10</view><slider min="1" max="10" step="1" value="{{satisfaction}}" activeColor="#718577" backgroundColor="#ded6c9" data-key="satisfaction" bindchange="onNumberInput" /></view>
     </view>
 
@@ -78,6 +79,13 @@
     <view wx:if="{{type === 'period'}}" class="type-fields">
       <view class="field"><view class="label">记录状态</view><picker mode="selector" range="{{periodFlows}}" value="{{periodFlowIndex}}" data-key="periodFlowIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{periodFlows[periodFlowIndex]}}</view></picker></view>
       <view class="privacy-note">此类记录默认仅自己可见，可见性始终由你控制。</view>
+    </view>
+
+    <view wx:if="{{type === 'intimacy'}}" class="type-fields">
+      <view class="intimacy-note"><view class="intimacy-note__title">由你决定记录多少</view><view>亲密应建立在清晰、持续且可撤回的同意上。这里不评价次数或表现，也不会自动共享。</view></view>
+      <view class="field"><view class="label">保护措施</view><picker mode="selector" range="{{protectionChoices}}" value="{{protectionIndex}}" data-key="protectionIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{protectionChoices[protectionIndex]}}</view></picker></view>
+      <view class="field"><view class="label">身体感受</view><picker mode="selector" range="{{comfortChoices}}" value="{{comfortIndex}}" data-key="comfortIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{comfortChoices[comfortIndex]}}</view></picker></view>
+      <view class="privacy-note">亲密记录默认仅自己可见。若选择共享，请先确认这是你真实、自愿的决定。</view>
     </view>
 
     <view wx:if="{{type === 'game'}}" class="type-fields">

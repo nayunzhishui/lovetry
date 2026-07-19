@@ -1,5 +1,5 @@
 const api = require("../../services/cloudApi");
-const { normalizeRewardItem } = require("../../../shared/reward-store");
+const { normalizeRewardItem } = require("../../shared/reward-store");
 
 function requestKey(itemId) {
   return `reward-item:${itemId}:${Date.now()}:${Math.random().toString(36).slice(2, 9)}`;

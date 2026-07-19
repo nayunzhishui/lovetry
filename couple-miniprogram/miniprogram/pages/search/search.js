@@ -3,7 +3,7 @@ const {
   decorateSearchResult,
   typeOptionsForSource,
   validateSearchRange
-} = require("../../../shared/search");
+} = require("../../shared/search");
 
 const initialTypeOptions = typeOptionsForSource("");
 

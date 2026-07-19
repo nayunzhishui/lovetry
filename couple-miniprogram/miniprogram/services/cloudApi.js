@@ -1,4 +1,4 @@
-const { executeWithRetry, getRequestPolicy } = require("../../shared/retry");
+const { executeWithRetry, getRequestPolicy } = require("../shared/retry");
 
 const ERROR_MESSAGES = {
   CLOUD_UNAVAILABLE: "云服务暂不可用，请稍后重试",

@@ -4,6 +4,20 @@ function randomName() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function formatDay(value) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "时间未记录";
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function decorateAsset(asset, urls) {
+  return {
+    ...asset,
+    tempURL: (urls || []).find((item) => item.fileID === asset.fileID)?.tempFileURL || "",
+    createdAtText: formatDay(asset.createdAt)
+  };
+}
+
 Page({
   data: {
     couple: null,
@@ -12,7 +26,9 @@ Page({
     selectedAlbum: null,
     assets: [],
     newTitle: "",
+    newDescription: "",
     renameTitle: "",
+    editDescription: "",
     loading: false,
     uploading: false,
     uploadProgress: "",
@@ -49,13 +65,21 @@ Page({
     this.setData({ renameTitle: event.detail.value });
   },
 
+  onDescriptionInput(event) {
+    this.setData({ newDescription: event.detail.value });
+  },
+
+  onEditDescriptionInput(event) {
+    this.setData({ editDescription: event.detail.value });
+  },
+
   async createAlbum() {
     const title = this.data.newTitle.trim();
     if (!title || this.data.loading) return;
     this.setData({ loading: true, error: "" });
     try {
-      const album = await api.createAlbum({ title });
-      this.setData({ newTitle: "", selectedAlbum: album });
+      const album = await api.createAlbum({ title, description: this.data.newDescription.trim() });
+      this.setData({ newTitle: "", newDescription: "", selectedAlbum: album });
       await this.loadAlbums();
     } catch (error) {
       this.setData({ error: api.getErrorMessage(error, "创建相册失败") });
@@ -67,7 +91,7 @@ Page({
   async openAlbum(event) {
     const album = this.data.albums.find((item) => item._id === event.currentTarget.dataset.id);
     if (!album) return;
-    this.setData({ selectedAlbum: album, renameTitle: album.title, loading: true, error: "" });
+    this.setData({ selectedAlbum: album, renameTitle: album.title, editDescription: album.description || "", loading: true, error: "" });
     try {
       const result = await api.listMediaAssets({ albumId: album._id, offset: 0, limit: 30 });
       const assets = result.assets;
@@ -78,10 +102,7 @@ Page({
         urls = response.fileList || [];
       }
       this.setData({
-        assets: assets.map((asset) => ({
-          ...asset,
-          tempURL: urls.find((item) => item.fileID === asset.fileID)?.tempFileURL || ""
-        })),
+        assets: assets.map((asset) => decorateAsset(asset, urls)),
         hasMore: result.page.hasMore
       });
     } catch (error) {
@@ -96,9 +117,9 @@ Page({
     if (!this.data.selectedAlbum || !title || this.data.loading) return;
     this.setData({ loading: true, error: "" });
     try {
-      const album = await api.updateAlbum(this.data.selectedAlbum._id, { title });
+      const album = await api.updateAlbum(this.data.selectedAlbum._id, { title, description: this.data.editDescription.trim() });
       this.setData({ selectedAlbum: album, albums: this.data.albums.map((item) => item._id === album._id ? album : item) });
-      wx.showToast({ title: "相册名称已更新" });
+      wx.showToast({ title: "相册信息已更新" });
     } catch (error) {
       this.setData({ error: api.getErrorMessage(error, "相册更新失败") });
     } finally {
@@ -149,10 +170,7 @@ Page({
       });
       const fileList = result.assets.map((asset) => asset.fileID);
       const response = fileList.length ? await wx.cloud.getTempFileURL({ fileList }) : { fileList: [] };
-      const added = result.assets.map((asset) => ({
-        ...asset,
-        tempURL: (response.fileList || []).find((item) => item.fileID === asset.fileID)?.tempFileURL || ""
-      }));
+      const added = result.assets.map((asset) => decorateAsset(asset, response.fileList || []));
       this.setData({ assets: [...this.data.assets, ...added], hasMore: result.page.hasMore });
     } catch (error) {
       this.setData({ error: api.getErrorMessage(error, "更多照片加载失败") });
@@ -164,6 +182,7 @@ Page({
   async chooseAndUpload() {
     if (!this.data.selectedAlbum || !this.data.couple || this.data.uploading) return;
     this.setData({ uploading: true, error: "" });
+    let completed = 0;
     try {
       const selected = await wx.chooseMedia({ count: 6, mediaType: ["image"], sourceType: ["album", "camera"] });
       const files = selected.tempFiles || [];
@@ -191,6 +210,7 @@ Page({
             height: file.height,
             mimeType: file.fileType ? `image/${file.fileType}` : "image/jpeg"
           });
+          completed += 1;
         } catch (error) {
           try { await wx.cloud.deleteFile({ fileList: [uploaded.fileID] }); } catch (cleanupError) { console.warn("orphan file cleanup failed"); }
           throw error;
@@ -200,7 +220,10 @@ Page({
       await this.openAlbum({ currentTarget: { dataset: { id: this.data.selectedAlbum._id } } });
     } catch (error) {
       const message = error.errMsg?.includes("cancel") ? "" : api.getErrorMessage(error, error.message || "上传失败");
-      this.setData({ error: message });
+      if (completed > 0 && this.data.selectedAlbum) {
+        await this.openAlbum({ currentTarget: { dataset: { id: this.data.selectedAlbum._id } } });
+      }
+      this.setData({ error: completed > 0 ? `已加入 ${completed} 张；后续照片未完成：${message}` : message });
     } finally {
       this.setData({ uploading: false, uploadProgress: "" });
     }

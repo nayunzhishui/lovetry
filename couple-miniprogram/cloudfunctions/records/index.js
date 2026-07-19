@@ -18,10 +18,11 @@ const RECORD_TYPES = new Set([
   "outing",
   "sleep",
   "period",
+  "intimacy",
   "game",
   "pomodoro"
 ]);
-const PRIVATE_BY_DEFAULT = new Set(["mood", "conflict", "sleep", "period", "pomodoro"]);
+const PRIVATE_BY_DEFAULT = new Set(["mood", "conflict", "sleep", "period", "intimacy", "pomodoro"]);
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
   INVALID_RECORD: "记录内容不完整",

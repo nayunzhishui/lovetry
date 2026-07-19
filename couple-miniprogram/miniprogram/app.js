@@ -1,6 +1,6 @@
 const config = require("./config");
 const cloudApi = require("./services/cloudApi");
-const { mergeSyncChanges, normalizeSyncOffsets, summarizeSyncChanges } = require("../shared/sync");
+const { mergeSyncChanges, normalizeSyncOffsets, summarizeSyncChanges } = require("./shared/sync");
 
 const SYNC_CURSOR_KEY = "lovetry_sync_cursor_v1";
 
@@ -10,7 +10,8 @@ App({
     couple: null,
     isOnline: true,
     syncSummary: { total: 0, records: 0, plans: 0, notifications: 0 },
-    lastSyncAt: ""
+    lastSyncAt: "",
+    syncErrorAt: ""
   },
 
   onShow() {
@@ -87,6 +88,7 @@ App({
         const summary = summarizeSyncChanges(result.changes);
         this.globalData.syncSummary = summary;
         this.globalData.lastSyncAt = result.cursor;
+        this.globalData.syncErrorAt = "";
         if (!result.hasMore) {
           try { wx.setStorageSync(SYNC_CURSOR_KEY, result.cursor); } catch (error) { /* next show retries */ }
         }
@@ -96,6 +98,7 @@ App({
         return result;
       })
       .catch((error) => {
+        this.globalData.syncErrorAt = new Date().toISOString();
         if (error && error.code === "INVALID_SYNC_CURSOR") {
           try { wx.removeStorageSync(SYNC_CURSOR_KEY); } catch (storageError) { /* no-op */ }
         }

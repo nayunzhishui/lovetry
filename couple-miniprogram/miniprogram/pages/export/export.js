@@ -1,5 +1,5 @@
 const api = require("../../services/cloudApi");
-const { createBackupManifest, verifyBackupManifest } = require("../../../shared/backup-manifest");
+const { createBackupManifest, verifyBackupManifest } = require("../../shared/backup-manifest");
 
 Page({
   data: { loading: false, error: "", summary: "", backupText: "", backupPath: "" },

@@ -41,10 +41,12 @@ test("心情、吵架和睡眠记录未指定可见性时默认仅本人可见",
   }
 });
 
-test("生理期记录默认仅本人可见", () => {
-  const result = validateRecordInput({ type: "period", title: "身体记录" });
-  assert.equal(result.ok, true);
-  assert.equal(result.data.visibility, "private");
+test("生理期和亲密记录默认仅本人可见", () => {
+  for (const type of ["period", "intimacy"]) {
+    const result = validateRecordInput({ type, title: "身体记录" });
+    assert.equal(result.ok, true);
+    assert.equal(result.data.visibility, "private");
+  }
 });
 
 test("同一次番茄专注的请求 ID 始终映射到同一记录", () => {

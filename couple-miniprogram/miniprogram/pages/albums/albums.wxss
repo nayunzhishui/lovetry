@@ -3,12 +3,14 @@
 .album-pill { min-height: 72rpx; margin: 0; padding: 0 28rpx; border: 1rpx solid var(--line); border-radius: 36rpx; background: var(--surface); color: var(--ink); font-size: 26rpx; line-height: 72rpx; }
 .album-pill--active { border-color: var(--ink-strong); background: var(--ink-strong); color: #fff; }
 .album-head { margin-top: 26rpx; }
-.album-tools { display: grid; grid-template-columns: 1fr auto auto; gap: 10rpx; align-items: center; margin-top: 14rpx; }
+.album-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10rpx; align-items: center; margin-top: 14rpx; }
+.album-tools input, .album-tools textarea { grid-column: 1 / -1; }
 .album-tools .button { width: auto; margin: 0; }
 .danger-button { color: var(--danger); }
 .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10rpx; margin-top: 24rpx; }
 .photo-wrap { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); background: var(--surface-muted); }
 .photo { width: 100%; height: 100%; }
+.photo-date { position: absolute; top: 7rpx; left: 7rpx; padding: 4rpx 8rpx; border-radius: 16rpx; background: rgba(31,45,49,.76); color: #fff; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 17rpx; }
 .photo-delete { position: absolute; right: 6rpx; bottom: 6rpx; min-height: 56rpx; margin: 0; padding: 0 14rpx; border-radius: 28rpx; background: rgba(41,43,49,.84); color: #fff; font-size: 21rpx; line-height: 56rpx; }
 .photo-cover { position: absolute; left: 6rpx; bottom: 6rpx; min-height: 56rpx; margin: 0; padding: 0 14rpx; border-radius: 28rpx; background: rgba(183,121,50,.92); color: #fff; font-size: 21rpx; line-height: 56rpx; }
 .error-banner { margin-top: 24rpx; padding: 22rpx; border-radius: var(--radius-sm); background: #f5e4e1; color: var(--danger); }
