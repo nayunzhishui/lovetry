@@ -37,6 +37,14 @@ test("本机敏感缓存按 openid 和 coupleId 共同分区", (t) => {
   assert.equal(adapter.get("draft"), undefined);
 });
 
+test("显式身份作用域可在 App bootstrap 前安全初始化番茄缓存", (t) => {
+  const { createScopedStorageAdapter, storage } = loadStorageScope(t, { openid: "", couple: null });
+  const adapter = createScopedStorageAdapter({ openid: "user-a", coupleId: "couple-1" });
+  adapter.set("lovetry_pomodoro_v2", { status: "paused" });
+  assert.deepEqual(adapter.get("lovetry_pomodoro_v2"), { status: "paused" });
+  assert.ok([...storage.keys()][0].includes("user-a:couple-1"));
+});
+
 test("身份或情侣空间未确定时拒绝写入敏感本机缓存", (t) => {
   const { createScopedStorageAdapter } = loadStorageScope(t, { openid: "", couple: null });
   const adapter = createScopedStorageAdapter();
