@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-save miniprogram-ci
+      - run: npm install --no-save --package-lock=false miniprogram-ci@2.1.31
       - name: Prepare private key
         env:
           PRIVATE_KEY: ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
