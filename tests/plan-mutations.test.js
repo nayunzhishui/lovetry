@@ -29,10 +29,8 @@ test("计划快捷更新统一递增版本并保留其余字段", () => {
   assert.equal(deleted.deletedAt, now);
 });
 
-test("过期计划版本会被拒绝", () => {
-  assert.throws(
-    () => assertVersion({ version: 3 }, 2),
-    (error) => error.code === "VERSION_CONFLICT"
-  );
+test("过期或缺失的计划版本会被拒绝", () => {
+  assert.throws(() => assertVersion({ version: 3 }, 2), (error) => error.code === "VERSION_CONFLICT");
+  assert.throws(() => assertVersion({ version: 3 }), (error) => error.code === "VERSION_CONFLICT");
   assert.doesNotThrow(() => assertVersion({ version: 3 }, 3));
 });
