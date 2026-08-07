@@ -2,7 +2,12 @@ const config = require("./config");
 const cloudApi = require("./services/cloudApi");
 const { mergeSyncChanges, normalizeSyncOffsets, summarizeSyncChanges } = require("./shared/sync");
 
-const SYNC_CURSOR_KEY = "lovetry_sync_cursor_v1";
+const SYNC_CURSOR_PREFIX = "lovetry_sync_cursor_v2:";
+
+function syncCursorKey(openid, coupleId) {
+  const safe = (value) => String(value || "unknown").replace(/[^a-z0-9._-]/gi, "_").slice(0, 80);
+  return `${SYNC_CURSOR_PREFIX}${safe(openid)}:${safe(coupleId)}`;
+}
 
 App({
   globalData: {
@@ -75,8 +80,9 @@ App({
   syncChanges(options = {}) {
     if (this.syncing || !this.globalData.couple || !this.globalData.isOnline) return Promise.resolve(null);
     this.syncing = true;
+    const cursorKey = syncCursorKey(this.globalData.openid, this.globalData.couple._id);
     let since = "";
-    try { since = wx.getStorageSync(SYNC_CURSOR_KEY) || ""; } catch (error) { /* use default server window */ }
+    try { since = wx.getStorageSync(cursorKey) || ""; } catch (error) { /* use default server window */ }
     const loadPage = (offsets = {}, changes = {}, pageCount = 0) => cloudApi.syncSince(since, normalizeSyncOffsets(offsets))
       .then((page) => {
         const merged = mergeSyncChanges(changes, page.changes);
@@ -90,7 +96,7 @@ App({
         this.globalData.lastSyncAt = result.cursor;
         this.globalData.syncErrorAt = "";
         if (!result.hasMore) {
-          try { wx.setStorageSync(SYNC_CURSOR_KEY, result.cursor); } catch (error) { /* next show retries */ }
+          try { wx.setStorageSync(cursorKey, result.cursor); } catch (error) { /* next show retries */ }
         }
         if (!options.silent && summary.total > 0) {
           wx.showToast({ title: `发现 ${summary.total} 项远端更新`, icon: "none" });
@@ -100,7 +106,7 @@ App({
       .catch((error) => {
         this.globalData.syncErrorAt = new Date().toISOString();
         if (error && error.code === "INVALID_SYNC_CURSOR") {
-          try { wx.removeStorageSync(SYNC_CURSOR_KEY); } catch (storageError) { /* no-op */ }
+          try { wx.removeStorageSync(cursorKey); } catch (storageError) { /* no-op */ }
         }
         return null;
       })
