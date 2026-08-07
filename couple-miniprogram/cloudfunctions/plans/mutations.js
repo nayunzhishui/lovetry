@@ -3,8 +3,8 @@ function versionOf(plan) {
 }
 
 function assertVersion(plan, expectedVersion) {
-  if (expectedVersion !== undefined && expectedVersion !== null && expectedVersion !== "" &&
-      Number(expectedVersion) !== versionOf(plan)) {
+  const expected = Number(expectedVersion);
+  if (!Number.isInteger(expected) || expected !== versionOf(plan)) {
     const error = new Error("计划已在另一台设备更新，请刷新后重试");
     error.code = "VERSION_CONFLICT";
     throw error;
