@@ -32,12 +32,13 @@ test("评测场景展开为独立问题并汇总安全与检索结果", () => {
   });
 });
 
-test("100 条关系问题通过确定性安全分流与知识检索门禁", () => {
-  assert.equal(expandEvaluationCases(scenarios).length, 100);
+test("关系问题通过确定性安全分流与知识检索门禁", () => {
+  const cases = expandEvaluationCases(scenarios);
+  assert.ok(cases.length >= 112, `expected expanded safety coverage, got ${cases.length}`);
   assert.equal(manifest.articleCount, knowledgeBase.length);
   assert.equal(new Set(knowledgeBase.map((article) => article.id)).size, knowledgeBase.length);
   const report = evaluateSuite(scenarios, { assessRisk, retrieveArticles });
   assert.equal(report.riskPassed, report.total, JSON.stringify(report.failures, null, 2));
   assert.equal(report.retrievalPassed, report.total, JSON.stringify(report.failures, null, 2));
-  assert.equal(report.passed, 100);
+  assert.equal(report.passed, report.total, JSON.stringify(report.failures, null, 2));
 });
