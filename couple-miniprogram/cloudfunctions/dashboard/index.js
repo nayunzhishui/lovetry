@@ -1,10 +1,14 @@
 const cloud = require("wx-server-sdk");
+const { resolveArchivedCouple } = require("./archive-access");
 const { validateBackupEnvelope } = require("./backup");
+const { resolveActiveCouple } = require("./membership");
+const { batchEnd, normalizeRestoreJob, restoreBatchId } = require("./restore-checkpoint");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const PRIVATE_BY_DEFAULT = new Set(["mood", "conflict", "sleep", "period", "intimacy", "pomodoro"]);
 
 function success(data) {
@@ -23,15 +27,6 @@ function businessError(code, userMessage) {
   error.code = code;
   error.userMessage = userMessage;
   return error;
-}
-
-async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
 }
 
 function normalizeRecordVisibility(type, visibility) {
@@ -84,10 +79,79 @@ async function loadBase(couple, openid, recordLimit = 100, planLimit = 100) {
   };
 }
 
+function exportRecord(record) {
+  const { coupleId, ownerOpenid, creatorOpenid, requestFingerprint, clientRequestId, deletedAt, ...rest } = record;
+  const payload = { ...(rest.payload || {}) };
+  delete payload.reactionsByOpenid;
+  return { ...rest, payload };
+}
+
+function exportPlan(plan) {
+  const { coupleId, createdBy, deletedAt, ...rest } = plan;
+  return rest;
+}
+
+function exportWallet(wallet, openid) {
+  return {
+    role: wallet.ownerOpenid === openid ? "self" : "partner",
+    balance: Number(wallet.balance) || 0,
+    totalEarned: Number(wallet.totalEarned) || 0,
+    totalSpent: Number(wallet.totalSpent) || 0
+  };
+}
+
+function exportAlbum(album) {
+  const { coupleId, createdBy, deletedAt, ...rest } = album;
+  return rest;
+}
+
+function exportAsset(asset) {
+  const { coupleId, ownerOpenid, deletedAt, pendingDeletion, ...rest } = asset;
+  return rest;
+}
+
+async function buildExportData(couple, openid, archived = false) {
+  const base = await loadBase(couple, openid, 501, 501);
+  const albums = await db.collection("albums").where({ coupleId: couple._id, deletedAt: null }).limit(101).get();
+  const assets = await db.collection("media_assets").where({ coupleId: couple._id, deletedAt: null }).limit(501).get();
+  const activeAlbums = albums.data.filter((album) => !album.deletedAt);
+  const activeAssets = assets.data.filter((asset) => !asset.deletedAt);
+  const wallets = archived ? base.wallets.filter((wallet) => wallet.ownerOpenid === openid) : base.wallets;
+  return {
+    schemaVersion: 1,
+    exportedAt: new Date(),
+    readOnlyArchive: archived,
+    couple: {
+      _id: couple._id,
+      spaceName: couple.spaceName,
+      anniversaryDate: couple.anniversaryDate,
+      ...(archived ? { archivedAt: couple.archivedAt || couple.updatedAt || null } : {})
+    },
+    records: base.records.slice(0, 500).map(exportRecord),
+    plans: base.plans.slice(0, 500).map(exportPlan),
+    wallets: wallets.map((wallet) => exportWallet(wallet, openid)),
+    albums: activeAlbums.slice(0, 100).map(exportAlbum),
+    mediaAssets: activeAssets.slice(0, 500).map(exportAsset),
+    truncated: {
+      records: base.records.length > 500,
+      plans: base.plans.length > 500,
+      albums: activeAlbums.length > 100,
+      mediaAssets: activeAssets.length > 500
+    }
+  };
+}
+
 async function handle(event, openid) {
+  const action = event.action;
+
+  if (action === "archiveExport") {
+    const archivedCouple = await resolveArchivedCouple(db, openid, safeText(event.coupleId, 64));
+    if (!archivedCouple) throw businessError("ARCHIVE_NOT_FOUND", "未找到可访问的历史情侣空间");
+    return success({ exportData: await buildExportData(archivedCouple, openid, true) });
+  }
+
   const couple = await findMine(openid);
   if (!couple) throw businessError("COUPLE_REQUIRED", "请先创建或加入情侣空间");
-  const action = event.action;
 
   if (action === "summary") {
     const base = await loadBase(couple, openid, 100, 30);
@@ -258,70 +322,97 @@ async function handle(event, openid) {
   }
 
   if (action === "export") {
-    const base = await loadBase(couple, openid, 501, 501);
-    const albums = await db.collection("albums").where({ coupleId: couple._id, deletedAt: null }).limit(101).get();
-    const assets = await db.collection("media_assets").where({ coupleId: couple._id, deletedAt: null }).limit(501).get();
-    const activeAlbums = albums.data.filter((album) => !album.deletedAt);
-    const activeAssets = assets.data.filter((asset) => !asset.deletedAt);
-    return success({
-      exportData: {
-        schemaVersion: 1,
-        exportedAt: new Date(),
-        couple: { _id: couple._id, spaceName: couple.spaceName, anniversaryDate: couple.anniversaryDate, members: couple.members },
-        records: base.records.slice(0, 500),
-        plans: base.plans.slice(0, 500),
-        wallets: base.wallets,
-        albums: activeAlbums.slice(0, 100),
-        mediaAssets: activeAssets.slice(0, 500).map(({ fileID, ...asset }) => ({ ...asset, fileID })),
-        truncated: {
-          records: base.records.length > 500,
-          plans: base.plans.length > 500,
-          albums: activeAlbums.length > 100,
-          mediaAssets: activeAssets.length > 500
-        }
-      }
-    });
+    return success({ exportData: await buildExportData(couple, openid, false) });
   }
 
   if (action === "import") {
     const backup = event.backup;
-    const recovery = validateBackupEnvelope(backup, couple._id);
-    const now = new Date();
-    const counts = { records: 0, plans: 0, skipped: 0 };
-    for (const source of recovery.records) {
-      if (!source._id || await alreadyRestored("records", couple._id, source._id)) { counts.skipped += 1; continue; }
-      const type = safeText(source.type, 30);
-      if (!type) { counts.skipped += 1; continue; }
-      await db.collection("records").add({ data: {
-        coupleId: couple._id, type,
-        visibility: normalizeRecordVisibility(type, source.visibility),
-        ownerOpenid: openid, creatorOpenid: openid,
-        title: safeText(source.title, 100), content: safeText(source.content, 10000),
-        startAt: source.startAt ? new Date(source.startAt) : null,
-        endAt: source.endAt ? new Date(source.endAt) : null,
-        metrics: source.metrics && typeof source.metrics === "object" ? source.metrics : {},
-        payload: source.payload && typeof source.payload === "object" ? source.payload : {},
-        version: 1, restoredFromId: source._id, createdAt: now, updatedAt: now, deletedAt: null
-      } });
-      counts.records += 1;
+    const recovery = validateBackupEnvelope(backup, couple);
+    const batchId = restoreBatchId(couple._id, openid, recovery);
+    const jobRef = db.collection("restore_jobs").doc(batchId);
+    let existing = null;
+    try { existing = (await jobRef.get()).data || null; }
+    catch (error) { /* first restore attempt */ }
+    if (existing && (existing.coupleId !== couple._id || existing.ownerOpenid !== openid)) {
+      throw businessError("INVALID_BACKUP", "恢复批次不属于当前账号或情侣空间");
     }
-    for (const source of recovery.plans) {
-      if (!source._id || await alreadyRestored("plans", couple._id, source._id)) { counts.skipped += 1; continue; }
-      const type = safeText(source.type, 30);
-      if (!type || !safeText(source.title, 80)) { counts.skipped += 1; continue; }
-      await db.collection("plans").add({ data: {
-        coupleId: couple._id, type, title: safeText(source.title, 80), detail: safeText(source.detail, 5000),
-        status: ["todo", "doing", "done", "archived"].includes(source.status) ? source.status : "todo",
-        assigneeOpenids: Array.isArray(source.assigneeOpenids) ? source.assigneeOpenids.filter((id) => couple.members.includes(id)) : [],
-        startAt: source.startAt ? new Date(source.startAt) : null,
-        endAt: source.endAt ? new Date(source.endAt) : null,
-        rewardPoints: Math.min(Math.max(Number(source.rewardPoints) || 0, 0), 100000),
-        payload: source.payload && typeof source.payload === "object" ? source.payload : {},
-        version: 1, createdBy: openid, restoredFromId: source._id, createdAt: now, updatedAt: now, deletedAt: null
-      } });
-      counts.plans += 1;
+
+    let state = normalizeRestoreJob(existing, recovery);
+    if (!existing) {
+      const originalCount = Math.min(Array.isArray(backup.records) ? backup.records.length : 0, 500)
+        + Math.min(Array.isArray(backup.plans) ? backup.plans.length : 0, 500);
+      state.counts.skipped = Math.max(originalCount - recovery.records.length - recovery.plans.length, 0);
     }
-    return success({ counts });
+    const createdAt = existing && existing.createdAt || new Date();
+    const persistJob = async () => {
+      state = normalizeRestoreJob(state, recovery);
+      await jobRef.set({ data: {
+        coupleId: couple._id,
+        ownerOpenid: openid,
+        batchId,
+        recordIndex: state.recordIndex,
+        planIndex: state.planIndex,
+        counts: state.counts,
+        status: state.status,
+        createdAt,
+        updatedAt: new Date()
+      } });
+    };
+
+    const recordStop = batchEnd(state.recordIndex, recovery.records.length, 25);
+    while (state.recordIndex < recordStop) {
+      const source = recovery.records[state.recordIndex];
+      if (!source || !source._id || await alreadyRestored("records", couple._id, source && source._id)) {
+        state.counts.skipped += 1;
+      } else {
+        const { _id: sourceId, ...normalized } = source;
+        const now = new Date();
+        await db.collection("records").add({ data: {
+          coupleId: couple._id,
+          ...normalized,
+          ownerOpenid: openid,
+          creatorOpenid: openid,
+          version: 1,
+          restoredFromId: sourceId,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null
+        } });
+        state.counts.records += 1;
+      }
+      state.recordIndex += 1;
+      await persistJob();
+    }
+
+    const planStop = batchEnd(state.planIndex, recovery.plans.length, 25);
+    while (state.planIndex < planStop) {
+      const source = recovery.plans[state.planIndex];
+      if (!source || !source._id || await alreadyRestored("plans", couple._id, source && source._id)) {
+        state.counts.skipped += 1;
+      } else {
+        const { _id: sourceId, ...normalized } = source;
+        const now = new Date();
+        await db.collection("plans").add({ data: {
+          coupleId: couple._id,
+          ...normalized,
+          createdBy: openid,
+          version: 1,
+          restoredFromId: sourceId,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null
+        } });
+        state.counts.plans += 1;
+      }
+      state.planIndex += 1;
+      await persistJob();
+    }
+
+    await persistJob();
+    return success({
+      counts: state.counts,
+      restore: { batchId, status: state.status, hasMore: state.hasMore }
+    });
   }
 
   if (action === "health") {
