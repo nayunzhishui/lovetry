@@ -10,6 +10,7 @@ const ERROR_MESSAGES = {
   COUPLE_FULL: "该情侣空间已有两位成员",
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
   ALREADY_IN_COUPLE: "当前账号已属于另一个情侣空间",
+  ARCHIVE_NOT_FOUND: "未找到可访问的历史情侣空间",
   INVALID_RECORD: "请检查记录内容后重试",
   RECORD_NOT_FOUND: "记录不存在或已删除",
   VERSION_CONFLICT: "记录已在另一台设备更新，请刷新后重试",
@@ -38,6 +39,8 @@ const ERROR_MESSAGES = {
   NOTIFICATION_NOT_FOUND: "提醒不存在或无权访问",
   INVALID_RANGE: "请选择正确的日期范围",
   INVALID_SYNC_CURSOR: "同步位置已失效，请刷新页面",
+  INVALID_BACKUP: "备份格式不正确或不属于当前情侣空间",
+  TRUNCATED_BACKUP: "备份内容不完整，请重新导出完整备份",
   NO_PERMISSION: "无权访问这项数据",
   UNKNOWN_ACTION: "当前操作暂不支持"
 };
@@ -139,6 +142,10 @@ function getMyCouple() {
   return call("couple", { action: "mine" }).then((result) => result.couple || null);
 }
 
+function listRelationshipArchives() {
+  return call("couple", { action: "listArchives" }).then((result) => result.archives || []);
+}
+
 function createCouple() {
   return call("couple", { action: "create" }).then((result) => result.couple || null);
 }
@@ -165,8 +172,8 @@ function updateRecord(recordId, version, record) {
   );
 }
 
-function deleteRecord(recordId) {
-  return records("delete", { recordId }).then((result) => result.recordId || recordId);
+function deleteRecord(recordId, version) {
+  return records("delete", { recordId, version }).then((result) => result.recordId || recordId);
 }
 
 function cleanupTestData() {
@@ -339,8 +346,19 @@ function exportData() {
   return dashboard("export").then((result) => result.exportData || null);
 }
 
+function exportArchivedData(coupleId) {
+  return dashboard("archiveExport", { coupleId }).then((result) => result.exportData || null);
+}
+
 function importData(backup) {
-  return dashboard("import", { backup }).then((result) => result.counts);
+  const run = (attempt = 0) => {
+    if (attempt >= 50) return Promise.reject(createApiError("CALL_FAILED", "恢复批次超过安全上限，请重新进入页面后继续"));
+    return dashboard("import", { backup }).then((result) => {
+      if (result.restore && result.restore.hasMore) return run(attempt + 1);
+      return result.counts;
+    });
+  };
+  return run();
 }
 
 function getServiceHealth() {
@@ -409,6 +427,7 @@ module.exports = {
   notifications,
   login,
   getMyCouple,
+  listRelationshipArchives,
   createCouple,
   joinCouple,
   createRecord,
@@ -457,6 +476,7 @@ module.exports = {
   searchAll,
   syncSince,
   exportData,
+  exportArchivedData,
   importData,
   getServiceHealth,
   getNotificationPreferences,
