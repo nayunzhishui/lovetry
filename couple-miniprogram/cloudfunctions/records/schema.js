@@ -48,7 +48,7 @@ function sanitizeRecordMetrics(type, input) {
     return {
       ...(plannedMinutes ? { plannedMinutes } : {}),
       ...(durationMinutes ? { durationMinutes } : {}),
-      completed: Boolean(metrics.completed)
+      completed: metrics.completed === true
     };
   }
   return {};
@@ -102,7 +102,7 @@ function sanitizeRecordPayload(type, input, existingPayload) {
   }
   if (type === "pomodoro") {
     return {
-      phase: payload.phase === "focus" ? "focus" : "focus",
+      phase: "focus",
       result: POMODORO_RESULTS.has(payload.result) ? payload.result : "interrupted"
     };
   }
