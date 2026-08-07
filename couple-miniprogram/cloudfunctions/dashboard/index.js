@@ -5,6 +5,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const PRIVATE_BY_DEFAULT = new Set(["mood", "conflict", "sleep", "period", "intimacy", "pomodoro"]);
 
 function success(data) {
   return { ok: true, data, ...data };
@@ -33,10 +34,15 @@ async function findMine(openid) {
   return result.data[0] || null;
 }
 
+function normalizeRecordVisibility(type, visibility) {
+  if (visibility === "private" || visibility === "couple") return visibility;
+  return PRIVATE_BY_DEFAULT.has(type) ? "private" : "couple";
+}
+
 function canReadRecord(record, openid) {
   if (record.deletedAt) return false;
-  if (!record.visibility) return true;
-  return record.visibility === "couple" || record.ownerOpenid === openid || record.creatorOpenid === openid;
+  const visibility = normalizeRecordVisibility(record.type, record.visibility);
+  return visibility === "couple" || record.ownerOpenid === openid || record.creatorOpenid === openid;
 }
 
 function inRange(value, start, end) {
@@ -288,7 +294,7 @@ async function handle(event, openid) {
       if (!type) { counts.skipped += 1; continue; }
       await db.collection("records").add({ data: {
         coupleId: couple._id, type,
-        visibility: source.visibility === "private" ? "private" : "couple",
+        visibility: normalizeRecordVisibility(type, source.visibility),
         ownerOpenid: openid, creatorOpenid: openid,
         title: safeText(source.title, 100), content: safeText(source.content, 10000),
         startAt: source.startAt ? new Date(source.startAt) : null,
