@@ -1,9 +1,0 @@
-{
-  "triggers": [
-    {
-      "name": "daily-media-cleanup",
-      "type": "timer",
-      "config": "0 0 2 * * * *"
-    }
-  ]
-}
