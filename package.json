@@ -5,10 +5,11 @@
   "description": "情侣微信小程序的本地自动化与共享业务规则",
   "scripts": {
     "sync:shared": "node scripts/sync-runtime-shared.js",
+    "scan:secrets": "node scripts/scan-secrets.js",
     "test": "node --test tests/*.test.js",
     "eval:agent": "node scripts/evaluate-love-agent.js",
     "verify": "node scripts/verify-project.js",
-    "quality": "npm run sync:shared && npm test && npm run eval:agent && npm run verify"
+    "quality": "npm run sync:shared && npm run scan:secrets && npm test && npm run eval:agent && npm run verify"
   },
   "engines": {
     "node": ">=22"
