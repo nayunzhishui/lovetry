@@ -1,5 +1,6 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
+const { resolveActiveCouple } = require("./membership");
 const { buildReminderCandidates } = require("./schedule");
 const {
   defaults,
@@ -10,6 +11,7 @@ const {
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
@@ -28,11 +30,6 @@ function success(data) { return { ok: true, data, ...data }; }
 function failure(error) {
   const code = ERROR_MESSAGES[error.code] ? error.code : "INTERNAL_ERROR";
   return { ok: false, error: { code, message: ERROR_MESSAGES[code] || "服务暂时不可用" } };
-}
-
-async function findMine(openid) {
-  const result = await db.collection("couples").where({ members: openid, status: _.neq("archived") }).limit(1).get();
-  return result.data[0] || null;
 }
 
 function preferenceId(coupleId, openid) {
