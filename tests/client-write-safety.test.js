@@ -21,13 +21,16 @@ test("普通记录草稿恢复时沿用同一 clientRequestId", (t) => {
   const { api } = createStorageWx();
   let pageDefinition;
   global.wx = api;
+  global.getApp = () => ({ globalData: { openid: "user-a", couple: { _id: "couple-a" } } });
   global.Page = (definition) => { pageDefinition = definition; };
   t.after(() => {
     delete global.wx;
+    delete global.getApp;
     delete global.Page;
     delete require.cache[require.resolve("../couple-miniprogram/miniprogram/pages/record-form/record-form")];
     delete require.cache[require.resolve("../couple-miniprogram/miniprogram/services/formDraft")];
     delete require.cache[require.resolve("../couple-miniprogram/miniprogram/services/agentHandoff")];
+    delete require.cache[require.resolve("../couple-miniprogram/miniprogram/services/storageScope")];
   });
 
   require("../couple-miniprogram/miniprogram/pages/record-form/record-form");
