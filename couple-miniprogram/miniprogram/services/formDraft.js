@@ -1,7 +1,4 @@
 const { createDraftRepository } = require("../shared/form-assist");
+const { createScopedStorageAdapter } = require("./storageScope");
 
-module.exports = createDraftRepository({
-  get(key) { return wx.getStorageSync(key); },
-  set(key, value) { wx.setStorageSync(key, value); },
-  remove(key) { wx.removeStorageSync(key); }
-});
+module.exports = createDraftRepository(createScopedStorageAdapter());
