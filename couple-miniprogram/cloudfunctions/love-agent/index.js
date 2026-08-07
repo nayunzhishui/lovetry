@@ -31,6 +31,10 @@ function usageId(openid, date) {
   return crypto.createHash("sha256").update(`${openid}:${date}`).digest("hex").slice(0, 32);
 }
 
+function safetyIdentifier(openid) {
+  return crypto.createHash("sha256").update(`lovetry-agent:${openid}`).digest("hex");
+}
+
 async function consumeDailyQuota(openid) {
   const date = new Date().toISOString().slice(0, 10);
   const id = usageId(openid, date);
@@ -83,7 +87,8 @@ async function handleProviderStatus(event, openid) {
   try {
     await generateAnswer({
       instructions: "这是 API 连通性测试。只回复 OK，不要添加其他内容。",
-      input: "请回复 OK"
+      input: "请回复 OK",
+      safetyIdentifier: safetyIdentifier(openid)
     });
     return success({ ...status, connection: "connected" });
   } catch (error) {
@@ -125,7 +130,8 @@ async function handle(event, openid) {
     try {
       generated = await generateAnswer({
         instructions: buildInstructions(),
-        input: buildInput(question, history, knowledgeContext(articles), selectedContext)
+        input: buildInput(question, history, knowledgeContext(articles), selectedContext),
+        safetyIdentifier: safetyIdentifier(openid)
       });
     } catch (error) {
       providerFailed = true;
