@@ -1,4 +1,5 @@
 const cloud = require("wx-server-sdk");
+const { resolveActiveCouple } = require("./membership");
 const {
   assertVersion,
   markDeleted,
@@ -11,6 +12,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const PLAN_TYPES = new Set(["task", "event", "menu", "trip", "anniversary"]);
 const STATUSES = new Set(["todo", "doing", "done", "archived"]);
 const ERROR_MESSAGES = {
@@ -36,15 +38,6 @@ function failure(error) {
   const code = error.code || error.message || "INTERNAL_ERROR";
   const known = Object.prototype.hasOwnProperty.call(ERROR_MESSAGES, code);
   return { ok: false, error: { code: known ? code : "INTERNAL_ERROR", message: known ? (error.message || ERROR_MESSAGES[code]) : "服务暂时不可用" } };
-}
-
-async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
 }
 
 function text(value, maxLength) {
@@ -150,9 +143,7 @@ async function handle(event, openid) {
         throw businessError("PLAN_NOT_FOUND");
       }
       if (!current || current.coupleId !== couple._id || current.deletedAt) throw businessError("PLAN_NOT_FOUND");
-      if (event.version && Number(event.version) !== Number(current.version || 1)) {
-        throw businessError("VERSION_CONFLICT");
-      }
+      assertVersion(current, event.version);
       const next = normalize(event.plan, couple, openid, current);
       const updatedAt = new Date();
       const version = Number(current.version || 1) + 1;
