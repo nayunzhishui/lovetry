@@ -27,7 +27,9 @@ function sanitizeRestorablePlans(plans, couple) {
     .filter(Boolean);
 }
 
-function validateBackupEnvelope(backup, coupleId) {
+function validateBackupEnvelope(backup, coupleOrId) {
+  const coupleId = typeof coupleOrId === "object" && coupleOrId ? coupleOrId._id : coupleOrId;
+  const restoreCouple = typeof coupleOrId === "object" && coupleOrId ? coupleOrId : backup && backup.couple;
   if (!backup || Number(backup.schemaVersion) !== 1 || !backup.couple || backup.couple._id !== coupleId) {
     throw backupError("INVALID_BACKUP", "备份格式不正确，或不属于当前情侣空间");
   }
@@ -39,7 +41,7 @@ function validateBackupEnvelope(backup, coupleId) {
 
   return {
     records: sanitizeRestorableRecords(backup.records),
-    plans: sanitizeRestorablePlans(backup.plans, backup.couple)
+    plans: sanitizeRestorablePlans(backup.plans, restoreCouple)
   };
 }
 
