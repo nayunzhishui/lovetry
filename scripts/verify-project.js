@@ -56,7 +56,8 @@ for (const page of pages) {
   }
 }
 
-const functions = fs.readdirSync(cloudRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory());
+const functions = fs.readdirSync(cloudRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"));
 for (const entry of functions) {
   requireFile(path.join(cloudRoot, entry.name, "index.js"), "云函数缺少入口");
   requireFile(path.join(cloudRoot, entry.name, "package.json"), "云函数缺少依赖声明");
