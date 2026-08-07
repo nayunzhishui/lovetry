@@ -6,6 +6,7 @@ const {
   recordRequestFingerprint
 } = require("./idempotency");
 const { toggleReaction, validateReactionRequest } = require("./reactions");
+const { sanitizeRecordMetrics, sanitizeRecordPayload } = require("./schema");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -97,8 +98,8 @@ function normalizeRecord(input, openid, existing) {
     visibility: normalizeVisibility(type, record.visibility),
     startAt: parseDate(record.startAt),
     endAt: parseDate(record.endAt),
-    metrics: record.metrics && typeof record.metrics === "object" ? record.metrics : {},
-    payload: record.payload && typeof record.payload === "object" ? record.payload : {},
+    metrics: sanitizeRecordMetrics(type, record.metrics),
+    payload: sanitizeRecordPayload(type, record.payload, existing && existing.payload),
     relatedPlanId: trimText(record.relatedPlanId, 64),
     isTest: Boolean(record.isTest),
     ownerOpenid: existing ? existing.ownerOpenid || existing.creatorOpenid : openid
