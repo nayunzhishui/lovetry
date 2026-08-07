@@ -111,8 +111,8 @@ function isDeleted(record) {
 
 function canRead(record, openid) {
   if (isDeleted(record)) return false;
-  if (!record.visibility) return true;
-  return record.visibility === "couple" || record.ownerOpenid === openid || record.creatorOpenid === openid;
+  const visibility = normalizeVisibility(record.type, record.visibility);
+  return visibility === "couple" || record.ownerOpenid === openid || record.creatorOpenid === openid;
 }
 
 function canEdit(record, openid) {
@@ -212,7 +212,7 @@ async function handle(event, openid) {
     const visible = result.data.filter((record) => canRead(record, openid));
     return success({
       records: visible.slice(0, limit),
-      page: { offset, limit, hasMore: visible.length > limit }
+      page: { offset, limit, hasMore: result.data.length > limit }
     });
   }
 
