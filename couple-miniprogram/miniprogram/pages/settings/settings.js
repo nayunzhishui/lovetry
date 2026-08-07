@@ -2,9 +2,17 @@ const app = getApp();
 const cloudApi = require("../../services/cloudApi");
 const config = require("../../config");
 
+function archiveDateText(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 Page({
   data: {
     couple: null,
+    archives: [],
     joinCode: "",
     spaceName: "",
     anniversaryDate: "",
@@ -17,11 +25,11 @@ Page({
 
   onShow() {
     this.loadCouple();
+    this.loadArchives();
   },
 
   loadCouple() {
     if (this.data.isLoading) return;
-
     this.setData({ isLoading: true, error: "" });
     cloudApi
       .getMyCouple()
@@ -38,30 +46,24 @@ Page({
         this.setData({ error: message });
         wx.showToast({ title: message, icon: "none" });
       })
-      .finally(() => {
-        this.setData({ isLoading: false });
-      });
+      .finally(() => this.setData({ isLoading: false }));
   },
 
-  onJoinCodeInput(event) {
-    this.setData({ joinCode: event.detail.value.toUpperCase() });
+  loadArchives() {
+    cloudApi.listRelationshipArchives()
+      .then((archives) => this.setData({ archives: (archives || []).map((item) => ({ ...item, archivedAtText: archiveDateText(item.archivedAt) })) }))
+      .catch(() => {});
   },
 
-  onProfileInput(event) {
-    this.setData({ [event.currentTarget.dataset.key]: event.detail.value });
-  },
-
-  onAnniversaryChange(event) {
-    this.setData({ anniversaryDate: event.detail.value });
-  },
+  onJoinCodeInput(event) { this.setData({ joinCode: event.detail.value.toUpperCase() }); },
+  onProfileInput(event) { this.setData({ [event.currentTarget.dataset.key]: event.detail.value }); },
+  onAnniversaryChange(event) { this.setData({ anniversaryDate: event.detail.value }); },
 
   createCouple() {
     if (this.data.isSaving) return;
-
     this.setData({ isSaving: true, error: "" });
     wx.showLoading({ title: "创建中", mask: true });
-    cloudApi
-      .createCouple()
+    cloudApi.createCouple()
       .then((couple) => {
         app.globalData.couple = couple;
         this.setData({ couple });
@@ -72,24 +74,18 @@ Page({
         this.setData({ error: message });
         wx.showToast({ title: message, icon: "none" });
       })
-      .finally(() => {
-        wx.hideLoading();
-        this.setData({ isSaving: false });
-      });
+      .finally(() => { wx.hideLoading(); this.setData({ isSaving: false }); });
   },
 
   joinCouple() {
     if (this.data.isSaving) return;
-
     if (!this.data.joinCode.trim()) {
       wx.showToast({ title: "请输入加入码", icon: "none" });
       return;
     }
-
     this.setData({ isSaving: true, error: "" });
     wx.showLoading({ title: "加入中", mask: true });
-    cloudApi
-      .joinCouple(this.data.joinCode.trim())
+    cloudApi.joinCouple(this.data.joinCode.trim())
       .then((couple) => {
         app.globalData.couple = couple;
         this.setData({ couple, joinCode: "" });
@@ -100,19 +96,13 @@ Page({
         this.setData({ error: message });
         wx.showToast({ title: message, icon: "none" });
       })
-      .finally(() => {
-        wx.hideLoading();
-        this.setData({ isSaving: false });
-      });
+      .finally(() => { wx.hideLoading(); this.setData({ isSaving: false }); });
   },
 
   saveProfile() {
     if (this.data.isSaving || !this.data.couple) return;
     this.setData({ isSaving: true, error: "" });
-    cloudApi.call("couple", {
-      action: "updateProfile",
-      profile: { spaceName: this.data.spaceName, anniversaryDate: this.data.anniversaryDate }
-    })
+    cloudApi.call("couple", { action: "updateProfile", profile: { spaceName: this.data.spaceName, anniversaryDate: this.data.anniversaryDate } })
       .then((result) => {
         app.globalData.couple = result.couple;
         this.setData({ couple: result.couple });
@@ -135,26 +125,19 @@ Page({
       .finally(() => this.setData({ isSaving: false }));
   },
 
-  goExport() {
-    wx.navigateTo({ url: "/pages/export/export" });
+  goExport() { wx.navigateTo({ url: "/pages/export/export" }); },
+  goArchive(event) {
+    const coupleId = event.currentTarget.dataset.id;
+    if (!coupleId) return;
+    wx.navigateTo({ url: `/pages/export/export?archive=1&coupleId=${encodeURIComponent(coupleId)}` });
   },
-
-  goNotifications() {
-    wx.navigateTo({ url: "/features/notifications/notifications" });
-  },
-
-  goIntegrationTest() {
-    wx.navigateTo({ url: "/pages/integration-test/integration-test" });
-  },
-
+  goNotifications() { wx.navigateTo({ url: "/features/notifications/notifications" }); },
+  goIntegrationTest() { wx.navigateTo({ url: "/pages/integration-test/integration-test" }); },
   leaveCouple() {
     if (!this.data.couple || this.data.isSaving) return;
     this.setData({ showLeaveConfirm: true });
   },
-
-  cancelLeave() {
-    this.setData({ showLeaveConfirm: false });
-  },
+  cancelLeave() { this.setData({ showLeaveConfirm: false }); },
 
   confirmLeave() {
     if (!this.data.couple || this.data.isSaving) return;
@@ -163,7 +146,8 @@ Page({
       .then(() => {
         app.globalData.couple = null;
         this.setData({ couple: null, spaceName: "", anniversaryDate: "" });
-        wx.showToast({ title: "已解除" });
+        this.loadArchives();
+        wx.showToast({ title: "已解除，历史档案已保留" });
       })
       .catch((error) => this.setData({ error: cloudApi.getErrorMessage(error, "解除失败") }))
       .finally(() => this.setData({ isSaving: false }));
