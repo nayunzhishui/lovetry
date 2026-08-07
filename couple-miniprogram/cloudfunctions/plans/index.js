@@ -5,6 +5,7 @@ const {
   setStatus,
   toggleChecklist
 } = require("./mutations");
+const { sanitizePlanPayload } = require("./schema");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -59,23 +60,28 @@ function date(value) {
 
 function normalize(input, couple, openid, current) {
   const plan = input || {};
-  const type = plan.type || (current && current.type);
+  const type = current ? current.type : plan.type;
   const title = text(plan.title, 80);
   if (!PLAN_TYPES.has(type) || !title) throw businessError("INVALID_PLAN");
-  const status = STATUSES.has(plan.status) ? plan.status : current?.status || "todo";
-  const assigneeOpenids = Array.isArray(plan.assigneeOpenids)
-    ? plan.assigneeOpenids.filter((member) => couple.members.includes(member)).slice(0, 2)
+  const rawAssignees = Array.isArray(plan.assigneeOpenids)
+    ? plan.assigneeOpenids
     : current?.assigneeOpenids || [];
+  const assigneeOpenids = type === "task"
+    ? [...new Set(rawAssignees.filter((member) => couple.members.includes(member)))].slice(0, 2)
+    : [];
+  const startAt = ["event", "trip", "anniversary"].includes(type) ? date(plan.startAt) : null;
+  const endAt = ["task", "trip"].includes(type) ? date(plan.endAt) : null;
+  if (startAt && endAt && endAt < startAt) throw businessError("INVALID_PLAN", "结束日期不能早于开始日期");
   return {
     type,
     title,
     detail: text(plan.detail, 5000),
-    status,
+    status: current?.status || "todo",
     assigneeOpenids,
-    startAt: date(plan.startAt),
-    endAt: date(plan.endAt),
-    rewardPoints: Math.min(Math.max(Number(plan.rewardPoints) || 0, 0), 100000),
-    payload: plan.payload && typeof plan.payload === "object" ? plan.payload : {},
+    startAt,
+    endAt,
+    rewardPoints: type === "task" ? Math.min(Math.max(Math.round(Number(plan.rewardPoints) || 0), 0), 100000) : 0,
+    payload: sanitizePlanPayload(type, plan.payload),
     createdBy: current?.createdBy || openid
   };
 }
