@@ -63,6 +63,12 @@
    - `miniprogram-ci` 从未固定的 latest 安装改为显式 `2.1.31`；
    - 避免工作流因上游最新版本变化产生不可解释的预览构建差异。
 
+10. **仓库高置信度 secret scan**
+   - `quality` 增加 `scan:secrets`；
+   - 扫描 Git 跟踪文本文件中的私钥材料、OpenAI 风格 API key、GitHub token、AWS access key；
+   - 不把环境变量名和测试占位符当作泄密；
+   - 命中高置信度密钥模式时直接阻断 CI。
+
 ## 部分完成
 
 ### 本机 storage namespace
