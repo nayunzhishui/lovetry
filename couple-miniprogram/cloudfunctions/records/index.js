@@ -1,5 +1,6 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
+const { resolveActiveCouple } = require("./membership");
 const {
   assertRecordRequestCompatible,
   recordIdForRequest,
@@ -12,6 +13,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const RECORD_TYPES = new Set([
   "moment",
   "mood",
@@ -58,13 +60,11 @@ function failure(error) {
   };
 }
 
-async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
+function assertExpectedVersion(record, expectedVersion) {
+  const expected = Number(expectedVersion);
+  if (!Number.isInteger(expected) || expected !== Number(record.version || 1)) {
+    throw businessError("VERSION_CONFLICT");
+  }
 }
 
 function trimText(value, maxLength) {
@@ -269,9 +269,7 @@ async function handle(event, openid) {
       }
       if (!latest || latest.coupleId !== couple._id || isDeleted(latest)) throw businessError("RECORD_NOT_FOUND");
       if (!canEdit(latest, openid)) throw businessError("NO_PERMISSION");
-      if (event.version && Number(event.version) !== Number(latest.version || 1)) {
-        throw businessError("VERSION_CONFLICT");
-      }
+      assertExpectedVersion(latest, event.version);
       const normalized = normalizeRecord(event.record, openid, latest);
       const nextVersion = Number(latest.version || 1) + 1;
       const updatedAt = new Date();
@@ -285,6 +283,7 @@ async function handle(event, openid) {
 
   if (action === "delete") {
     const current = await assertAccessibleRecord(event.recordId, couple, openid, true);
+    assertExpectedVersion(current, event.version);
     const deletedAt = new Date();
     await db.collection("records").doc(current._id).update({
       data: { deletedAt, updatedAt: deletedAt, version: _.inc(1) }
