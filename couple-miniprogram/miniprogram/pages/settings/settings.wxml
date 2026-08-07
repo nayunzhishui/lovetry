@@ -8,10 +8,7 @@
 
   <view wx:if="{{couple}}" class="panel code-card">
     <view class="panel-head">
-      <view>
-        <view class="panel-kicker">INVITE CODE</view>
-        <view class="panel-title">当前加入码</view>
-      </view>
+      <view><view class="panel-kicker">INVITE CODE</view><view class="panel-title">当前加入码</view></view>
       <view class="status status--warm">{{couple.members.length}} 人</view>
     </view>
     <view class="invite-code">{{couple.code}}</view>
@@ -20,42 +17,19 @@
   </view>
 
   <view wx:if="{{couple}}" class="panel">
-    <view class="panel-kicker">SPACE PROFILE</view>
-    <view class="panel-title">两个人的资料</view>
+    <view class="panel-kicker">SPACE PROFILE</view><view class="panel-title">两个人的资料</view>
     <view class="field"><view class="label">空间名称</view><input value="{{spaceName}}" maxlength="30" placeholder="我们的小空间" data-key="spaceName" bindinput="onProfileInput" /></view>
     <view class="field"><view class="label">在一起的日期</view><picker mode="date" value="{{anniversaryDate}}" bindchange="onAnniversaryChange"><view class="input-like profile-date">{{anniversaryDate || '选择日期'}}</view></picker></view>
     <button class="button" disabled="{{isSaving}}" bindtap="saveProfile">保存资料</button>
   </view>
 
   <view wx:if="{{!couple}}" class="panel action-panel">
-    <view class="panel-kicker">CONNECT</view>
-    <view class="panel-title">建立两个人的连接</view>
-    <view class="connection-choice">
-      <view class="choice-index">A</view>
-      <view class="choice-body">
-        <view class="label">还没有空间</view>
-        <view class="hint">由其中一人创建，再分享加入码。</view>
-      </view>
-    </view>
+    <view class="panel-kicker">CONNECT</view><view class="panel-title">建立两个人的连接</view>
+    <view class="connection-choice"><view class="choice-index">A</view><view class="choice-body"><view class="label">还没有空间</view><view class="hint">由其中一人创建，再分享加入码。</view></view></view>
     <button class="button" bindtap="createCouple">创建情侣空间</button>
-
-    <view class="choice-divider">
-      <view class="choice-divider__line"></view>
-      <view class="choice-divider__text">或</view>
-      <view class="choice-divider__line"></view>
-    </view>
-
-    <view class="connection-choice">
-      <view class="choice-index choice-index--sage">B</view>
-      <view class="choice-body">
-        <view class="label">已经收到加入码</view>
-        <view class="hint">输入对方发来的 8 位加入码。</view>
-      </view>
-    </view>
-    <view class="field join-field">
-      <view class="label">加入码</view>
-      <input class="join-input" value="{{joinCode}}" maxlength="8" placeholder="请输入 8 位加入码" bindinput="onJoinCodeInput" />
-    </view>
+    <view class="choice-divider"><view class="choice-divider__line"></view><view class="choice-divider__text">或</view><view class="choice-divider__line"></view></view>
+    <view class="connection-choice"><view class="choice-index choice-index--sage">B</view><view class="choice-body"><view class="label">已经收到加入码</view><view class="hint">输入对方发来的 8 位加入码。</view></view></view>
+    <view class="field join-field"><view class="label">加入码</view><input class="join-input" value="{{joinCode}}" maxlength="8" placeholder="请输入 8 位加入码" bindinput="onJoinCodeInput" /></view>
     <button class="button secondary" bindtap="joinCouple">加入情侣空间</button>
   </view>
 
@@ -66,9 +40,17 @@
     <button wx:if="{{showDeveloperTools}}" class="tool-row" bindtap="goIntegrationTest"><view><view class="label">联调检查</view><view class="hint">检查云函数和数据库连接</view></view><text>›</text></button>
   </view>
 
+  <view wx:if="{{archives.length}}" class="panel tools-panel">
+    <view class="panel-kicker">READ-ONLY ARCHIVES</view>
+    <view class="panel-title">历史关系档案</view>
+    <view class="hint">解除关系不会抹掉你自己的数据权利。历史档案只读，可导出当时的共享历史和你自己的私密记录。</view>
+    <button wx:for="{{archives}}" wx:key="_id" class="tool-row" data-id="{{item._id}}" bindtap="goArchive">
+      <view><view class="label">{{item.spaceName || '历史情侣空间'}}</view><view class="hint">{{item.archivedAtText ? '解除于 ' + item.archivedAtText : '历史只读档案'}}</view></view><text>›</text>
+    </button>
+  </view>
+
   <view wx:if="{{couple}}" class="panel privacy-panel">
-    <view class="panel-kicker">PRIVACY BY DEFAULT</view>
-    <view class="panel-title">敏感记录默认只对自己可见</view>
+    <view class="panel-kicker">PRIVACY BY DEFAULT</view><view class="panel-title">敏感记录默认只对自己可见</view>
     <view class="hint">心情、沟通复盘、睡眠、生理期、亲密和专注记录会先保存为私密内容；你可在编辑时主动改为两人共享。</view>
   </view>
 
@@ -76,7 +58,7 @@
   <confirm-dialog
     open="{{showLeaveConfirm}}"
     title="解除当前情侣空间？"
-    detail="解除会归档整个情侣空间，双方都将无法继续查看共享数据。建议先导出备份。"
+    detail="解除后当前空间停止继续写入，双方的历史档案会各自保留为只读，可导出共享历史和本人私密数据。之后创建新关系也不会覆盖旧档案。"
     confirm-text="确认解除"
     bindcancel="cancelLeave"
     bindconfirm="confirmLeave"
