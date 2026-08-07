@@ -1,12 +1,24 @@
 const crypto = require("crypto");
 
+function stableValue(value) {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === "object") {
+    return Object.keys(value).sort().reduce((result, key) => {
+      result[key] = stableValue(value[key]);
+      return result;
+    }, {});
+  }
+  return value;
+}
+
 function restoreBatchId(coupleId, ownerId, recovery) {
-  const fingerprint = JSON.stringify({
+  const fingerprint = JSON.stringify(stableValue({
     coupleId: String(coupleId || ""),
     ownerId: String(ownerId || ""),
-    records: (recovery.records || []).map((item) => item._id),
-    plans: (recovery.plans || []).map((item) => item._id)
-  });
+    records: recovery.records || [],
+    plans: recovery.plans || []
+  }));
   return crypto.createHash("sha256").update(fingerprint).digest("hex").slice(0, 32);
 }
 
@@ -33,4 +45,4 @@ function batchEnd(index, total, batchSize = 25) {
   return Math.min(total, index + Math.min(Math.max(Number(batchSize) || 25, 1), 50));
 }
 
-module.exports = { batchEnd, normalizeRestoreJob, restoreBatchId };
+module.exports = { batchEnd, normalizeRestoreJob, restoreBatchId, stableValue };
