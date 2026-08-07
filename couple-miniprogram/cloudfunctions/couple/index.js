@@ -1,10 +1,13 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
+const { archiveAccessData, archiveAccessId, listArchivedCouples } = require("./archive-access");
+const { membershipId, resolveActiveCouple } = require("./membership");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const INVITE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const INVITE_LENGTH = 8;
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -68,35 +71,6 @@ async function createUniqueCode() {
   throw businessError("INVITE_CODE_GENERATION_FAILED", "暂时无法生成加入码，请稍后重试");
 }
 
-async function findMine(openid) {
-  const membershipId = crypto.createHash("sha256").update(openid).digest("hex").slice(0, 32);
-  try {
-    const membership = (await db.collection("memberships").doc(membershipId).get()).data;
-    if (membership && membership.status === "active" && membership.coupleId) {
-      const couple = (await db.collection("couples").doc(membership.coupleId).get()).data;
-      if (couple && couple.status !== "archived" && couple.members.includes(openid)) return couple;
-    }
-  } catch (error) {
-    // Existing projects are lazily migrated from the couples.members array below.
-  }
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  const couple = result.data[0] || null;
-  if (couple) {
-    await db.collection("memberships").doc(membershipId).set({ data: {
-      openid, coupleId: couple._id, status: "active", updatedAt: new Date()
-    } });
-  }
-  return couple;
-}
-
-function membershipId(openid) {
-  return crypto.createHash("sha256").update(openid).digest("hex").slice(0, 32);
-}
-
 function sanitizeProfile(profile) {
   const next = {};
   if (Object.prototype.hasOwnProperty.call(profile, "spaceName")) {
@@ -117,6 +91,10 @@ async function handle(event, openid) {
 
   if (action === "mine") {
     return success({ couple: await findMine(openid) });
+  }
+
+  if (action === "listArchives") {
+    return success({ archives: await listArchivedCouples(db, openid, 20) });
   }
 
   if (action === "create") {
@@ -184,14 +162,15 @@ async function handle(event, openid) {
       }
       if (members.includes(openid)) return;
       if (members.length >= 2) throw businessError("COUPLE_FULL");
+      const updatedAt = new Date();
       await transaction.collection("couples").doc(coupleId).update({
         data: {
           members: [...members, openid],
-          updatedAt: new Date(),
+          updatedAt,
           version: Number(couple.version || 0) + 1
         }
       });
-      await memberDoc.set({ data: { openid, coupleId, status: "active", updatedAt: new Date() } });
+      await memberDoc.set({ data: { openid, coupleId, status: "active", updatedAt } });
     });
 
     return success({ couple: await findMine(openid) });
@@ -241,6 +220,7 @@ async function handle(event, openid) {
         throw businessError("COUPLE_NOT_FOUND");
       }
       const archivedAt = new Date();
+      const archivedCouple = { ...latest, _id: couple._id, status: "archived", archivedAt, updatedAt: archivedAt };
       await transaction.collection("couples").doc(couple._id).update({ data: {
         status: "archived",
         code: "",
@@ -257,6 +237,9 @@ async function handle(event, openid) {
           status: "archived",
           updatedAt: archivedAt
         } });
+        await transaction.collection("relationship_archives").doc(archiveAccessId(member, couple._id)).set({
+          data: archiveAccessData(member, archivedCouple, archivedAt)
+        });
       }
     });
     return success({ couple: null });
