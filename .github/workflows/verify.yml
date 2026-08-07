@@ -14,5 +14,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
-      - run: npm run verify
+      - run: npm run quality
+      - name: Ensure generated runtime mirrors are committed
+        run: git diff --exit-code
