@@ -1,11 +1,13 @@
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
+const { resolveActiveCouple } = require("./membership");
 const { normalizeRewardItem, transitionRewardItem } = require("./reward-policy");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
   INVALID_AMOUNT: "积分必须是大于零的整数",
@@ -40,15 +42,6 @@ function failure(error) {
   const code = error.code || error.message || "INTERNAL_ERROR";
   const known = Object.prototype.hasOwnProperty.call(ERROR_MESSAGES, code);
   return { ok: false, error: { code: known ? code : "INTERNAL_ERROR", message: known ? (error.message || ERROR_MESSAGES[code]) : "服务暂时不可用" } };
-}
-
-async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
 }
 
 function walletId(coupleId, openid) {
