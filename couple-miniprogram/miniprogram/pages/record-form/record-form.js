@@ -38,7 +38,7 @@ const DEFAULT_TITLES = {
 };
 
 const DRAFT_FIELDS = [
-  "title", "content", "visibility", "startDate", "startTime", "endDate", "endTime",
+  "clientRequestId", "title", "content", "visibility", "startDate", "startTime", "endDate", "endTime",
   "moodLevel", "tagsText", "feelings", "needs", "communication", "agreement",
   "satisfaction", "outingCategoryIndex", "location", "amount", "outingRating",
   "sleepQuality", "periodFlowIndex", "protectionIndex", "comfortIndex", "participants", "repairIndex"
@@ -46,6 +46,10 @@ const DRAFT_FIELDS = [
 
 function pad(value) {
   return String(value).padStart(2, "0");
+}
+
+function createClientRequestId() {
+  return `record-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function toParts(value, fallback) {
@@ -108,6 +112,7 @@ Page({
     contentPlaceholder: TYPE_META.mood.placeholder,
     recordId: "",
     version: 0,
+    clientRequestId: "",
     title: "",
     content: "",
     visibility: "private",
@@ -157,6 +162,7 @@ Page({
     const requestedType = TYPES.some((item) => item.value === options.type) ? options.type : "mood";
     const requestedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(options.date || "")) ? options.date : "";
     this.setData({
+      clientRequestId: createClientRequestId(),
       startDate: start.date,
       startTime: start.time,
       endDate: end.date,
@@ -202,7 +208,7 @@ Page({
     if (this.data.recordId) return;
     const item = TYPES[Number(event.detail.value)] || TYPES[0];
     if (this.draftDirty) this.persistDraft();
-    this.setData(emptyRecordFields());
+    this.setData({ ...emptyRecordFields(), clientRequestId: createClientRequestId() });
     this.applyType(item.value, true);
     this.restoreDraft();
   },
@@ -421,7 +427,7 @@ Page({
       };
     }
 
-    return {
+    const record = {
       type,
       title: this.data.title.trim() || DEFAULT_TITLES[type],
       content: this.data.content.trim(),
@@ -431,6 +437,8 @@ Page({
       metrics,
       payload
     };
+    if (!this.data.recordId) record.clientRequestId = this.data.clientRequestId || createClientRequestId();
+    return record;
   },
 
   submit() {
@@ -443,6 +451,10 @@ Page({
       return;
     }
 
+    if (!this.data.recordId) {
+      this.draftDirty = true;
+      this.persistDraft();
+    }
     this.setData({ isSubmitting: true, error: "" });
     wx.showLoading({ title: "保存中", mask: true });
     const request = this.data.recordId
