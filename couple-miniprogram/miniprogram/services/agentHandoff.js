@@ -1,7 +1,4 @@
 const { createHandoffRepository } = require("../shared/agent-context");
+const { createScopedStorageAdapter } = require("./storageScope");
 
-module.exports = createHandoffRepository({
-  get(key) { return wx.getStorageSync(key); },
-  set(key, value) { wx.setStorageSync(key, value); },
-  remove(key) { wx.removeStorageSync(key); }
-});
+module.exports = createHandoffRepository(createScopedStorageAdapter());

@@ -43,3 +43,24 @@ test("共享记录允许伴侣查看但只允许创建者修改", () => {
     { isMember: true, canRead: true, canWrite: false }
   );
 });
+
+test("缺少 visibility 的历史敏感记录按默认私密处理", () => {
+  const couple = { members: ["user-a", "user-b"] };
+  for (const type of ["mood", "conflict", "sleep", "period", "intimacy", "pomodoro"]) {
+    const record = { type, ownerOpenid: "user-a" };
+    assert.deepEqual(
+      evaluateRecordAccess({ couple, record, openid: "user-b" }),
+      { isMember: true, canRead: false, canWrite: false },
+      `${type} should remain private for partner`
+    );
+  }
+});
+
+test("缺少 visibility 的历史普通共享记录保持兼容", () => {
+  const couple = { members: ["user-a", "user-b"] };
+  const record = { type: "moment", ownerOpenid: "user-a" };
+  assert.deepEqual(
+    evaluateRecordAccess({ couple, record, openid: "user-b" }),
+    { isMember: true, canRead: true, canWrite: false }
+  );
+});

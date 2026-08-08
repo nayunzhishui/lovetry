@@ -6,9 +6,9 @@ const { validateBackupEnvelope } = require("../couple-miniprogram/cloudfunctions
 function createBackup(overrides = {}) {
   return {
     schemaVersion: 1,
-    couple: { _id: "couple-a" },
-    records: [{ _id: "record-1" }],
-    plans: [{ _id: "plan-1" }],
+    couple: { _id: "couple-a", members: ["user-a", "user-b"] },
+    records: [{ _id: "record-1", type: "moment", title: "一条记录" }],
+    plans: [{ _id: "plan-1", type: "task", title: "一项任务" }],
     truncated: { records: false, plans: false, albums: false, mediaAssets: false },
     ...overrides
   };
@@ -33,8 +33,16 @@ test("恢复前拒绝已截断的不完整备份", () => {
 
 test("合法备份仅返回可恢复集合并限制数量", () => {
   const backup = createBackup({
-    records: Array.from({ length: 501 }, (_, index) => ({ _id: `record-${index}` })),
-    plans: Array.from({ length: 501 }, (_, index) => ({ _id: `plan-${index}` }))
+    records: Array.from({ length: 501 }, (_, index) => ({
+      _id: `record-${index}`,
+      type: "moment",
+      title: `记录 ${index}`
+    })),
+    plans: Array.from({ length: 501 }, (_, index) => ({
+      _id: `plan-${index}`,
+      type: "task",
+      title: `任务 ${index}`
+    }))
   });
   const result = validateBackupEnvelope(backup, "couple-a");
   assert.equal(result.records.length, 500);

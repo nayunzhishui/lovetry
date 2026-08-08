@@ -12,7 +12,8 @@
     "pages/record-detail/record-detail",
     "pages/pomodoro/pomodoro",
     "pages/search/search",
-    "pages/export/export"
+    "pages/export/export",
+    "pages/integration-test/integration-test"
   ],
   "subpackages": [
     {

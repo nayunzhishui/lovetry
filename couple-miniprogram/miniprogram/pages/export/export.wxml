@@ -1,19 +1,27 @@
 <view class="page">
-  <view class="hero"><view class="eyebrow">KEEP A COPY</view><view class="title">数据备份</view><view class="subtitle">导出情侣空间的共享数据和你自己的私密数据，不会包含伴侣的私密记录。</view></view>
+  <view class="hero">
+    <view class="eyebrow">{{archiveMode ? 'READ-ONLY ARCHIVE' : 'KEEP A COPY'}}</view>
+    <view class="title">{{archiveMode ? '历史关系档案' : '数据备份'}}</view>
+    <view class="subtitle">{{archiveMode ? '只读导出已解除关系中的共享历史和你自己的私密记录；不会恢复或重新激活旧关系。' : '导出情侣空间的共享数据和你自己的私密数据，不会包含伴侣的私密记录。'}}</view>
+  </view>
   <view class="panel panel--quiet">
     <view class="panel-title">导出前请注意</view>
     <view class="hint">导出的 JSON 可能包含敏感日期和文字。请保存在只有自己可以访问的位置，不要发送到公开群聊。</view>
   </view>
-  <button class="button" loading="{{loading}}" disabled="{{loading}}" bindtap="exportFile">生成备份文件</button>
-  <button class="button secondary" disabled="{{loading}}" bindtap="copyExport">复制备份文本</button>
+  <button class="button" loading="{{loading}}" disabled="{{loading}}" bindtap="exportFile">生成{{archiveMode ? '历史档案' : '备份'}}文件</button>
+  <button class="button secondary" disabled="{{loading}}" bindtap="copyExport">复制{{archiveMode ? '历史档案' : '备份'}}文本</button>
   <button wx:if="{{backupPath}}" class="button secondary" bindtap="shareFile">通过微信分享文件</button>
-  <view class="panel restore-panel">
+  <view wx:if="{{!archiveMode}}" class="panel restore-panel">
     <view class="panel-title">从备份恢复</view>
-    <view class="hint">接受版本 1 和带摘要的版本 2 备份。重复恢复会跳过；钱包流水和图片文件不会被导入。超大备份请用文件导入。</view>
+    <view class="hint">接受版本 1 和带摘要的版本 2 备份。恢复会分批执行并记录检查点，重复恢复会跳过，中断后可继续；钱包流水和图片文件不会被导入。超大备份请用文件导入。</view>
     <button class="button secondary" bindtap="chooseBackupFile">从微信文件选择</button>
     <textarea value="{{backupText}}" maxlength="100000" placeholder="在此粘贴备份 JSON" bindinput="onBackupInput"></textarea>
     <button class="button secondary" loading="{{loading}}" disabled="{{loading || !backupText}}" bindtap="restoreBackup">校验并恢复记录与计划</button>
   </view>
-  <view wx:if="{{summary}}" class="panel"><view class="status">备份已生成</view><view class="hint">{{summary}}</view></view>
+  <view wx:if="{{archiveMode}}" class="panel panel--quiet">
+    <view class="panel-title">档案为只读</view>
+    <view class="hint">解除关系后的历史档案不会写回当前情侣空间，也不会允许修改旧关系中的数据。</view>
+  </view>
+  <view wx:if="{{summary}}" class="panel"><view class="status">{{archiveMode ? '历史档案已生成' : '备份状态'}}</view><view class="hint">{{summary}}</view></view>
   <view wx:if="{{error}}" class="error-banner">{{error}}</view>
 </view>

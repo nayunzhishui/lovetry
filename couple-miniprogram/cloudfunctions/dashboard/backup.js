@@ -1,3 +1,5 @@
+const { normalizeRestoredRecord, normalizeRestoredPlan } = require("./restore-schema");
+
 function backupError(code, userMessage) {
   const error = new Error(code);
   error.code = code;
@@ -5,7 +7,29 @@ function backupError(code, userMessage) {
   return error;
 }
 
-function validateBackupEnvelope(backup, coupleId) {
+function sanitizeRestorableRecords(records) {
+  return (Array.isArray(records) ? records : [])
+    .slice(0, 500)
+    .map((source) => {
+      const normalized = normalizeRestoredRecord(source, "");
+      return normalized && source && source._id ? { _id: source._id, ...normalized } : null;
+    })
+    .filter(Boolean);
+}
+
+function sanitizeRestorablePlans(plans, couple) {
+  return (Array.isArray(plans) ? plans : [])
+    .slice(0, 500)
+    .map((source) => {
+      const normalized = normalizeRestoredPlan(source, couple, "");
+      return normalized && source && source._id ? { _id: source._id, ...normalized } : null;
+    })
+    .filter(Boolean);
+}
+
+function validateBackupEnvelope(backup, coupleOrId) {
+  const coupleId = typeof coupleOrId === "object" && coupleOrId ? coupleOrId._id : coupleOrId;
+  const restoreCouple = typeof coupleOrId === "object" && coupleOrId ? coupleOrId : backup && backup.couple;
   if (!backup || Number(backup.schemaVersion) !== 1 || !backup.couple || backup.couple._id !== coupleId) {
     throw backupError("INVALID_BACKUP", "备份格式不正确，或不属于当前情侣空间");
   }
@@ -16,8 +40,8 @@ function validateBackupEnvelope(backup, coupleId) {
   }
 
   return {
-    records: (Array.isArray(backup.records) ? backup.records : []).slice(0, 500),
-    plans: (Array.isArray(backup.plans) ? backup.plans : []).slice(0, 500)
+    records: sanitizeRestorableRecords(backup.records),
+    plans: sanitizeRestorablePlans(backup.plans, restoreCouple)
   };
 }
 

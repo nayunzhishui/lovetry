@@ -1,20 +1,22 @@
 process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
+const { resolveActiveCouple } = require("./membership");
 const {
   assertRecordRequestCompatible,
   recordIdForRequest,
   recordRequestFingerprint
 } = require("./idempotency");
 const { preservePartnerReactions, toggleReaction, validateReactionRequest } = require("./reactions");
-const { findMineViaMembership } = require("./membership");
 const { exceedsFlexibleFieldLimit } = require("./payload-guard");
+const { sanitizeRecordMetrics, sanitizeRecordPayload } = require("./schema");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
 const { RECORD_TYPES, normalizeVisibility } = require("./visibility");
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
   INVALID_RECORD: "记录内容不完整",
@@ -49,9 +51,11 @@ function failure(error) {
   };
 }
 
-async function findMine(openid) {
-  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
-  return findMineViaMembership(db, openid);
+function assertExpectedVersion(record, expectedVersion) {
+  const expected = Number(expectedVersion);
+  if (!Number.isInteger(expected) || expected !== Number(record.version || 1)) {
+    throw businessError("VERSION_CONFLICT");
+  }
 }
 
 function trimText(value, maxLength) {
@@ -86,8 +90,8 @@ function normalizeRecord(input, openid, existing) {
     visibility: normalizeVisibility(type, record.visibility, existing && existing.visibility),
     startAt: parseDate(record.startAt),
     endAt: parseDate(record.endAt),
-    metrics,
-    payload,
+    metrics: sanitizeRecordMetrics(type, metrics),
+    payload: sanitizeRecordPayload(type, payload, existing && existing.payload),
     relatedPlanId: trimText(record.relatedPlanId, 64),
     isTest: Boolean(record.isTest),
     ownerOpenid: existing ? existing.ownerOpenid || existing.creatorOpenid : openid
@@ -100,8 +104,8 @@ function isDeleted(record) {
 
 function canRead(record, openid) {
   if (isDeleted(record)) return false;
-  if (!record.visibility) return true;
-  return record.visibility === "couple" || record.ownerOpenid === openid || record.creatorOpenid === openid;
+  const visibility = normalizeVisibility(record.type, record.visibility);
+  return visibility === "couple" || record.ownerOpenid === openid || record.creatorOpenid === openid;
 }
 
 function canEdit(record, openid) {
@@ -233,7 +237,7 @@ async function handle(event, openid) {
     const visible = result.data.filter((record) => canRead(record, openid));
     return success({
       records: visible.slice(0, limit),
-      page: { offset, limit, hasMore: visible.length > limit }
+      page: { offset, limit, hasMore: result.data.length > limit }
     });
   }
 
@@ -300,9 +304,7 @@ async function handle(event, openid) {
       }
       if (!latest || latest.coupleId !== couple._id || isDeleted(latest)) throw businessError("RECORD_NOT_FOUND");
       if (!canEdit(latest, openid)) throw businessError("NO_PERMISSION");
-      if (event.version && Number(event.version) !== Number(latest.version || 1)) {
-        throw businessError("VERSION_CONFLICT");
-      }
+      assertExpectedVersion(latest, event.version);
       const normalized = normalizeRecord(event.record, openid, latest);
       // 伴侣的轻回应存放在 payload.reactionsByOpenid：owner 编辑记录不能覆盖/清空它
       normalized.payload = preservePartnerReactions(normalized.payload, latest.payload);
@@ -318,6 +320,7 @@ async function handle(event, openid) {
 
   if (action === "delete") {
     const current = await assertAccessibleRecord(event.recordId, couple, openid, true);
+    assertExpectedVersion(current, event.version);
     const deletedAt = new Date();
     await db.collection("records").doc(current._id).update({
       data: { deletedAt, updatedAt: deletedAt, version: _.inc(1) }

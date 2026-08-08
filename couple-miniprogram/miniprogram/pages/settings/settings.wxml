@@ -57,42 +57,19 @@
   </view>
 
   <view wx:if="{{couple}}" class="panel">
-    <view class="panel-kicker">SPACE PROFILE</view>
-    <view class="panel-title">两个人的资料</view>
+    <view class="panel-kicker">SPACE PROFILE</view><view class="panel-title">两个人的资料</view>
     <view class="field"><view class="label">空间名称</view><input value="{{spaceName}}" maxlength="30" placeholder="我们的小空间" data-key="spaceName" bindinput="onProfileInput" /></view>
     <view class="field"><view class="label">在一起的日期</view><picker mode="date" value="{{anniversaryDate}}" bindchange="onAnniversaryChange"><view class="input-like profile-date">{{anniversaryDate || '选择日期'}}</view></picker></view>
     <button class="button" disabled="{{isSaving}}" bindtap="saveProfile">保存资料</button>
   </view>
 
   <view wx:if="{{!couple}}" class="panel action-panel">
-    <view class="panel-kicker">CONNECT</view>
-    <view class="panel-title">建立两个人的连接</view>
-    <view class="connection-choice">
-      <view class="choice-index">A</view>
-      <view class="choice-body">
-        <view class="label">还没有空间</view>
-        <view class="hint">由其中一人创建，再分享加入码。</view>
-      </view>
-    </view>
+    <view class="panel-kicker">CONNECT</view><view class="panel-title">建立两个人的连接</view>
+    <view class="connection-choice"><view class="choice-index">A</view><view class="choice-body"><view class="label">还没有空间</view><view class="hint">由其中一人创建，再分享加入码。</view></view></view>
     <button class="button" bindtap="createCouple">创建情侣空间</button>
-
-    <view class="choice-divider">
-      <view class="choice-divider__line"></view>
-      <view class="choice-divider__text">或</view>
-      <view class="choice-divider__line"></view>
-    </view>
-
-    <view class="connection-choice">
-      <view class="choice-index choice-index--sage">B</view>
-      <view class="choice-body">
-        <view class="label">已经收到加入码</view>
-        <view class="hint">输入对方发来的 8 位加入码。</view>
-      </view>
-    </view>
-    <view class="field join-field">
-      <view class="label">加入码</view>
-      <input class="join-input" value="{{joinCode}}" maxlength="8" placeholder="请输入 8 位加入码" bindinput="onJoinCodeInput" />
-    </view>
+    <view class="choice-divider"><view class="choice-divider__line"></view><view class="choice-divider__text">或</view><view class="choice-divider__line"></view></view>
+    <view class="connection-choice"><view class="choice-index choice-index--sage">B</view><view class="choice-body"><view class="label">已经收到加入码</view><view class="hint">输入对方发来的 8 位加入码。</view></view></view>
+    <view class="field join-field"><view class="label">加入码</view><input class="join-input" value="{{joinCode}}" maxlength="8" placeholder="请输入 8 位加入码" bindinput="onJoinCodeInput" /></view>
     <button class="button secondary" bindtap="joinCouple">加入情侣空间</button>
   </view>
 
@@ -103,9 +80,17 @@
     <button wx:if="{{showDeveloperTools}}" class="tool-row" bindtap="goIntegrationTest"><view><view class="label">联调检查</view><view class="hint">检查云函数和数据库连接</view></view><text>›</text></button>
   </view>
 
+  <view wx:if="{{archives.length}}" class="panel tools-panel">
+    <view class="panel-kicker">READ-ONLY ARCHIVES</view>
+    <view class="panel-title">历史关系档案</view>
+    <view class="hint">解除关系不会抹掉你自己的数据权利。历史档案只读，可导出当时的共享历史和你自己的私密记录。</view>
+    <button wx:for="{{archives}}" wx:key="_id" class="tool-row" data-id="{{item._id}}" bindtap="goArchive">
+      <view><view class="label">{{item.spaceName || '历史情侣空间'}}</view><view class="hint">{{item.archivedAtText ? '解除于 ' + item.archivedAtText : '历史只读档案'}}</view></view><text>›</text>
+    </button>
+  </view>
+
   <view wx:if="{{couple}}" class="panel privacy-panel">
-    <view class="panel-kicker">PRIVACY BY DEFAULT</view>
-    <view class="panel-title">敏感记录默认只对自己可见</view>
+    <view class="panel-kicker">PRIVACY BY DEFAULT</view><view class="panel-title">敏感记录默认只对自己可见</view>
     <view class="hint">心情、沟通复盘、睡眠、生理期、亲密和专注记录会先保存为私密内容；你可在编辑时主动改为两人共享。</view>
   </view>
 
@@ -113,7 +98,7 @@
   <confirm-dialog
     open="{{showLeaveConfirm}}"
     title="申请解除当前情侣空间？"
-    detail="申请后进入 7 天冷静期：期间双方仍可查看数据、可随时撤销，期间请先导出备份；7 天后空间将归档，双方都无法再查看共享数据。"
+    detail="申请后进入 7 天冷静期：期间双方仍可查看数据并可随时撤销；7 天后空间归档为只读，双方可分别导出共享历史和本人私密数据。"
     confirm-text="确认申请解除"
     bindcancel="cancelLeave"
     bindconfirm="confirmLeave"

@@ -1,16 +1,17 @@
 process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
+const { resolveActiveCouple } = require("./membership");
 const { buildReminderCandidates } = require("./schedule");
 const {
   defaults,
   mergePreferences,
   registerSubscription
 } = require("./preferences");
-const { findMineViaMembership } = require("./membership");
-
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
+const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
@@ -29,11 +30,6 @@ function success(data) { return { ok: true, data, ...data }; }
 function failure(error) {
   const code = ERROR_MESSAGES[error.code] ? error.code : "INTERNAL_ERROR";
   return { ok: false, error: { code, message: ERROR_MESSAGES[code] || "服务暂时不可用" } };
-}
-
-async function findMine(openid) {
-  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
-  return findMineViaMembership(db, openid);
 }
 
 function preferenceId(coupleId, openid) {

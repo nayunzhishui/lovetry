@@ -67,6 +67,7 @@ function getProviderConfig(env = process.env) {
     style,
     chatTokenField,
     endpointUrl: endpointUrl.toString(),
+    isOpenAIEndpoint: endpointUrl.hostname === "api.openai.com",
     model: String(env.LOVE_AGENT_MODEL || "gpt-5.6-luna").trim(),
     timeoutMs: boundedInteger(env.LOVE_AGENT_TIMEOUT_MS, 12000, 3000, 30000),
     maxOutputTokens: boundedInteger(env.LOVE_AGENT_MAX_OUTPUT_TOKENS, 900, 64, 2000)
@@ -82,7 +83,10 @@ function getProviderStatus(config = getProviderConfig()) {
   };
 }
 
-function buildProviderRequest({ config, instructions, input }) {
+function buildProviderRequest({ config, instructions, input, safetyIdentifier }) {
+  const safety = config.isOpenAIEndpoint && String(safetyIdentifier || "").trim()
+    ? { safety_identifier: String(safetyIdentifier).trim().slice(0, 64) }
+    : {};
   if (config.style === "chat_completions") {
     return {
       model: config.model,
@@ -90,7 +94,8 @@ function buildProviderRequest({ config, instructions, input }) {
         { role: "system", content: instructions },
         { role: "user", content: input }
       ],
-      [config.chatTokenField || "max_tokens"]: config.maxOutputTokens
+      [config.chatTokenField || "max_tokens"]: config.maxOutputTokens,
+      ...safety
     };
   }
   return {
@@ -98,7 +103,8 @@ function buildProviderRequest({ config, instructions, input }) {
     instructions,
     input,
     max_output_tokens: config.maxOutputTokens,
-    store: false
+    store: false,
+    ...safety
   };
 }
 
@@ -141,13 +147,13 @@ function requestJson(url, apiKey, body, timeoutMs = 12000) {
   });
 }
 
-async function generateAnswer({ instructions, input }, env = process.env) {
+async function generateAnswer({ instructions, input, safetyIdentifier }, env = process.env) {
   const config = getProviderConfig(env);
   if (!config.apiKey) return null;
   const response = await requestJson(
     config.endpointUrl,
     config.apiKey,
-    buildProviderRequest({ config, instructions, input }),
+    buildProviderRequest({ config, instructions, input, safetyIdentifier }),
     config.timeoutMs
   );
   const answer = config.style === "chat_completions"

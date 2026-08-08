@@ -1,7 +1,8 @@
 const cloudApi = require("../../services/cloudApi");
+const { createScopedStorageAdapter } = require("../../services/storageScope");
 
-const STORAGE_KEY = "lovetry_pomodoro_v1";
-const PENDING_KEY = "lovetry_pomodoro_pending_v1";
+const STORAGE_KEY = "lovetry_pomodoro_v2";
+const PENDING_KEY = "lovetry_pomodoro_pending_v2";
 const PHASES = {
   focus: { label: "专注", minutes: 25 },
   break: { label: "休息", minutes: 5 }
@@ -48,8 +49,47 @@ Page({
   },
 
   onLoad() {
-    if (!this.restorePendingRecord()) this.restoreState();
-    this.loadTasks();
+    this.initializeStorage();
+  },
+
+  initializeStorage() {
+    const applyContext = (identity, couple) => {
+      if (!identity || !identity.openid || !couple || !couple._id) return false;
+      this.storage = createScopedStorageAdapter({ openid: identity.openid, coupleId: couple._id });
+      try {
+        if (typeof getApp === "function") {
+          const app = getApp();
+          if (app && app.globalData) {
+            app.globalData.openid = identity.openid;
+            app.globalData.couple = couple;
+          }
+        }
+      } catch (error) { /* explicit storage scope is already available */ }
+      if (!this.restorePendingRecord()) this.restoreState();
+      this.loadTasks();
+      return true;
+    };
+
+    try {
+      if (typeof getApp === "function") {
+        const app = getApp();
+        const globalData = app && app.globalData || {};
+        if (globalData.openid && globalData.couple && globalData.couple._id) {
+          applyContext({ openid: globalData.openid }, globalData.couple);
+          return;
+        }
+      }
+    } catch (error) { /* fall through to explicit cloud context */ }
+
+    Promise.all([cloudApi.login(), cloudApi.getMyCouple()])
+      .then(([identity, couple]) => {
+        if (!applyContext(identity, couple)) {
+          this.setData({ error: "请先创建或加入情侣空间后再使用专注计时" });
+        }
+      })
+      .catch((error) => {
+        this.setData({ error: cloudApi.getErrorMessage(error, "专注计时初始化失败，请稍后重试") });
+      });
   },
 
   loadTasks() {
@@ -108,6 +148,10 @@ Page({
 
   start() {
     if (this.data.isSaving) return;
+    if (!this.storage) {
+      wx.showToast({ title: "正在加载情侣空间，请稍后", icon: "none" });
+      return;
+    }
     if (this.data.status === "paused") {
       this.resume();
       return;
@@ -238,7 +282,7 @@ Page({
       payload: { phase: "focus", result: completed ? "completed" : "interrupted" }
     };
     record.clientRequestId = `pomodoro:${record.startAt}`;
-    try { wx.setStorageSync(PENDING_KEY, { record, completed }); } catch (error) { /* in-memory retry remains available */ }
+    try { if (this.storage) this.storage.set(PENDING_KEY, { record, completed }); } catch (error) { /* in-memory retry remains available */ }
     this.setData({ pendingRecord: record, status: "saving", statusText: "正在保存", targetAt: 0 });
     this.saveRecord(record, completed);
   },
@@ -306,9 +350,9 @@ Page({
   },
 
   persistState() {
-    if (this.data.status !== "running" && this.data.status !== "paused") return;
+    if (!this.storage || (this.data.status !== "running" && this.data.status !== "paused")) return;
     try {
-      wx.setStorageSync(STORAGE_KEY, {
+      this.storage.set(STORAGE_KEY, {
         phase: this.data.phase,
         plannedMinutes: this.data.plannedMinutes,
         remainingMs: this.data.remainingMs,
@@ -323,13 +367,14 @@ Page({
   },
 
   restoreState() {
+    if (!this.storage) return false;
     let saved;
     try {
-      saved = wx.getStorageSync(STORAGE_KEY);
+      saved = this.storage.get(STORAGE_KEY);
     } catch (error) {
-      return;
+      return false;
     }
-    if (!saved || !PHASES[saved.phase] || !["running", "paused"].includes(saved.status)) return;
+    if (!saved || !PHASES[saved.phase] || !["running", "paused"].includes(saved.status)) return false;
     const config = PHASES[saved.phase];
     const remainingMs = saved.status === "running"
       ? Math.max(0, Number(saved.targetAt) - Date.now())
@@ -348,11 +393,13 @@ Page({
     if (saved.status === "running" && remainingMs <= 0) {
       this.finishSession(true, true);
     }
+    return true;
   },
 
   restorePendingRecord() {
+    if (!this.storage) return false;
     try {
-      const pending = wx.getStorageSync(PENDING_KEY);
+      const pending = this.storage.get(PENDING_KEY);
       if (!pending || !pending.record) return false;
       this.setData({
         pendingRecord: pending.record,
@@ -367,12 +414,12 @@ Page({
   },
 
   clearPendingRecord() {
-    try { wx.removeStorageSync(PENDING_KEY); } catch (error) { /* no-op */ }
+    try { if (this.storage) this.storage.remove(PENDING_KEY); } catch (error) { /* no-op */ }
   },
 
   clearPersistedState() {
     try {
-      wx.removeStorageSync(STORAGE_KEY);
+      if (this.storage) this.storage.remove(STORAGE_KEY);
     } catch (error) {
       // Nothing else is required when storage cleanup fails.
     }

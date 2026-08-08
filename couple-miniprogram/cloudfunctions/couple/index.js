@@ -2,11 +2,14 @@ process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
 const { COOLING_OFF_DAYS, computePurgeAt, isPurgeDue } = require("./archive-policy");
+const { archiveAccessData, archiveAccessId, listArchivedCouples } = require("./archive-access");
+const { membershipId, resolveActiveCouple } = require("./membership");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const INVITE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const INVITE_LENGTH = 8;
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -70,35 +73,6 @@ async function createUniqueCode() {
   throw businessError("INVITE_CODE_GENERATION_FAILED", "暂时无法生成加入码，请稍后重试");
 }
 
-async function findMine(openid) {
-  const membershipId = crypto.createHash("sha256").update(openid).digest("hex").slice(0, 32);
-  try {
-    const membership = (await db.collection("memberships").doc(membershipId).get()).data;
-    if (membership && membership.status === "active" && membership.coupleId) {
-      const couple = (await db.collection("couples").doc(membership.coupleId).get()).data;
-      if (couple && couple.status !== "archived" && couple.members.includes(openid)) return couple;
-    }
-  } catch (error) {
-    // Existing projects are lazily migrated from the couples.members array below.
-  }
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  const couple = result.data[0] || null;
-  if (couple) {
-    await db.collection("memberships").doc(membershipId).set({ data: {
-      openid, coupleId: couple._id, status: "active", updatedAt: new Date()
-    } });
-  }
-  return couple;
-}
-
-function membershipId(openid) {
-  return crypto.createHash("sha256").update(openid).digest("hex").slice(0, 32);
-}
-
 // 判断 CloudBase“文档不存在”类错误：只有这类错误才能当作“当前账号还没有 membership”继续走下去；
 // 其余数据库异常（网络、权限、超时等）必须向上抛出，否则会把已有成员误判为可再次创建/加入。
 function isDocMissingError(error) {
@@ -145,6 +119,7 @@ async function finalizeArchive(coupleId, archivedBy) {
     const latest = latestResult.data;
     if (!latest || latest.status === "archived") return;
     const archivedAt = new Date();
+    const archivedCouple = { ...latest, _id: coupleId, status: "archived", archivedAt, updatedAt: archivedAt };
     await transaction.collection("couples").doc(coupleId).update({ data: {
       status: "archived",
       code: "",
@@ -161,6 +136,9 @@ async function finalizeArchive(coupleId, archivedBy) {
         status: "archived",
         updatedAt: archivedAt
       } });
+      await transaction.collection("relationship_archives").doc(archiveAccessId(member, coupleId)).set({
+        data: archiveAccessData(member, archivedCouple, archivedAt)
+      });
     }
   });
 }
@@ -208,6 +186,10 @@ async function handle(event, openid) {
 
   if (action === "mine") {
     return success({ couple: await findMine(openid) });
+  }
+
+  if (action === "listArchives") {
+    return success({ archives: await listArchivedCouples(db, openid, 20) });
   }
 
   if (action === "create") {

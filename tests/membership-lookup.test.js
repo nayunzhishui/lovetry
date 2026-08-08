@@ -11,7 +11,7 @@ const {
   findMineViaMembership
 } = require("../couple-miniprogram/cloudfunctions/records/membership");
 
-const CLOUD_FUNCTIONS_WITH_COPY = ["records", "rewards", "plans", "media", "dashboard", "notifications"];
+const CLOUD_FUNCTIONS_WITH_COPY = ["couple", "records", "rewards", "plans", "media", "dashboard", "notifications"];
 
 function readCopy(name) {
   return fs.readFileSync(
@@ -39,6 +39,10 @@ function fakeDb({ memberships = {}, couples = {}, whereResult = [] } = {}) {
                 throw error;
               }
               return { data: store[id] };
+            },
+            async set({ data }) {
+              log.push(`set:${name}:${id}`);
+              if (name === "memberships") memberships[id] = data;
             }
           };
         },
@@ -55,7 +59,7 @@ function fakeDb({ memberships = {}, couples = {}, whereResult = [] } = {}) {
   };
 }
 
-test("六个云函数目录内的 membership.js 拷贝内容保持一致", () => {
+test("七个云函数目录内的 membership.js 拷贝内容保持一致", () => {
   const reference = readCopy(CLOUD_FUNCTIONS_WITH_COPY[0]);
   for (const name of CLOUD_FUNCTIONS_WITH_COPY.slice(1)) {
     assert.equal(readCopy(name), reference, `cloudfunctions/${name}/membership.js 与 records 拷贝不一致`);
@@ -67,12 +71,9 @@ test("membershipId 与 couple 云函数使用同一哈希主键算法", () => {
   const expected = crypto.createHash("sha256").update(openid).digest("hex").slice(0, 32);
   assert.equal(membershipId(openid), expected);
   assert.equal(membershipId(openid).length, 32);
-  // couple/index.js 的实现必须保持同一算法，否则快路径永远 miss
-  const coupleSource = fs.readFileSync(
-    path.join(__dirname, "..", "couple-miniprogram", "cloudfunctions", "couple", "index.js"),
-    "utf8"
-  );
-  assert.ok(coupleSource.includes('createHash("sha256").update(openid).digest("hex").slice(0, 32)'));
+  // couple 云函数使用同步生成的 membership 模块，算法必须保持一致，否则快路径永远 miss
+  const coupleMembership = require("../couple-miniprogram/cloudfunctions/couple/membership");
+  assert.equal(coupleMembership.membershipId(openid), expected);
 });
 
 test("membership 与 couple 校验只接受活跃且包含本人的数据", () => {
@@ -109,16 +110,15 @@ test("memberships 未建立或文档不存在时回退到 couples 条件查询",
   assert.ok(db.log.includes("where:couples"));
 });
 
-test("membership 指向已归档或不含本人的空间时同样回退，且回退无结果返回 null", async () => {
+test("已存在 membership 指向归档或不含本人的空间时拒绝旧查询复活", async () => {
   const openid = "openid-a";
   const archivedDb = fakeDb({
     memberships: { [membershipId(openid)]: { openid, coupleId: "c1", status: "active" } },
     couples: { c1: { status: "archived", members: [openid] } },
     whereResult: [{ _id: "c3", status: "active", members: [openid] }]
   });
-  const recovered = await findMineViaMembership(archivedDb, openid);
-  assert.equal(recovered._id, "c3");
-  assert.ok(archivedDb.log.includes("where:couples"));
+  assert.equal(await findMineViaMembership(archivedDb, openid), null);
+  assert.ok(!archivedDb.log.includes("where:couples"));
 
   const emptyDb = fakeDb({});
   assert.equal(await findMineViaMembership(emptyDb, openid), null);

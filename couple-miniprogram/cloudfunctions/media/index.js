@@ -1,11 +1,12 @@
 process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
-const { findMineViaMembership } = require("./membership");
+const { resolveActiveCouple } = require("./membership");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+const findMine = (openid) => resolveActiveCouple(db, _, openid);
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
   INVALID_ALBUM: "相册名称不能为空",
@@ -22,29 +23,18 @@ function businessError(code, message) {
   error.code = code;
   return error;
 }
-
-function success(data) {
-  return { ok: true, data, ...data };
-}
-
+function success(data) { return { ok: true, data, ...data }; }
 function failure(error) {
   const code = error.code || error.message || "INTERNAL_ERROR";
   const known = Object.prototype.hasOwnProperty.call(ERROR_MESSAGES, code);
   return { ok: false, error: { code: known ? code : "INTERNAL_ERROR", message: known ? (error.message || ERROR_MESSAGES[code]) : "服务暂时不可用" } };
 }
 
-async function findMine(openid) {
-  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
-  return findMineViaMembership(db, openid);
-}
-
 async function getAlbum(id, couple) {
   if (!id) throw businessError("ALBUM_NOT_FOUND");
   try {
     const result = await db.collection("albums").doc(id).get();
-    if (!result.data || result.data.coupleId !== couple._id || result.data.deletedAt) {
-      throw businessError("ALBUM_NOT_FOUND");
-    }
+    if (!result.data || result.data.coupleId !== couple._id || result.data.deletedAt) throw businessError("ALBUM_NOT_FOUND");
     return result.data;
   } catch (error) {
     if (error.code) throw error;
@@ -56,9 +46,7 @@ async function getAsset(id, couple) {
   if (!id) throw businessError("ASSET_NOT_FOUND");
   try {
     const result = await db.collection("media_assets").doc(id).get();
-    if (!result.data || result.data.coupleId !== couple._id || result.data.deletedAt) {
-      throw businessError("ASSET_NOT_FOUND");
-    }
+    if (!result.data || result.data.coupleId !== couple._id || result.data.deletedAt) throw businessError("ASSET_NOT_FOUND");
     return result.data;
   } catch (error) {
     if (error.code) throw error;
@@ -111,28 +99,13 @@ async function handle(event, openid) {
     const title = String(event.album?.title || "").trim().slice(0, 60);
     if (!title) throw businessError("INVALID_ALBUM");
     const now = new Date();
-    const data = {
-      coupleId: couple._id,
-      title,
-      description: String(event.album?.description || "").trim().slice(0, 500),
-      coverAssetId: "",
-      createdBy: openid,
-      version: 1,
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null
-    };
+    const data = { coupleId: couple._id, title, description: String(event.album?.description || "").trim().slice(0, 500), coverAssetId: "", createdBy: openid, version: 1, createdAt: now, updatedAt: now, deletedAt: null };
     const result = await db.collection("albums").add({ data });
     return success({ album: { _id: result._id, ...data } });
   }
 
   if (action === "listAlbums") {
-    const result = await db
-      .collection("albums")
-      .where({ coupleId: couple._id, deletedAt: null })
-      .orderBy("updatedAt", "desc")
-      .limit(50)
-      .get();
+    const result = await db.collection("albums").where({ coupleId: couple._id, deletedAt: null }).orderBy("updatedAt", "desc").limit(50).get();
     return success({ albums: result.data.filter((album) => !album.deletedAt) });
   }
 
@@ -146,13 +119,7 @@ async function handle(event, openid) {
       const cover = await getAsset(coverAssetId, couple);
       if (cover.albumId !== current._id) throw businessError("INVALID_ASSET");
     }
-    const next = {
-      title,
-      description: String(event.album?.description ?? current.description ?? "").trim().slice(0, 500),
-      coverAssetId,
-      updatedAt,
-      version: _.inc(1)
-    };
+    const next = { title, description: String(event.album?.description ?? current.description ?? "").trim().slice(0, 500), coverAssetId, updatedAt, version: _.inc(1) };
     await db.collection("albums").doc(current._id).update({ data: next });
     return success({ album: { ...current, ...next, version: Number(current.version || 1) + 1 } });
   }
@@ -160,9 +127,7 @@ async function handle(event, openid) {
   if (action === "deleteAlbum") {
     const current = await getAlbum(event.albumId, couple);
     const assets = await db.collection("media_assets").where({ coupleId: couple._id, albumId: current._id, deletedAt: null }).limit(1).get();
-    if (assets.data.some((asset) => !asset.deletedAt)) {
-      throw businessError("ALBUM_NOT_EMPTY", "请先删除相册中的照片");
-    }
+    if (assets.data.some((asset) => !asset.deletedAt)) throw businessError("ALBUM_NOT_EMPTY", "请先删除相册中的照片");
     const deletedAt = new Date();
     await db.collection("albums").doc(current._id).update({ data: { deletedAt, updatedAt: deletedAt, version: _.inc(1) } });
     return success({ albumId: current._id, deletedAt });
@@ -173,27 +138,15 @@ async function handle(event, openid) {
     const fileID = String(event.asset?.fileID || "").trim();
     const cloudPath = String(event.asset?.cloudPath || "").replace(/^\/+/, "").slice(0, 500);
     const expectedPrefix = `couples/${couple._id}/${openid}/`;
-    if (!fileID.startsWith("cloud://") || !cloudPath.startsWith(expectedPrefix) || !fileID.endsWith(cloudPath)) {
-      throw businessError("INVALID_ASSET");
-    }
+    if (!fileID.startsWith("cloud://") || !cloudPath.startsWith(expectedPrefix) || !fileID.endsWith(cloudPath)) throw businessError("INVALID_ASSET");
     const now = new Date();
     const data = {
-      coupleId: couple._id,
-      albumId: album._id,
-      fileID,
-      cloudPath,
+      coupleId: couple._id, albumId: album._id, fileID, cloudPath,
       description: String(event.asset?.description || "").trim().slice(0, 500),
       mimeType: String(event.asset?.mimeType || "image/jpeg").slice(0, 80),
-      size: Math.max(Number(event.asset?.size) || 0, 0),
-      width: Math.max(Number(event.asset?.width) || 0, 0),
-      height: Math.max(Number(event.asset?.height) || 0, 0),
-      relatedRecordId: String(event.asset?.relatedRecordId || "").slice(0, 80),
-      relatedPlanId: String(event.asset?.relatedPlanId || "").slice(0, 80),
-      ownerOpenid: openid,
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null,
-      pendingDeletion: false
+      size: Math.max(Number(event.asset?.size) || 0, 0), width: Math.max(Number(event.asset?.width) || 0, 0), height: Math.max(Number(event.asset?.height) || 0, 0),
+      relatedRecordId: String(event.asset?.relatedRecordId || "").slice(0, 80), relatedPlanId: String(event.asset?.relatedPlanId || "").slice(0, 80),
+      ownerOpenid: openid, createdAt: now, updatedAt: now, deletedAt: null, pendingDeletion: false
     };
     const result = await db.collection("media_assets").add({ data });
     await db.collection("albums").doc(album._id).update({ data: { updatedAt: now, version: _.inc(1) } });
@@ -204,13 +157,7 @@ async function handle(event, openid) {
     const album = await getAlbum(event.albumId, couple);
     const limit = Math.min(Math.max(Number(event.limit) || 30, 1), 50);
     const offset = Math.max(Number(event.offset) || 0, 0);
-    const result = await db
-      .collection("media_assets")
-      .where({ coupleId: couple._id, albumId: album._id, deletedAt: null })
-      .orderBy("createdAt", "desc")
-      .skip(offset)
-      .limit(limit + 1)
-      .get();
+    const result = await db.collection("media_assets").where({ coupleId: couple._id, albumId: album._id, deletedAt: null }).orderBy("createdAt", "desc").skip(offset).limit(limit + 1).get();
     const assets = result.data.filter((asset) => !asset.deletedAt);
     return success({ assets: assets.slice(0, limit), page: { offset, limit, hasMore: result.data.length > limit } });
   }
@@ -253,8 +200,10 @@ async function handle(event, openid) {
 
 exports.main = async (event = {}) => {
   const startedAt = Date.now();
+  const { OPENID } = cloud.getWXContext();
   // 定时触发器（无用户上下文）：执行全局 pendingDeletion 清理。
-  if (event.Type === "Timer" || event.TriggerName) {
+  const isScheduledEvent = !OPENID && event && event.Type && event.Time;
+  if (isScheduledEvent || (!OPENID && event.TriggerName)) {
     try {
       return { ok: true, data: await purgeAllPendingDeletions() };
     } catch (error) {
@@ -262,7 +211,6 @@ exports.main = async (event = {}) => {
       return { ok: false };
     }
   }
-  const { OPENID } = cloud.getWXContext();
   try {
     const result = await handle(event, OPENID);
     console.info("media function completed", { traceId: event._traceId || "", action: event.action || "", code: "OK", durationMs: Date.now() - startedAt });
@@ -272,3 +220,5 @@ exports.main = async (event = {}) => {
     return failure(error);
   }
 };
+
+exports.cleanupPendingDeletion = purgeAllPendingDeletions;

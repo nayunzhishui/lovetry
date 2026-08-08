@@ -1,4 +1,13 @@
-const { VISIBILITIES } = require("./constants");
+const { RECORD_TYPES, VISIBILITIES } = require("./constants");
+
+const PRIVATE_BY_DEFAULT = new Set([
+  RECORD_TYPES.MOOD,
+  RECORD_TYPES.CONFLICT,
+  RECORD_TYPES.SLEEP,
+  RECORD_TYPES.PERIOD,
+  RECORD_TYPES.INTIMACY,
+  RECORD_TYPES.POMODORO
+]);
 
 function isCoupleMember(couple, openid) {
   return Boolean(
@@ -9,6 +18,13 @@ function isCoupleMember(couple, openid) {
   );
 }
 
+function isRecordPrivate(record) {
+  if (!record) return true;
+  if (record.visibility === VISIBILITIES.PRIVATE) return true;
+  if (record.visibility === VISIBILITIES.COUPLE) return false;
+  return PRIVATE_BY_DEFAULT.has(record.type);
+}
+
 function evaluateRecordAccess({ couple, record, openid } = {}) {
   const isMember = isCoupleMember(couple, openid);
   if (!isMember || !record) {
@@ -17,7 +33,7 @@ function evaluateRecordAccess({ couple, record, openid } = {}) {
 
   const ownerOpenid = record.ownerOpenid || record.creatorOpenid;
   const isOwner = ownerOpenid === openid;
-  const isPrivate = record.visibility === VISIBILITIES.PRIVATE;
+  const isPrivate = isRecordPrivate(record);
 
   return {
     isMember: true,
@@ -26,4 +42,4 @@ function evaluateRecordAccess({ couple, record, openid } = {}) {
   };
 }
 
-module.exports = { evaluateRecordAccess, isCoupleMember };
+module.exports = { evaluateRecordAccess, isCoupleMember, isRecordPrivate };
