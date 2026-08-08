@@ -65,15 +65,18 @@ LOVE_AGENT_MODEL=<网关支持的模型 ID>
 | records | `coupleId`、`creatorOpenid`、`deletedAt`、`createdAt desc` | 兼容旧记录 OR 分支 |
 | records | `coupleId`、`type`、`visibility/ownerOpenid/creatorOpenid`、`deletedAt`、`createdAt desc` | 类型筛选与统计；按控制台对 OR 各分支分别建索引 |
 | records | `coupleId`、`restoredFromId` | 恢复去重 |
+| records | `coupleId`、`updatedAt asc` | 增量同步（dashboard sync）分页 |
 | plans | `coupleId`、`type`、`createdAt desc` | 计划列表 |
 | plans | `coupleId`、`status`、`updatedAt desc` | 待办与奖励确认 |
 | plans | `coupleId`、`restoredFromId` | 恢复去重 |
+| plans | `coupleId`、`updatedAt asc` | 增量同步（dashboard sync）分页 |
 | wallets | `coupleId`、`ownerOpenid` | 钱包查询 |
 | reward_transactions | `coupleId`、`ownerOpenid`、`createdAt desc` | 积分流水 |
 | reward_items | `coupleId`、`status`、`createdAt desc` | 奖励商城列表 |
 | reward_inventory | `coupleId`、`createdAt desc` | 奖励仓库列表 |
 | albums | `coupleId`、`createdAt desc` | 相册列表 |
 | media_assets | `coupleId`、`albumId`、`createdAt desc` | 相片分页 |
+| media_assets | `pendingDeletion` | 定时清理删除失败残留的云文件 |
 | notification_preferences | `coupleId`、`ownerOpenid` | 用户提醒偏好 |
 | notifications | `coupleId`、`recipientOpenid`、`updatedAt asc` | 增量同步与提醒列表 |
 | record_reaction_requests | `coupleId`、`recordId`、`actorOpenid` | 轻回应幂等请求 |
@@ -88,7 +91,9 @@ LOVE_AGENT_MODEL=<网关支持的模型 ID>
 - 上传后，`media` 云函数还会校验 `fileID` 与 `cloudPath`、情侣空间和当前 OpenID 是否一致，再允许写入元数据；
 - 上传路径为 `couples/{coupleId}/{ownerOpenid}/{随机名}`；
 - 数据库只保存 `fileID`，页面展示时获取短期临时地址；
-- 删除失败会保留 `pendingDeletion`，需定期按该字段重试并巡检孤儿文件；
+- 删除时先软删数据库记录再删云文件；`cloud.deleteFile` 的逐文件返回码非 0 或抛错都会保留 `pendingDeletion: true`；
+- `media` 云函数已内置定时清理入口：部署时保留 `cloudfunctions/media/config.json` 中的 `purge-pending-deletions` 定时触发器（默认每日 04:00），触发后自动重试删除 `pendingDeletion: true` 的残留文件；也可用 `action: "purgePendingDeletions"` 手动清理本空间；
+- `media_assets` 需为 `pendingDeletion` 建立单字段索引供定时清理扫描；
 - 在云开发控制台配置容量和调用量告警，避免图片使用量失控。
 
 ## 4. 部署后验收

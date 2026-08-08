@@ -1,6 +1,8 @@
 const cloudApi = require("../../services/cloudApi");
+const { isCoupleMissing, isCoupleRequiredError } = require("../../services/coupleGate");
 const formDraft = require("../../services/formDraft");
 const { applyFormTemplate, templatesFor } = require("../../shared/form-assist");
+const { SLIDER_COLORS } = require("../../shared/constants");
 
 const PLAN_TYPES = [
   { value: "task", label: "任务", eyebrow: "TO DO", titlePlaceholder: "例如：周六一起整理房间" },
@@ -80,6 +82,7 @@ function decoratePlan(plan) {
 
 Page({
   data: {
+    sliderColors: SLIDER_COLORS,
     planTypes: PLAN_TYPES,
     activeType: "task",
     activeConfig: PLAN_TYPES[0],
@@ -99,7 +102,9 @@ Page({
     templates: templatesFor("plan", "task"),
     draftRestored: false,
     draftStatusText: "",
-    composerOpen: false
+    composerOpen: false,
+    needsCouple: false,
+    highlightPlanId: ""
   },
 
   onLoad(options = {}) {
@@ -111,6 +116,8 @@ Page({
       form.endDate = initialDate;
     }
     this.initialDate = initialDate;
+    // 搜索/日历跳转携带的目标计划：加载完成后定位并高亮，找不到则静默忽略
+    this.pendingPlanId = String(options.planId || "");
     this.setData({
       activeType,
       activeConfig: PLAN_TYPES.find((item) => item.value === activeType),
@@ -121,6 +128,12 @@ Page({
   },
 
   onShow() {
+    // 未绑定伴侣时直接展示引导，不发起注定失败的云函数调用
+    if (isCoupleMissing(getApp().globalData)) {
+      this.setData({ needsCouple: true, isLoading: false });
+      return;
+    }
+    if (this.data.needsCouple) this.setData({ needsCouple: false });
     if (!this.draftInitialized) {
       this.draftInitialized = true;
       this.restorePlanDraft();
@@ -132,7 +145,24 @@ Page({
 
   onUnload() {
     if (this.draftTimer) clearTimeout(this.draftTimer);
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
     if (this.draftDirty && !this.data.editingId) this.persistPlanDraft();
+  },
+
+  // 定位从搜索/日历跳转过来的目标计划：滚动到对应卡片并高亮 2 秒
+  locatePendingPlan() {
+    const planId = this.pendingPlanId;
+    if (!planId) return;
+    this.pendingPlanId = "";
+    if (!this.data.plans.some((item) => item._id === planId)) return;
+    this.setData({ highlightPlanId: planId }, () => {
+      wx.pageScrollTo({ selector: "#plan-" + planId, offsetTop: -80 });
+    });
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => {
+      this.highlightTimer = null;
+      this.setData({ highlightPlanId: "" });
+    }, 2000);
   },
 
   loadContext() {
@@ -176,9 +206,13 @@ Page({
     cloudApi
       .listPlans({ type: this.data.activeType, limit: 50 })
       .then((result) => {
-        this.setData({ plans: result.plans.map(decoratePlan) });
+        this.setData({ plans: result.plans.map(decoratePlan) }, () => this.locatePendingPlan());
       })
       .catch((error) => {
+        if (isCoupleRequiredError(error)) {
+          this.setData({ plans: [], needsCouple: true, error: "" });
+          return;
+        }
         const message = cloudApi.getErrorMessage(error, "计划加载失败，请稍后重试");
         this.setData({ plans: [], error: message });
       })

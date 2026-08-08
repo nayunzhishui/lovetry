@@ -1,11 +1,24 @@
 const app = getApp();
 const cloudApi = require("../../services/cloudApi");
-const formDraft = require("../../services/formDraft");
-const { nextAnniversary } = require("../../shared/anniversary");
+const { daysTogether, nextAnniversary } = require("../../shared/anniversary");
+const { questionForDate } = require("../../shared/daily-questions");
 
 function todayText() {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+// 今日一问：本人回答的本机缓存（提交后展示"我的回答"摘要用）
+function dailyAnswerStorageKey(dateText) {
+  return `lovetry_daily_answer_${dateText}`;
+}
+
+// 冷静期剩余天数（向上取整，最小 0）：与云端 archive-policy 的口径一致
+function archivingDaysLeft(couple) {
+  if (!couple || couple.status !== "archiving" || !couple.scheduledPurgeAt) return 0;
+  const dueAt = new Date(couple.scheduledPurgeAt).getTime();
+  if (!Number.isFinite(dueAt)) return 0;
+  return Math.max(0, Math.ceil((dueAt - Date.now()) / 86400000));
 }
 
 Page({
@@ -18,34 +31,81 @@ Page({
     upcomingAnniversary: null,
     syncText: "等待首次同步",
     syncFailed: false,
-    title: "",
-    content: "",
+    syncDigestText: "",
+    pendingApprovals: 0,
+    archivingDaysLeft: 0,
+    dailyQuestion: null,
+    dailyStatusText: "",
+    dailyAnsweredByMe: false,
+    dailyAnsweredByPartner: false,
+    dailyAnswerOpen: false,
+    dailyAnswerText: "",
+    dailySubmitting: false,
+    dailyMyAnswer: "",
     isLoading: false,
-    isSaving: false,
-    error: "",
-    momentDraftStatus: "",
-    momentDraftRestored: false
+    error: ""
   },
 
   onShow() {
-    if (!this.momentDraftInitialized) {
-      this.momentDraftInitialized = true;
-      this.restoreMomentDraft();
-    }
     this.stopSyncTimer();
+    // onShow 时 loadCouple 会完整刷新数据，这里只负责展示未读的同步摘要
+    this.applySyncDigest(false);
+    this.prepareDailyQuestion();
     this.loadCouple();
     this.syncTimer = setInterval(() => this.runSync(), 30000);
   },
 
+  // 今日一问：题目本地确定（同一天全球同题），回答状态由 summary.dailyQuestion 提供
+  prepareDailyQuestion() {
+    const date = todayText();
+    if (this.data.dailyQuestion && this.data.dailyQuestion.date === date) return;
+    const question = questionForDate(date);
+    let dailyMyAnswer = "";
+    try { dailyMyAnswer = String(wx.getStorageSync(dailyAnswerStorageKey(date)) || ""); } catch (error) { /* 缓存缺失时只影响摘要展示 */ }
+    this.setData({
+      dailyQuestion: { id: question.id, text: question.text, date },
+      dailyStatusText: "",
+      dailyAnsweredByMe: false,
+      dailyAnsweredByPartner: false,
+      dailyAnswerOpen: false,
+      dailyAnswerText: "",
+      dailyMyAnswer
+    });
+    this.dailyClientRequestId = "";
+  },
+
   onHide() {
     this.stopSyncTimer();
-    if (this.momentDraftDirty) this.persistMomentDraft();
+    // 摘要已经展示过至少一次，离开页面时视为已读
+    this.markSyncDigestSeen();
   },
 
   onUnload() {
     this.stopSyncTimer();
-    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
-    if (this.momentDraftDirty) this.persistMomentDraft();
+    this.markSyncDigestSeen();
+  },
+
+  // 读取全局同步摘要；refreshOnChange 为 true 且 cursor 变化时刷新首页数据
+  applySyncDigest(refreshOnChange) {
+    const digest = app.globalData.syncDigest || null;
+    const at = digest ? digest.at || "" : "";
+    const changed = Boolean(at) && at !== this.syncDigestAt;
+    this.syncDigestAt = at;
+    const syncDigestText = digest && !digest.seen && digest.text ? digest.text : "";
+    if (syncDigestText !== this.data.syncDigestText) this.setData({ syncDigestText });
+    if (refreshOnChange && changed) this.loadSummary();
+  },
+
+  markSyncDigestSeen() {
+    const digest = app.globalData.syncDigest;
+    if (digest && this.data.syncDigestText) digest.seen = true;
+  },
+
+  openSyncDigest() {
+    const digest = app.globalData.syncDigest;
+    if (digest) digest.seen = true;
+    this.setData({ syncDigestText: "" });
+    wx.navigateTo({ url: "/pages/timeline/timeline" });
   },
 
   stopSyncTimer() {
@@ -78,6 +138,8 @@ Page({
     if (!app.globalData.couple || typeof app.syncChanges !== "function") return Promise.resolve(null);
     return app.syncChanges({ silent: true }).then((result) => {
       this.refreshSyncText();
+      // 后台同步拿到新内容时（cursor 变化）刷新首页数据并展示摘要卡
+      this.applySyncDigest(true);
       return result;
     });
   },
@@ -99,7 +161,8 @@ Page({
       .getMyCouple()
       .then((couple) => {
         app.globalData.couple = couple;
-        this.setData({ couple });
+        app.globalData.coupleReady = true;
+        this.setData({ couple, archivingDaysLeft: archivingDaysLeft(couple) });
         if (couple) {
           this.loadSummary();
           this.runSync();
@@ -121,12 +184,7 @@ Page({
       .getDashboardSummary()
       .then((summary) => {
         const walletText = (summary.wallets || []).map((wallet) => wallet.balance || 0).join(" / ");
-        const anniversary = summary.couple && summary.couple.anniversaryDate
-          ? new Date(`${summary.couple.anniversaryDate}T00:00:00`)
-          : null;
-        const togetherDays = anniversary && !Number.isNaN(anniversary.getTime())
-          ? Math.max(0, Math.floor((Date.now() - anniversary.getTime()) / 86400000) + 1)
-          : 0;
+        const togetherDays = summary.couple ? daysTogether(summary.couple.anniversaryDate) : 0;
         const recentMood = (summary.recentRecords || []).find((record) => record.type === "mood");
         const recentMoodText = recentMood && recentMood.payload && recentMood.payload.level
           ? `${recentMood.payload.level}/5 · ${recentMood.title}`
@@ -135,63 +193,100 @@ Page({
           .map((plan) => ({ ...plan, next: nextAnniversary(String(plan.startAt || "").slice(0, 10)) }))
           .filter((plan) => plan.next)
           .sort((a, b) => a.next.daysRemaining - b.next.daysRemaining)[0] || null;
-        this.setData({ summary, walletText, togetherDays, recentMoodText, upcomingAnniversary });
+        this.setData({
+          summary,
+          walletText,
+          togetherDays,
+          recentMoodText,
+          upcomingAnniversary,
+          pendingApprovals: Number(summary.pendingApprovals) || 0,
+          ...this.dailyQuestionState(summary)
+        });
       })
       .catch(() => {
-        this.setData({ summary: null, walletText: "" });
+        this.setData({ summary: null, walletText: "", pendingApprovals: 0 });
       });
   },
 
-  onTitleInput(event) {
-    this.setData({ title: event.detail.value });
-    this.scheduleMomentDraft();
+  // 由 summary.dailyQuestion 推导今日一问的两人回答状态与文案
+  dailyQuestionState(summary) {
+    const question = this.data.dailyQuestion;
+    const state = summary && summary.dailyQuestion && question && summary.dailyQuestion.date === question.date
+      ? summary.dailyQuestion
+      : null;
+    const answeredByMe = Boolean(state && state.answeredByMe) || this.data.dailyAnsweredByMe;
+    const answeredByPartner = Boolean(state && state.answeredByPartner);
+    let dailyStatusText = "你们今天都还没回答";
+    if (answeredByMe && answeredByPartner) dailyStatusText = "都答完了，去看看";
+    else if (answeredByMe) dailyStatusText = "你答了，等 TA";
+    else if (answeredByPartner) dailyStatusText = "TA 已回答，等你";
+    return { dailyAnsweredByMe: answeredByMe, dailyAnsweredByPartner: answeredByPartner, dailyStatusText };
   },
 
-  onContentInput(event) {
-    this.setData({ content: event.detail.value });
-    this.scheduleMomentDraft();
+  openDailyAnswer() {
+    this.setData({ dailyAnswerOpen: true });
   },
 
-  scheduleMomentDraft() {
-    this.momentDraftDirty = true;
-    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
-    this.setData({ momentDraftStatus: "正在保留草稿…" });
-    this.momentDraftTimer = setTimeout(() => this.persistMomentDraft(), 450);
+  onDailyAnswerInput(event) {
+    this.setData({ dailyAnswerText: event.detail.value });
   },
 
-  persistMomentDraft() {
-    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
-    this.momentDraftTimer = null;
-    const saved = formDraft.save("home:moment", { title: this.data.title, content: this.data.content });
-    this.momentDraftDirty = false;
-    this.setData({ momentDraftStatus: saved ? "草稿已保存在本机" : "本机草稿暂未保存" });
+  submitDailyAnswer() {
+    if (this.data.dailySubmitting || !this.data.dailyQuestion) return;
+    const content = String(this.data.dailyAnswerText || "").trim();
+    if (!content) {
+      wx.showToast({ title: "写一两句再提交吧", icon: "none" });
+      return;
+    }
+    const question = this.data.dailyQuestion;
+    // 同一次输入的重试共用一个幂等键，避免双击/超时重试产生重复记录
+    if (!this.dailyClientRequestId) {
+      this.dailyClientRequestId = `daily:${question.date}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+    }
+    this.setData({ dailySubmitting: true });
+    cloudApi
+      .createRecord({
+        type: "moment",
+        title: "今日一问",
+        content,
+        visibility: "couple",
+        payload: { dailyQuestionId: question.id, dailyQuestionDate: question.date },
+        clientRequestId: this.dailyClientRequestId
+      })
+      .then(() => {
+        this.dailyClientRequestId = "";
+        try { wx.setStorageSync(dailyAnswerStorageKey(question.date), content); } catch (error) { /* 缓存失败只影响摘要展示 */ }
+        this.setData({
+          dailyAnswerOpen: false,
+          dailyAnswerText: "",
+          dailyAnsweredByMe: true,
+          dailyMyAnswer: content
+        });
+        this.setData(this.dailyQuestionState(this.data.summary));
+        wx.showToast({ title: "已记下你的回答", icon: "none" });
+        // 刷新一次摘要，拿到最新的两人回答状态
+        this.loadSummary();
+      })
+      .catch((error) => {
+        wx.showToast({ title: cloudApi.getErrorMessage(error, "回答保存失败，请稍后重试"), icon: "none" });
+      })
+      .finally(() => this.setData({ dailySubmitting: false }));
   },
 
-  restoreMomentDraft() {
-    const saved = formDraft.load("home:moment");
-    if (!saved) return;
-    this.setData({
-      title: saved.data.title || "",
-      content: saved.data.content || "",
-      momentDraftStatus: "已恢复上次未完成内容",
-      momentDraftRestored: true
-    });
-  },
-
-  clearMomentDraft() {
-    if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
-    this.momentDraftTimer = null;
-    formDraft.clear("home:moment");
-    this.momentDraftDirty = false;
-    this.setData({ momentDraftStatus: "已移除本机草稿备份", momentDraftRestored: false });
+  // 在一起天数指标：未设置纪念日时点击去设置页补上
+  goAnniversarySetup() {
+    if (this.data.togetherDays > 0) return;
+    wx.showToast({ title: "去设置在一起的日子", icon: "none" });
+    wx.switchTab({ url: "/pages/settings/settings" });
   },
 
   goSettings() {
     wx.switchTab({ url: "/pages/settings/settings" });
   },
 
-  goMoment() {
-    wx.pageScrollTo({ scrollTop: 999, duration: 250 });
+  // "写今天"：跳转生活日记表单（record-form 自带本机草稿能力）
+  goWriteToday() {
+    wx.navigateTo({ url: "/pages/record-form/record-form?type=moment" });
   },
 
   goConflict() {
@@ -208,6 +303,19 @@ Page({
 
   goPendingTasks() {
     wx.navigateTo({ url: "/pages/plans/plans?type=task" });
+  },
+
+  goPendingApprovals() {
+    wx.navigateTo({ url: "/features/reward-store/reward-store" });
+  },
+
+  copyInviteCode() {
+    const code = this.data.couple && this.data.couple.code;
+    if (!code) return;
+    wx.setClipboardData({
+      data: code,
+      success: () => wx.showToast({ title: "已复制，发给 TA 吧", icon: "none" })
+    });
   },
 
   goTodayAgenda() {
@@ -244,40 +352,5 @@ Page({
 
   goLoveAgent() {
     wx.navigateTo({ url: "/features/love-agent/love-agent" });
-  },
-
-  submitMoment() {
-    if (this.data.isSaving) return;
-
-    if (!this.data.title.trim() || !this.data.content.trim()) {
-      wx.showToast({ title: "请填写标题和内容", icon: "none" });
-      return;
-    }
-
-    this.setData({ isSaving: true, error: "" });
-    wx.showLoading({ title: "保存中", mask: true });
-    cloudApi
-      .createRecord({
-        type: "moment",
-        title: this.data.title.trim(),
-        content: this.data.content.trim(),
-        payload: {}
-      })
-      .then(() => {
-        if (this.momentDraftTimer) clearTimeout(this.momentDraftTimer);
-        formDraft.clear("home:moment");
-        this.momentDraftDirty = false;
-        wx.showToast({ title: "已保存" });
-        this.setData({ title: "", content: "", momentDraftStatus: "", momentDraftRestored: false });
-      })
-      .catch((error) => {
-        const message = cloudApi.getErrorMessage(error, "记录保存失败，请稍后重试");
-        this.setData({ error: message });
-        wx.showToast({ title: message, icon: "none" });
-      })
-      .finally(() => {
-        wx.hideLoading();
-        this.setData({ isSaving: false });
-      });
   }
 });

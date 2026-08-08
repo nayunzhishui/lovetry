@@ -22,4 +22,17 @@ function validateReactionRequest(request, recordId, reaction) {
   return request.record;
 }
 
-module.exports = { toggleReaction, validateReactionRequest };
+// owner 创建/编辑记录时调用：剥离输入 payload 里的 reactionsByOpenid，并保留库中已有的伴侣轻回应。
+// 轻回应存放在 payload.reactionsByOpenid（见上方 toggleReaction 与 index.js 的 react 动作），
+// 只能通过 react 动作变更，否则 owner 编辑记录会把伴侣的轻回应覆盖或清空。
+function preservePartnerReactions(nextPayload, existingPayload) {
+  const payload = { ...(nextPayload && typeof nextPayload === "object" ? nextPayload : {}) };
+  delete payload.reactionsByOpenid;
+  const existing = existingPayload && typeof existingPayload === "object"
+    ? existingPayload.reactionsByOpenid
+    : null;
+  if (existing && typeof existing === "object") payload.reactionsByOpenid = existing;
+  return payload;
+}
+
+module.exports = { preservePartnerReactions, toggleReaction, validateReactionRequest };

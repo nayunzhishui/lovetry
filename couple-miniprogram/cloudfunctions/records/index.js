@@ -1,3 +1,4 @@
+process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
 const {
@@ -5,24 +6,15 @@ const {
   recordIdForRequest,
   recordRequestFingerprint
 } = require("./idempotency");
-const { toggleReaction, validateReactionRequest } = require("./reactions");
+const { preservePartnerReactions, toggleReaction, validateReactionRequest } = require("./reactions");
+const { findMineViaMembership } = require("./membership");
+const { exceedsFlexibleFieldLimit } = require("./payload-guard");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
-const RECORD_TYPES = new Set([
-  "moment",
-  "mood",
-  "conflict",
-  "outing",
-  "sleep",
-  "period",
-  "intimacy",
-  "game",
-  "pomodoro"
-]);
-const PRIVATE_BY_DEFAULT = new Set(["mood", "conflict", "sleep", "period", "intimacy", "pomodoro"]);
+const { RECORD_TYPES, normalizeVisibility } = require("./visibility");
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
   INVALID_RECORD: "记录内容不完整",
@@ -58,12 +50,8 @@ function failure(error) {
 }
 
 async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
+  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
+  return findMineViaMembership(db, openid);
 }
 
 function trimText(value, maxLength) {
@@ -77,11 +65,6 @@ function parseDate(value) {
   return parsed;
 }
 
-function normalizeVisibility(type, visibility) {
-  if (visibility === "private" || visibility === "couple") return visibility;
-  return PRIVATE_BY_DEFAULT.has(type) ? "private" : "couple";
-}
-
 function normalizeRecord(input, openid, existing) {
   const record = input || {};
   const type = record.type || (existing && existing.type);
@@ -89,16 +72,22 @@ function normalizeRecord(input, openid, existing) {
   const title = trimText(record.title, 80);
   const content = trimText(record.content, 5000);
   if (!title && !content) throw businessError("INVALID_RECORD");
+  const metrics = record.metrics && typeof record.metrics === "object" ? record.metrics : {};
+  const payload = record.payload && typeof record.payload === "object" ? record.payload : {};
+  // payload/metrics 是自由结构，必须限制 JSON 体积，防止单文档膨胀
+  if (exceedsFlexibleFieldLimit(metrics) || exceedsFlexibleFieldLimit(payload)) {
+    throw businessError("INVALID_RECORD", "附加内容过大，请精简后重试");
+  }
 
   return {
     type,
     title,
     content,
-    visibility: normalizeVisibility(type, record.visibility),
+    visibility: normalizeVisibility(type, record.visibility, existing && existing.visibility),
     startAt: parseDate(record.startAt),
     endAt: parseDate(record.endAt),
-    metrics: record.metrics && typeof record.metrics === "object" ? record.metrics : {},
-    payload: record.payload && typeof record.payload === "object" ? record.payload : {},
+    metrics,
+    payload,
     relatedPlanId: trimText(record.relatedPlanId, 64),
     isTest: Boolean(record.isTest),
     ownerOpenid: existing ? existing.ownerOpenid || existing.creatorOpenid : openid
@@ -140,6 +129,36 @@ async function assertAccessibleRecord(recordId, couple, openid, edit = false) {
   return record;
 }
 
+const REACTION_LABELS = { seen: "看见了", hug: "抱一下", cheer: "一起加油" };
+
+// 轻回应回执：新增回应且记录 owner 不是回应者本人时，给 owner 写一条站内提醒。
+// 提醒写入失败不能影响 react 主流程：吞掉并 console.error。
+async function notifyRecordOwnerOfReaction(couple, reactorOpenid, outcome, reaction) {
+  try {
+    if (!outcome || outcome.replay || !outcome.added || !outcome.record) return;
+    const record = outcome.record;
+    const recipientOpenid = record.ownerOpenid || record.creatorOpenid || "";
+    if (!recipientOpenid || recipientOpenid === reactorOpenid) return;
+    const now = new Date();
+    const scheduledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    await db.collection("notifications").add({ data: {
+      coupleId: couple._id,
+      recipientOpenid,
+      type: "reaction",
+      sourceId: record._id,
+      title: "TA 对你的记录有了回应",
+      body: `「${record.title || "你的记录"}」· ${REACTION_LABELS[reaction] || "回应"}`,
+      scheduledDate,
+      daysRemaining: 0,
+      readAt: null,
+      createdAt: now,
+      updatedAt: now
+    } });
+  } catch (error) {
+    console.error("reaction notification write failed", { code: error.code || error.message });
+  }
+}
+
 async function handle(event, openid) {
   const action = event.action;
   const couple = await findMine(openid);
@@ -148,6 +167,8 @@ async function handle(event, openid) {
   if (action === "create") {
     const now = new Date();
     const normalized = normalizeRecord(event.record, openid);
+    // 轻回应只能由 react 动作写入，创建时剥离输入里伪造的 reactionsByOpenid
+    normalized.payload = preservePartnerReactions(normalized.payload, null);
     const data = {
       coupleId: couple._id,
       ...normalized,
@@ -217,21 +238,30 @@ async function handle(event, openid) {
   }
 
   if (action === "feed") {
+    // 不传 offset/limit 时保持旧行为（首屏最多 50 条），传入 offset 后支持翻页
+    const limit = Math.min(Math.max(Number(event.limit) || 50, 1), 50);
+    const offset = Math.max(Number(event.offset) || 0, 0);
     const result = await db.collection("records")
       .where({ coupleId: couple._id, visibility: "couple", type: _.in(["moment", "mood", "outing"]), deletedAt: null })
       .orderBy("createdAt", "desc")
-      .limit(50)
+      .skip(offset)
+      .limit(limit + 1)
       .get();
-    return success({ records: result.data.filter((record) => canRead(record, openid)) });
+    const visible = result.data.filter((record) => canRead(record, openid));
+    return success({
+      records: visible.slice(0, limit),
+      page: { offset, limit, hasMore: visible.length > limit }
+    });
   }
 
   if (action === "react") {
     if (!String(event.idempotencyKey || "").trim()) throw businessError("IDEMPOTENCY_KEY_REQUIRED");
     const requestId = crypto.createHash("sha256").update(`${couple._id}:${openid}:${event.idempotencyKey}`).digest("hex").slice(0, 32);
-    const updated = await db.runTransaction(async (transaction) => {
+    const outcome = await db.runTransaction(async (transaction) => {
       try {
         const request = (await transaction.collection("record_reaction_requests").doc(requestId).get()).data;
-        if (request) return validateReactionRequest(request, event.recordId, event.reaction);
+        // 幂等重放：直接返回上次结果，不再重复提醒
+        if (request) return { record: validateReactionRequest(request, event.recordId, event.reaction), replay: true, added: false };
       } catch (error) {
         if (error.code === "IDEMPOTENCY_CONFLICT") throw error;
       }
@@ -247,9 +277,11 @@ async function handle(event, openid) {
         coupleId: couple._id, ownerOpenid: openid, recordId: record._id, reaction: event.reaction,
         idempotencyKey: String(event.idempotencyKey).slice(0, 160), record: next, createdAt: updatedAt
       } });
-      return next;
+      // toggleReaction 的结果里仍带着本人条目 = 本次是新增/更换回应；条目消失 = 取消（不提醒）
+      return { record: next, replay: false, added: Boolean(payload.reactionsByOpenid[openid]) };
     });
-    return success({ record: updated });
+    await notifyRecordOwnerOfReaction(couple, openid, outcome, event.reaction);
+    return success({ record: outcome.record });
   }
 
   if (action === "get") {
@@ -272,6 +304,8 @@ async function handle(event, openid) {
         throw businessError("VERSION_CONFLICT");
       }
       const normalized = normalizeRecord(event.record, openid, latest);
+      // 伴侣的轻回应存放在 payload.reactionsByOpenid：owner 编辑记录不能覆盖/清空它
+      normalized.payload = preservePartnerReactions(normalized.payload, latest.payload);
       const nextVersion = Number(latest.version || 1) + 1;
       const updatedAt = new Date();
       await transaction.collection("records").doc(latest._id).update({

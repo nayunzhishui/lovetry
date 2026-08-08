@@ -1,6 +1,24 @@
 const api = require("../../services/cloudApi");
 const config = require("../../config");
 
+// 提醒类型 → 展示文案：未知类型统一落到"提醒"，保证新类型不会渲染成空白
+const TYPE_LABELS = {
+  task: "任务临近",
+  anniversary: "纪念日",
+  rewardApproval: "奖励确认",
+  reaction: "记录回应",
+  coupleArchiving: "解除申请",
+  coupleArchivingCancelled: "解除已撤销"
+};
+
+function decorateNotification(item) {
+  return {
+    ...item,
+    typeLabel: TYPE_LABELS[item.type] || "提醒",
+    typeClass: TYPE_LABELS[item.type] ? `notify-tag--${item.type}` : ""
+  };
+}
+
 Page({
   data: {
     loading: false,
@@ -22,7 +40,7 @@ Page({
       const [preferences, reminders, notifications] = await Promise.all([
         api.getNotificationPreferences(), api.previewNotifications(), api.listNotifications()
       ]);
-      this.setData({ preferences, reminders, notifications });
+      this.setData({ preferences, reminders, notifications: notifications.map(decorateNotification) });
     } catch (error) {
       this.setData({ error: api.getErrorMessage(error, "提醒加载失败") });
     } finally { this.setData({ loading: false }); }

@@ -1,5 +1,7 @@
 const cloudApi = require("../../services/cloudApi");
+const { isCoupleMissing, isCoupleRequiredError } = require("../../services/coupleGate");
 const { buildRecordInsight } = require("../../shared/record-insights");
+const { formatCompact } = require("../../shared/format-date");
 
 const TYPE_OPTIONS = [
   { value: "", label: "全部" },
@@ -19,24 +21,6 @@ const TYPE_LABELS = TYPE_OPTIONS.reduce((result, item) => {
   return result;
 }, {});
 
-function toDate(value) {
-  if (!value) return null;
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function pad(value) {
-  return String(value).padStart(2, "0");
-}
-
-function formatDate(value) {
-  const date = toDate(value);
-  if (!date) return "时间未记录";
-  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(
-    date.getHours()
-  )}:${pad(date.getMinutes())}`;
-}
-
 function formatRecord(item) {
   const content = String(item.content || "").trim();
   const duration = Number(item.metrics && item.metrics.durationMinutes);
@@ -44,7 +28,7 @@ function formatRecord(item) {
     ...item,
     typeLabel: TYPE_LABELS[item.type] || "记录",
     visibilityLabel: item.visibility === "private" ? "仅自己" : "两人共享",
-    timeText: formatDate(item.startAt || item.createdAt),
+    timeText: formatCompact(item.startAt || item.createdAt) || "时间未记录",
     contentPreview: content.length > 72 ? `${content.slice(0, 72)}…` : content,
     durationText: Number.isFinite(duration) && duration > 0 ? `${duration} 分钟` : "",
     categoryText: item.payload && item.payload.category || ""
@@ -63,10 +47,19 @@ Page({
     stats: null,
     insight: null,
     isLoading: true,
+    hasMore: false,
+    loadingMore: false,
+    needsCouple: false,
     error: ""
   },
 
   onShow() {
+    // 未绑定伴侣时直接展示引导，不发起注定失败的云函数调用
+    if (isCoupleMissing(getApp().globalData)) {
+      this.setData({ needsCouple: true, isLoading: false });
+      return;
+    }
+    if (this.data.needsCouple) this.setData({ needsCouple: false });
     this.loadRecords();
   },
 
@@ -90,10 +83,11 @@ Page({
       ? cloudApi.getRecordStats(type).catch(() => null)
       : Promise.resolve(null);
     return Promise.all([
-      cloudApi.listRecords({ type: type || undefined, limit: 50 }),
+      cloudApi.listRecordsPaged({ type: type || undefined, limit: 50, offset: 0 }),
       statsPromise
     ])
-      .then(([records, stats]) => {
+      .then(([listResult, stats]) => {
+        const records = listResult.records;
         const statsView = stats ? {
           last7DaysMinutes: type === "sleep" ? stats.last7Days.averageMinutes : stats.last7Days.totalMinutes,
           last30DaysMinutes: type === "sleep" ? stats.last30Days.averageMinutes : stats.last30Days.totalMinutes,
@@ -106,14 +100,21 @@ Page({
         const allRecords = records.map(formatRecord);
         const filteredRecords = this.filterRecords(allRecords);
         const insight = buildRecordInsight(type, filteredRecords);
-        if (requestId === this.requestId) this.setData({ allRecords, records: filteredRecords, stats: statsView, insight });
+        if (requestId === this.requestId) {
+          this.setData({ allRecords, records: filteredRecords, stats: statsView, insight, hasMore: listResult.page.hasMore });
+        }
       })
       .catch((error) => {
         if (requestId !== this.requestId) return;
+        if (isCoupleRequiredError(error)) {
+          this.setData({ needsCouple: true, records: [], allRecords: [], stats: null, insight: null, hasMore: false, error: "" });
+          return;
+        }
         this.setData({
           records: [],
           stats: null,
           insight: null,
+          hasMore: false,
           error: cloudApi.getErrorMessage(error, "记录加载失败，请稍后重试")
         });
       })
@@ -122,11 +123,44 @@ Page({
       });
   },
 
+  onReachBottom() {
+    this.loadMoreRecords();
+  },
+
+  // 触底追加下一页：保持当前筛选类型，offset 以已加载的服务端数据量为准
+  loadMoreRecords() {
+    if (this.data.needsCouple || this.data.isLoading || this.data.loadingMore || !this.data.hasMore) return;
+    const requestId = (this.requestId || 0) + 1;
+    this.requestId = requestId;
+    this.setData({ loadingMore: true });
+    const type = this.data.selectedType;
+    cloudApi
+      .listRecordsPaged({ type: type || undefined, limit: 50, offset: this.data.allRecords.length })
+      .then((result) => {
+        if (requestId !== this.requestId) return;
+        const allRecords = [...this.data.allRecords, ...result.records.map(formatRecord)];
+        const filteredRecords = this.filterRecords(allRecords);
+        this.setData({
+          allRecords,
+          records: filteredRecords,
+          insight: buildRecordInsight(type, filteredRecords),
+          hasMore: result.page.hasMore
+        });
+      })
+      .catch((error) => {
+        if (requestId !== this.requestId) return;
+        wx.showToast({ title: cloudApi.getErrorMessage(error, "更多记录加载失败，请稍后重试"), icon: "none" });
+      })
+      .finally(() => {
+        this.setData({ loadingMore: false });
+      });
+  },
+
   filterRecords(records) {
     if (this.data.selectedType !== "outing") return records;
     return records.filter((record) => {
       const categoryMatches = !this.data.outingCategory || record.categoryText === this.data.outingCategory;
-      const dateMatches = !this.data.filterDate || formatDate(record.startAt || record.createdAt).startsWith(this.data.filterDate.replace(/-/g, "."));
+      const dateMatches = !this.data.filterDate || formatCompact(record.startAt || record.createdAt).startsWith(this.data.filterDate.replace(/-/g, "."));
       return categoryMatches && dateMatches;
     });
   },

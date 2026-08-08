@@ -1,6 +1,6 @@
 const config = require("./config");
 const cloudApi = require("./services/cloudApi");
-const { mergeSyncChanges, normalizeSyncOffsets, summarizeSyncChanges } = require("./shared/sync");
+const { describeSyncDigest, mergeSyncChanges, normalizeSyncOffsets, summarizeSyncChanges } = require("./shared/sync");
 
 const SYNC_CURSOR_KEY = "lovetry_sync_cursor_v1";
 
@@ -8,10 +8,14 @@ App({
   globalData: {
     openid: "",
     couple: null,
+    // couple 是否已完成首次拉取：避免把"尚未初始化"误判为"未绑定"
+    coupleReady: false,
     isOnline: true,
     syncSummary: { total: 0, records: 0, plans: 0, notifications: 0 },
     lastSyncAt: "",
-    syncErrorAt: ""
+    syncErrorAt: "",
+    // 最近一次同步的内容摘要：{ text, at, seen }，由首页展示
+    syncDigest: null
   },
 
   onShow() {
@@ -63,6 +67,7 @@ App({
       })
       .then((couple) => {
         this.globalData.couple = couple;
+        this.globalData.coupleReady = true;
         if (couple) this.syncChanges({ silent: true });
         return this.globalData;
       })
@@ -92,8 +97,10 @@ App({
         if (!result.hasMore) {
           try { wx.setStorageSync(SYNC_CURSOR_KEY, result.cursor); } catch (error) { /* next show retries */ }
         }
-        if (!options.silent && summary.total > 0) {
-          wx.showToast({ title: `发现 ${summary.total} 项远端更新`, icon: "none" });
+        if (summary.total > 0) {
+          const text = describeSyncDigest(summary);
+          // 不再用 toast 打断，改由首页展示"去看看"内容卡
+          if (text) this.globalData.syncDigest = { text, at: result.cursor, seen: false };
         }
         return result;
       })

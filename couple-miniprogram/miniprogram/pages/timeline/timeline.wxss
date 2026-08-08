@@ -34,11 +34,11 @@
 
 .timeline-track {
   width: 2rpx;
-  background: rgba(183, 121, 50, 0.5);
+  background: rgba(196, 154, 74, 0.5);
 }
 
 .timeline-track--sage {
-  background: rgba(113, 133, 119, 0.55);
+  background: rgba(115, 142, 120, 0.55);
 }
 
 .timeline-record:last-child {
@@ -109,3 +109,11 @@
 .reaction-row { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 22rpx; padding-top: 18rpx; border-top: 1rpx solid var(--line); }
 .reaction-chip { min-height: 58rpx; margin: 0; padding: 0 18rpx; border: 1rpx solid var(--line); border-radius: 4rpx; background: transparent; color: var(--ink-soft); font-size: 21rpx; line-height: 58rpx; }
 .reaction-chip.is-active { border-color: var(--cobalt); background: rgba(53, 101, 141, 0.08); color: var(--cobalt); }
+
+/* 触底追加加载的列表页脚提示 */
+.list-footer {
+  padding: 26rpx 0 10rpx;
+  color: var(--ink-soft);
+  font-size: 21rpx;
+  text-align: center;
+}

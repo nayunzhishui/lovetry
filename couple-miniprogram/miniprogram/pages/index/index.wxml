@@ -6,7 +6,18 @@
     <view class="subtitle">把共同经历和沟通结果放在同一条时间线上，慢慢看见两个人的生活。</view>
   </view>
 
-  <view wx:if="{{!couple}}" class="empty empty--home">
+  <view wx:if="{{isLoading && !couple}}" class="state-card" aria-live="polite">
+    <view class="state-pulse"></view>
+    <view>正在打开你们的空间…</view>
+  </view>
+
+  <view wx:elif="{{error && !couple}}" class="empty empty--home" aria-live="polite">
+    <view class="empty-title">首页暂时没有加载出来</view>
+    <view class="empty-desc">{{error}}</view>
+    <button class="button" bindtap="loadCouple">重新加载</button>
+  </view>
+
+  <view wx:elif="{{!couple}}" class="empty empty--home">
     <view class="empty-title">还没有情侣空间</view>
     <view class="empty-desc">创建或加入一个只属于两个人的空间，再开始同步记录。</view>
     <button class="button" bindtap="goSettings">设置情侣空间</button>
@@ -15,16 +26,22 @@
 
   <view wx:else>
     <button class="sync-ribbon {{syncFailed ? 'sync-ribbon--failed' : ''}}" bindtap="retrySync"><view class="sync-ribbon__light"></view><text>{{syncText}}</text></button>
+    <button wx:if="{{couple.status === 'archiving'}}" class="archiving-note" bindtap="goSettings">这个空间正处于解除冷静期，{{archivingDaysLeft}} 天后将归档；任何一方都可以在设置页撤销，或先导出备份。</button>
+    <button wx:if="{{syncDigestText}}" class="sync-digest" bindtap="openSyncDigest">{{syncDigestText}} · 去看看</button>
     <view class="panel space-card">
       <view class="panel-head">
         <view>
           <view class="panel-kicker">SHARED SPACE</view>
           <view class="panel-title">当前情侣空间</view>
         </view>
-        <view class="status">已连接</view>
+        <view class="status">{{couple.members.length < 2 ? '等待 TA 加入' : '已连接'}}</view>
       </view>
       <view class="space-code">{{couple.code}}</view>
       <view class="hint">这是邀请另一半加入当前空间的加入码</view>
+      <view wx:if="{{couple.members.length < 2}}" class="space-waiting">
+        <view class="hint space-waiting__hint">空间还差一个人：把加入码发给 TA，加入后你们的内容会自动同步。</view>
+        <button class="button secondary compact" bindtap="copyInviteCode">复制加入码</button>
+      </view>
     </view>
 
     <view wx:if="{{summary}}" class="today-strip">
@@ -33,19 +50,46 @@
       <button class="today-metric" bindtap="goRewards"><view class="today-metric__value">{{walletText || '0'}}</view><view class="today-metric__label">两人积分</view></button>
     </view>
     <view wx:if="{{summary}}" class="relationship-note">
-      <view><text>{{togetherDays || '—'}}</text><view>{{togetherDays ? '在一起的第几天' : '设置纪念日后显示天数'}}</view></view>
+      <button class="relationship-note__cell" bindtap="goAnniversarySetup"><text>{{togetherDays || '—'}}</text><view>{{togetherDays ? '在一起的第几天' : '点这里设置纪念日'}}</view></button>
       <view><text>{{recentMoodText}}</text><view>最近的心情线索</view></view>
     </view>
     <view wx:if="{{summary.stats}}" class="week-summary">近 7 天：{{summary.stats.recordCount7d}} 条记录 · {{summary.stats.focusMinutes7d}} 分钟专注</view>
+    <button wx:if="{{pendingApprovals > 0}}" class="almanac-card approvals-card" bindtap="goPendingApprovals">
+      <view><view class="almanac-code" aria-hidden="true">NEEDS YOUR OK</view><view class="record-title">有 {{pendingApprovals}} 件事等你确认</view><view class="record-meta">奖励提议与兑换正等你回应</view></view>
+      <view class="approvals-card__arrow" aria-hidden="true">›</view>
+    </button>
     <view class="today-actions">
       <button bindtap="goMood"><view class="today-actions__mark today-actions__mark--me"></view><view><text>记录心情</text><view>留下一条自己的感受</view></view></button>
       <button bindtap="goTodayPlan"><view class="today-actions__mark today-actions__mark--us"></view><view><text>安排今天</text><view>给两个人留出时间</view></view></button>
       <button bindtap="goConflict"><view class="today-actions__mark today-actions__mark--talk"></view><view><text>沟通复盘</text><view>把事实与需要分开写</view></view></button>
     </view>
     <button wx:if="{{upcomingAnniversary}}" class="almanac-card anniversary-card" bindtap="goPlans">
-      <view><view class="almanac-code">NEXT ANNIVERSARY</view><view class="record-title">{{upcomingAnniversary.title}}</view><view class="record-meta">{{upcomingAnniversary.next.date}}</view></view>
+      <view><view class="almanac-code" aria-hidden="true">NEXT ANNIVERSARY</view><view class="record-title">{{upcomingAnniversary.title}}</view><view class="record-meta">{{upcomingAnniversary.next.date}}</view></view>
       <view class="anniversary-card__count"><text>{{upcomingAnniversary.next.daysRemaining}}</text><view>{{upcomingAnniversary.next.daysRemaining === 0 ? '今天' : '天后'}}</view></view>
     </button>
+
+    <view wx:if="{{summary && dailyQuestion}}" class="panel daily-question">
+      <view class="panel-head">
+        <view>
+          <view class="panel-kicker">DAILY QUESTION</view>
+          <view class="panel-title">今日一问</view>
+        </view>
+        <view class="status">{{dailyStatusText}}</view>
+      </view>
+      <view class="daily-question__text">{{dailyQuestion.text}}</view>
+      <view class="hint">每天一道小问题，回答后就能看到彼此的答案。</view>
+      <block wx:if="{{!dailyAnsweredByMe}}">
+        <button wx:if="{{!dailyAnswerOpen}}" class="button secondary compact" bindtap="openDailyAnswer">写下我的回答</button>
+        <view wx:else class="daily-question__composer">
+          <textarea class="daily-question__input" value="{{dailyAnswerText}}" maxlength="500" placeholder="写一两句就好" bindinput="onDailyAnswerInput" aria-label="今日一问的回答" />
+          <button class="button compact" loading="{{dailySubmitting}}" disabled="{{dailySubmitting}}" bindtap="submitDailyAnswer">提交回答</button>
+        </view>
+      </block>
+      <block wx:else>
+        <view wx:if="{{dailyMyAnswer}}" class="daily-question__mine">我的回答：{{dailyMyAnswer}}</view>
+        <button wx:if="{{dailyAnsweredByPartner}}" class="button secondary compact" bindtap="goTimeline">去时间线看看</button>
+      </block>
+    </view>
 
     <view class="section-head">
       <view>
@@ -85,6 +129,11 @@
         <view class="nav-title">搜索回忆</view>
         <view class="nav-desc">按关键词找到记录和计划</view>
       </button>
+      <button class="nav-item" bindtap="goTimeline">
+        <view class="nav-mark"></view>
+        <view class="nav-title">共同动态</view>
+        <view class="nav-desc">沿时间线回看两个人的共同瞬间</view>
+      </button>
       <button class="nav-item nav-item--agent" bindtap="goLoveAgent">
         <view class="nav-mark"></view>
         <view class="nav-title">恋爱助手 · AI</view>
@@ -92,29 +141,9 @@
       </button>
     </view>
 
-    <view class="home-links">
-      <button bindtap="goConflict">沟通复盘</button>
-      <button bindtap="goTimeline">共同时间线</button>
-      <button bindtap="goSettings">情侣空间</button>
+    <view class="write-today">
+      <button class="button" bindtap="goWriteToday">写今天</button>
+      <view class="write-today__hint">用一篇生活日记，留下今天最想共同记住的事。</view>
     </view>
-  </view>
-
-  <view wx:if="{{couple}}" id="moment-form" class="panel moment-panel">
-    <view class="panel-kicker">NEW MOMENT</view>
-    <view class="panel-title">留下一段共同经历</view>
-    <view class="subtitle">不必写得完整，先记下你最想保留的细节。</view>
-    <view wx:if="{{momentDraftStatus}}" class="moment-draft">
-      <text>{{momentDraftStatus}}</text><button wx:if="{{momentDraftRestored}}" bindtap="clearMomentDraft">移除备份</button>
-    </view>
-    <view class="field">
-      <view class="label">标题</view>
-      <input value="{{title}}" maxlength="40" placeholder="例如：第一次一起做饭" bindinput="onTitleInput" />
-    </view>
-    <view class="field">
-      <view class="label">内容</view>
-      <textarea value="{{content}}" maxlength="1000" auto-height placeholder="发生了什么？当时有什么感受？" bindinput="onContentInput" />
-    </view>
-    <button class="button" bindtap="submitMoment">保存这段经历</button>
-    <view class="moment-draft-hint">输入后自动保留本机草稿，云端保存成功后清除。</view>
   </view>
 </view>

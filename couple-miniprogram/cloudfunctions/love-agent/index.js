@@ -1,3 +1,4 @@
+process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
 const { fallbackAnswer } = require("./fallback");
@@ -31,8 +32,15 @@ function usageId(openid, date) {
   return crypto.createHash("sha256").update(`${openid}:${date}`).digest("hex").slice(0, 32);
 }
 
+function localDateKey(now = new Date()) {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 async function consumeDailyQuota(openid) {
-  const date = new Date().toISOString().slice(0, 10);
+  const date = localDateKey();
   const id = usageId(openid, date);
   await db.runTransaction(async (transaction) => {
     let current = null;
@@ -103,8 +111,12 @@ async function handle(event, openid) {
   const question = String(event.question || "").trim().slice(0, 600);
   if (question.length < 2) throw businessError("INVALID_QUESTION");
   const selectedContext = normalizeSelectedContext(event.context);
+  const history = normalizeHistory(event.history);
   const queryText = agentQueryText(question, selectedContext);
-  const risk = assessRisk(queryText);
+  // 风险评估必须覆盖客户端传入的全部会话历史：
+  // 否则把高危内容放进 history、question 只写"请继续"即可绕过安全拦截。
+  const riskText = [queryText, ...history.map((message) => message.content)].join("\n");
+  const risk = assessRisk(riskText);
   const articles = retrieveArticles(queryText, 4);
   const sources = sourcesForClient(articles);
   if (risk !== "none") {
@@ -116,7 +128,6 @@ async function handle(event, openid) {
     });
   }
 
-  const history = normalizeHistory(event.history);
   let generated = null;
   let providerFailed = false;
   const provider = inspectProvider();

@@ -1,3 +1,4 @@
+process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const {
   assertVersion,
@@ -5,6 +6,8 @@ const {
   setStatus,
   toggleChecklist
 } = require("./mutations");
+const { findMineViaMembership } = require("./membership");
+const { exceedsFlexibleFieldLimit } = require("./payload-guard");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -38,12 +41,8 @@ function failure(error) {
 }
 
 async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
+  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
+  return findMineViaMembership(db, openid);
 }
 
 function text(value, maxLength) {
@@ -63,6 +62,11 @@ function normalize(input, couple, openid, current) {
   const title = text(plan.title, 80);
   if (!PLAN_TYPES.has(type) || !title) throw businessError("INVALID_PLAN");
   const status = STATUSES.has(plan.status) ? plan.status : current?.status || "todo";
+  const payload = plan.payload && typeof plan.payload === "object" ? plan.payload : {};
+  // payload 是自由结构（如清单 checklist），必须限制 JSON 体积，防止单文档膨胀
+  if (exceedsFlexibleFieldLimit(payload)) {
+    throw businessError("INVALID_PLAN", "附加内容过大，请精简后重试");
+  }
   const assigneeOpenids = Array.isArray(plan.assigneeOpenids)
     ? plan.assigneeOpenids.filter((member) => couple.members.includes(member)).slice(0, 2)
     : current?.assigneeOpenids || [];
@@ -75,7 +79,7 @@ function normalize(input, couple, openid, current) {
     startAt: date(plan.startAt),
     endAt: date(plan.endAt),
     rewardPoints: Math.min(Math.max(Number(plan.rewardPoints) || 0, 0), 100000),
-    payload: plan.payload && typeof plan.payload === "object" ? plan.payload : {},
+    payload,
     createdBy: current?.createdBy || openid
   };
 }

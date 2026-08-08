@@ -15,6 +15,21 @@ function summarizeSyncChanges(changes) {
   return { total: records + plans + notifications, records, plans, notifications };
 }
 
+// 将同步摘要转成首页可读的中文短语；分量为 0 时省略，全部为 0 返回空串。
+// 变更中可能混有本机写入的内容，因此用中性的"有 N 条记录更新"而不是"TA 更新了"。
+function describeSyncDigest(summary) {
+  const source = summary || {};
+  const records = Number(source.records) || 0;
+  const plans = Number(source.plans) || 0;
+  const notifications = Number(source.notifications) || 0;
+  const parts = [];
+  if (records > 0) parts.push(`${records} 条记录`);
+  if (plans > 0) parts.push(`${plans} 个计划`);
+  if (notifications > 0) parts.push(`${notifications} 条提醒`);
+  if (parts.length === 0) return "";
+  return `有 ${parts.join("、")}更新`;
+}
+
 function mergeSyncChanges(current = {}, next = {}) {
   return ["records", "plans", "notifications"].reduce((result, key) => {
     const combined = [
@@ -37,4 +52,4 @@ function normalizeSyncOffsets(offsets = {}) {
   }, {});
 }
 
-module.exports = { mergeSyncChanges, normalizeSyncOffsets, parseSyncCursor, summarizeSyncChanges };
+module.exports = { describeSyncDigest, mergeSyncChanges, normalizeSyncOffsets, parseSyncCursor, summarizeSyncChanges };

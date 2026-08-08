@@ -59,7 +59,10 @@ function findKnownCode(message) {
 function normalizeError(error) {
   if (error && error.name === "CloudApiError") return error;
   if (error && error.code === "REQUEST_TIMEOUT") {
-    return createApiError("REQUEST_TIMEOUT", "", error);
+    const timeoutError = createApiError("REQUEST_TIMEOUT", "", error);
+    // 写操作的超时文案（“结果未知，请刷新确认”）由 shared/retry 随错误携带，需原样透传到 UI
+    if (error.userMessage) timeoutError.userMessage = error.userMessage;
+    return timeoutError;
   }
 
   const message = error && (error.errMsg || error.message);
@@ -147,12 +150,29 @@ function joinCouple(code) {
   return call("couple", { action: "join", code }).then((result) => result.couple || null);
 }
 
+// 撤销解绑申请（冷静期内任一成员可调用），返回恢复后的 couple
+function cancelLeaveCouple() {
+  return call("couple", { action: "cancelLeave" }).then((result) => result.couple || null);
+}
+
 function createRecord(record) {
+  if (!record || !record.clientRequestId) {
+    // 服务端幂等去重依赖 clientRequestId：缺失时双击保存/超时重试会产生重复记录。
+    console.warn("createRecord called without clientRequestId; duplicate submissions will not be deduplicated");
+  }
   return records("create", { record }).then((result) => result.record || null);
 }
 
 function listRecords(options) {
   return records("list", options).then((result) => result.records || []);
+}
+
+// 带分页信息的记录列表：返回 { records, page }，供长列表追加加载使用
+function listRecordsPaged(options) {
+  return records("list", options).then((result) => ({
+    records: result.records || [],
+    page: result.page || { offset: 0, limit: 0, hasMore: false }
+  }));
 }
 
 function getRecord(recordId) {
@@ -177,8 +197,12 @@ function getRecordStats(type) {
   return records("stats", { type }).then((result) => result.stats || null);
 }
 
-function listSharedFeed() {
-  return records("feed").then((result) => result.records || []);
+// 共同时间线：透传 offset/limit，返回 { records, page } 供追加加载
+function listSharedFeed(options) {
+  return records("feed", options || {}).then((result) => ({
+    records: result.records || [],
+    page: result.page || { offset: 0, limit: 0, hasMore: false }
+  }));
 }
 
 function reactToRecord(recordId, reaction, idempotencyKey) {
@@ -224,8 +248,12 @@ function getRewardSummary() {
   return rewards("summary").then((result) => ({ wallets: result.wallets || [] }));
 }
 
+// 奖励流水：透传 offset/limit，返回 { transactions, page } 供追加加载
 function listRewardTransactions(options) {
-  return rewards("list", options).then((result) => result.transactions || []);
+  return rewards("list", options).then((result) => ({
+    transactions: result.transactions || [],
+    page: result.page || { offset: 0, limit: 0, hasMore: false }
+  }));
 }
 
 function grantReward(data) {
@@ -411,8 +439,10 @@ module.exports = {
   getMyCouple,
   createCouple,
   joinCouple,
+  cancelLeaveCouple,
   createRecord,
   listRecords,
+  listRecordsPaged,
   getRecord,
   updateRecord,
   deleteRecord,

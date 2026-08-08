@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "共同相册",
-  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
+  "usingComponents": {
+    "twin-rail": "/components/twin-rail/twin-rail",
+    "state-view": "/components/state-view/state-view"
+  }
 }

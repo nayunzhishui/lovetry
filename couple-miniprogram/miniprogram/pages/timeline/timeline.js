@@ -1,4 +1,8 @@
 const cloudApi = require("../../services/cloudApi");
+const { isCoupleMissing, isCoupleRequiredError } = require("../../services/coupleGate");
+const { formatDateTime } = require("../../shared/format-date");
+
+const PAGE_SIZE = 50;
 
 const REACTIONS = [
   { value: "seen", label: "看见了" },
@@ -11,7 +15,7 @@ function decorate(item, openid) {
   return {
     ...item,
     typeLabel: item.type === "mood" ? "心情" : item.type === "outing" ? "共同经历" : "生活片段",
-    createdAtText: item.createdAt ? new Date(item.createdAt).toLocaleString() : "",
+    createdAtText: formatDateTime(item.createdAt),
     reactions: REACTIONS.map((reaction) => ({ ...reaction, active: reactionMap[openid] === reaction.value, count: Object.values(reactionMap).filter((value) => value === reaction.value).length }))
   };
 }
@@ -22,10 +26,19 @@ Page({
     openid: "",
     reactingId: "",
     isLoading: false,
+    loadingMore: false,
+    hasMore: false,
+    needsCouple: false,
     error: ""
   },
 
   onShow() {
+    // 未绑定伴侣时直接展示引导，不发起注定失败的云函数调用
+    if (isCoupleMissing(getApp().globalData)) {
+      this.setData({ needsCouple: true, isLoading: false });
+      return;
+    }
+    if (this.data.needsCouple) this.setData({ needsCouple: false });
     this.loadRecords();
   },
 
@@ -33,17 +46,47 @@ Page({
     if (this.data.isLoading) return;
 
     this.setData({ isLoading: true, error: "" });
-    Promise.all([cloudApi.login(), cloudApi.listSharedFeed()])
-      .then(([identity, items]) => {
-        this.setData({ openid: identity.openid, records: items.map((item) => decorate(item, identity.openid)) });
+    Promise.all([cloudApi.login(), cloudApi.listSharedFeed({ limit: PAGE_SIZE, offset: 0 })])
+      .then(([identity, result]) => {
+        this.setData({
+          openid: identity.openid,
+          records: result.records.map((item) => decorate(item, identity.openid)),
+          hasMore: result.page.hasMore
+        });
       })
       .catch((error) => {
-        const message = cloudApi.getErrorMessage(error, "时间线加载失败，请稍后重试");
-        this.setData({ error: message });
-        wx.showToast({ title: message, icon: "none" });
+        if (isCoupleRequiredError(error)) {
+          this.setData({ needsCouple: true, records: [], hasMore: false, error: "" });
+          return;
+        }
+        this.setData({ error: cloudApi.getErrorMessage(error, "时间线加载失败，请稍后重试") });
       })
       .finally(() => {
         this.setData({ isLoading: false });
+      });
+  },
+
+  onReachBottom() {
+    this.loadMoreRecords();
+  },
+
+  // 触底追加下一页共同动态
+  loadMoreRecords() {
+    if (this.data.needsCouple || this.data.isLoading || this.data.loadingMore || !this.data.hasMore) return;
+    this.setData({ loadingMore: true });
+    cloudApi
+      .listSharedFeed({ limit: PAGE_SIZE, offset: this.data.records.length })
+      .then((result) => {
+        this.setData({
+          records: [...this.data.records, ...result.records.map((item) => decorate(item, this.data.openid))],
+          hasMore: result.page.hasMore
+        });
+      })
+      .catch((error) => {
+        wx.showToast({ title: cloudApi.getErrorMessage(error, "更多动态加载失败，请稍后重试"), icon: "none" });
+      })
+      .finally(() => {
+        this.setData({ loadingMore: false });
       });
   },
 

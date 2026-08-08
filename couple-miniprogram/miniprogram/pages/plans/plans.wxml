@@ -6,12 +6,17 @@
     <view class="subtitle">把想做的事放在同一张桌面上，一件件完成。</view>
   </view>
 
+  <state-view wx:if="{{needsCouple}}" mode="couple-required" />
+
+  <block wx:else>
   <scroll-view class="type-tabs" scroll-x enhanced show-scrollbar="{{false}}">
     <view class="type-tabs__inner">
       <button
         wx:for="{{planTypes}}"
         wx:key="value"
         class="type-tab {{activeType === item.value ? 'type-tab--active' : ''}}"
+        aria-role="tab"
+        aria-selected="{{activeType === item.value}}"
         data-type="{{item.value}}"
         bindtap="switchType"
       >{{item.label}}</button>
@@ -29,7 +34,7 @@
   </view>
 
   <button wx:if="{{!composerOpen}}" class="composer-launch" bindtap="openComposer">
-    <view><view class="composer-launch__eyebrow">ADD {{activeConfig.eyebrow}}</view><view class="composer-launch__title">新增{{activeConfig.label}}</view><view class="composer-launch__desc">{{draftStatusText || '清单优先展示，需要时再展开表单'}}</view></view>
+    <view><view class="composer-launch__eyebrow" aria-hidden="true">ADD {{activeConfig.eyebrow}}</view><view class="composer-launch__title">新增{{activeConfig.label}}</view><view class="composer-launch__desc">{{draftStatusText || '清单优先展示，需要时再展开表单'}}</view></view>
     <view class="composer-launch__mark" aria-hidden="true">＋</view>
   </button>
 
@@ -84,7 +89,7 @@
       <input value="{{form.category}}" maxlength="30" placeholder="例如：川菜、甜品、常去餐厅" data-field="category" bindinput="onFieldInput" />
     </view>
     <view wx:if="{{activeType === 'menu'}}" class="field"><view class="label">标签</view><input value="{{form.tagsText}}" maxlength="80" placeholder="例如：清淡，约会，常去" data-field="tagsText" bindinput="onFieldInput" /></view>
-    <view wx:if="{{activeType === 'menu'}}" class="field"><view class="label">喜欢程度 · {{form.preference}} / 5</view><slider min="1" max="5" step="1" value="{{form.preference}}" data-field="preference" bindchange="onFieldInput" activeColor="#b77932" backgroundColor="#ded6c9" /></view>
+    <view wx:if="{{activeType === 'menu'}}" class="field"><view class="label">喜欢程度 · {{form.preference}} / 5</view><slider min="1" max="5" step="1" value="{{form.preference}}" data-field="preference" bindchange="onFieldInput" activeColor="{{sliderColors.active}}" backgroundColor="{{sliderColors.track}}" /></view>
 
     <view wx:if="{{activeType === 'task'}}" class="form-grid">
       <view class="field">
@@ -162,25 +167,28 @@
     <view class="list-head__count">{{plans.length}} 项</view>
   </view>
 
-  <view wx:if="{{isLoading}}" class="state-card">
-    <view class="state-pulse"></view>
-    <view>正在整理共同计划…</view>
-  </view>
+  <state-view wx:if="{{isLoading}}" variant="loading" title="正在整理共同计划…" />
 
-  <view wx:elif="{{error && plans.length === 0}}" class="state-card state-card--error">
-    <view class="empty-title">计划暂时没有加载出来</view>
-    <view class="empty-desc">{{error}}</view>
-    <button class="button secondary compact" bindtap="loadPlans">重新加载</button>
-  </view>
+  <state-view
+    wx:elif="{{error && plans.length === 0}}"
+    variant="error"
+    title="计划暂时没有加载出来"
+    description="{{error}}"
+    actionText="重新加载"
+    bind:action="loadPlans"
+  />
 
-  <view wx:elif="{{plans.length === 0}}" class="empty">
-    <view class="empty-title">还没有{{activeConfig.label}}</view>
-    <view class="empty-desc">添加第一项后，两个人会看到同一份清单。</view>
-    <button class="button compact state-action" bindtap="openComposer">添加第一项</button>
-  </view>
+  <state-view
+    wx:elif="{{plans.length === 0}}"
+    variant="empty"
+    title="还没有{{activeConfig.label}}"
+    description="添加第一项后，两个人会看到同一份清单。"
+    actionText="添加第一项"
+    bind:action="openComposer"
+  />
 
   <view wx:else class="plan-list">
-    <view wx:for="{{plans}}" wx:key="_id" class="plan-card {{item.isDone ? 'plan-card--done' : ''}}">
+    <view wx:for="{{plans}}" wx:key="_id" id="plan-{{item._id}}" class="plan-card {{item.isDone ? 'plan-card--done' : ''}} {{highlightPlanId === item._id ? 'plan-card--highlight' : ''}}">
       <view class="plan-card__rail" aria-hidden="true"><view></view><view></view></view>
       <view class="plan-card__top">
         <view class="plan-card__type">{{item.typeLabel}}</view>
@@ -210,4 +218,5 @@
       </view>
     </view>
   </view>
+  </block>
 </view>

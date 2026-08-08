@@ -34,4 +34,15 @@ function nextAnniversary(sourceDate, now = new Date()) {
   };
 }
 
-module.exports = { nextAnniversary };
+// 在一起的第几天：当天记为第 1 天；日期非法或在未来时返回 0（页面据此提示先设置纪念日）
+function daysTogether(sourceDate, now = new Date()) {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(sourceDate || ""));
+  if (!parts || Number.isNaN(now.getTime())) return 0;
+  const start = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+  if (start.getMonth() !== Number(parts[2]) - 1 || start.getDate() !== Number(parts[3])) return 0;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((today.getTime() - start.getTime()) / 86400000) + 1;
+  return days > 0 ? days : 0;
+}
+
+module.exports = { daysTogether, nextAnniversary };

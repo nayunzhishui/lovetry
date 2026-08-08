@@ -1,1 +1,15 @@
-<view class="state-view" aria-live="polite"><view class="state-view__mark"></view><view class="state-view__title">{{loading ? '正在整理…' : title}}</view><view wx:if="{{description}}" class="state-view__description">{{description}}</view><button wx:if="{{actionText}}" class="state-view__action" bindtap="onAction">{{actionText}}</button></view>
+<view class="state-view {{variant ? 'state-view--' + variant : ''}}" aria-live="polite">
+  <block wx:if="{{mode === 'couple-required'}}">
+    <view class="state-view__icon" aria-hidden="true">♥</view>
+    <view class="state-view__title">先和 TA 建一个共同空间</view>
+    <view class="state-view__description">创建或加入后，这里会展示你们的共同内容。</view>
+    <button class="state-view__action" bindtap="onCoupleAction">去创建 / 加入</button>
+  </block>
+  <block wx:else>
+    <view wx:if="{{isBusy}}" class="state-view__pulse" aria-hidden="true"></view>
+    <view wx:else class="state-view__mark" aria-hidden="true"></view>
+    <view class="state-view__title">{{displayTitle}}</view>
+    <view wx:if="{{description}}" class="state-view__description">{{description}}</view>
+    <button wx:if="{{actionText && !isBusy}}" class="state-view__action" bindtap="onAction">{{actionText}}</button>
+  </block>
+</view>

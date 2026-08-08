@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "共同计划",
   "enablePullDownRefresh": true,
-  "usingComponents": { "twin-rail": "/components/twin-rail/twin-rail" }
+  "usingComponents": {
+    "twin-rail": "/components/twin-rail/twin-rail",
+    "state-view": "/components/state-view/state-view"
+  }
 }

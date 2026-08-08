@@ -34,6 +34,23 @@
   word-break: break-all;
 }
 
+.waiting-hint {
+  margin-top: 16rpx;
+  color: var(--amber-deep);
+}
+
+.invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.invite-actions .button {
+  flex: 1 1 30%;
+  margin-top: 0;
+}
+
 .action-panel {
   margin-top: 30rpx;
 }
@@ -50,7 +67,7 @@
   width: 44rpx;
   height: 44rpx;
   border-radius: 50%;
-  background: #f2e6d5;
+  background: var(--amber-soft-bg);
   color: var(--amber-deep);
   font-size: 22rpx;
   font-weight: 700;
@@ -59,8 +76,8 @@
 }
 
 .choice-index--sage {
-  background: #e8eee9;
-  color: #536a59;
+  background: var(--sage-soft-bg);
+  color: var(--sage-soft-ink);
 }
 
 .choice-body {
@@ -123,5 +140,17 @@
 
 .tool-row:last-child { border-bottom: 0; }
 .tool-row > text { color: var(--ink-soft); font-size: 38rpx; }
-.privacy-panel { border-left-color: var(--moss); }
+.privacy-panel { border-left-color: var(--sage); }
 .leave-button { margin-top: 34rpx; background: transparent; color: var(--danger); font-size: 24rpx; }
+
+/* 绑定成功仪式卡：加入/创建后引导设置纪念日 */
+.ceremony-card { border-left-color: var(--coral); }
+.ceremony-card .button { margin-top: 24rpx; }
+.ceremony-card .button.secondary { margin-top: 14rpx; }
+.ceremony-card picker { display: block; margin-top: 18rpx; }
+
+/* 解绑冷静期状态条 */
+.archiving-panel { border-left-color: var(--danger); }
+.archiving-panel .panel-title { color: var(--danger); }
+.archiving-panel .button { margin-top: 24rpx; }
+.archiving-panel .button.secondary { margin-top: 14rpx; }

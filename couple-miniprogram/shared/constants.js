@@ -23,6 +23,13 @@ const PLAN_TYPES = Object.freeze({
   ANNIVERSARY: "anniversary"
 });
 
+// slider 的 activeColor/backgroundColor 不支持 CSS 变量，只能绑定常量色值
+const SLIDER_COLORS = Object.freeze({
+  active: "#C49A4A",
+  altActive: "#738E78",
+  track: "#D6DFDC"
+});
+
 const ERROR_CODES = Object.freeze({
   INVALID_RECORD: "INVALID_RECORD",
   INVALID_TIME: "INVALID_TIME",
@@ -35,5 +42,6 @@ module.exports = {
   ERROR_CODES,
   PLAN_TYPES,
   RECORD_TYPES,
+  SLIDER_COLORS,
   VISIBILITIES
 };

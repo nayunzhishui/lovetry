@@ -12,31 +12,56 @@
     "pages/record-detail/record-detail",
     "pages/pomodoro/pomodoro",
     "pages/search/search",
-    "pages/export/export",
-    "pages/integration-test/integration-test"
+    "pages/export/export"
   ],
   "subpackages": [
     {
       "root": "features",
-      "pages": ["notifications/notifications", "reward-store/reward-store", "love-agent/love-agent"]
+      "pages": [
+        "notifications/notifications",
+        "reward-store/reward-store",
+        "love-agent/love-agent"
+      ]
     }
   ],
+  "darkmode": true,
+  "themeLocation": "theme.json",
   "window": {
     "navigationBarTitleText": "恋爱记录",
-    "navigationBarBackgroundColor": "#f1f4f2",
-    "navigationBarTextStyle": "black",
-    "backgroundColor": "#f1f4f2"
+    "navigationBarBackgroundColor": "@navBgColor",
+    "navigationBarTextStyle": "@navTxtStyle",
+    "backgroundColor": "@bgColor"
   },
   "tabBar": {
-    "color": "#68767A",
-    "selectedColor": "#1F2D31",
-    "backgroundColor": "#FCFDFC",
-    "borderStyle": "white",
+    "color": "@tabColor",
+    "selectedColor": "@tabSelectedColor",
+    "backgroundColor": "@tabBgColor",
+    "borderStyle": "@tabBorderStyle",
     "list": [
-      { "pagePath": "pages/index/index", "text": "今天" },
-      { "pagePath": "pages/calendar/calendar", "text": "日历" },
-      { "pagePath": "pages/records/records", "text": "记录" },
-      { "pagePath": "pages/settings/settings", "text": "我们" }
+      {
+        "pagePath": "pages/index/index",
+        "text": "今天",
+        "iconPath": "@tabIconToday",
+        "selectedIconPath": "@tabIconTodayActive"
+      },
+      {
+        "pagePath": "pages/calendar/calendar",
+        "text": "日历",
+        "iconPath": "@tabIconCalendar",
+        "selectedIconPath": "@tabIconCalendarActive"
+      },
+      {
+        "pagePath": "pages/records/records",
+        "text": "记录",
+        "iconPath": "@tabIconRecords",
+        "selectedIconPath": "@tabIconRecordsActive"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "我们",
+        "iconPath": "@tabIconUs",
+        "selectedIconPath": "@tabIconUsActive"
+      }
     ]
   },
   "style": "v2",

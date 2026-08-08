@@ -1,4 +1,5 @@
 const api = require("../../services/cloudApi");
+const { isCoupleMissing, isCoupleRequiredError } = require("../../services/coupleGate");
 
 function randomName() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -34,10 +35,17 @@ Page({
     uploadProgress: "",
     hasMore: false,
     loadingMore: false,
+    needsCouple: false,
     error: ""
   },
 
   onShow() {
+    // 未绑定伴侣时直接展示引导，不发起注定失败的云函数调用
+    if (isCoupleMissing(getApp().globalData)) {
+      this.setData({ needsCouple: true, loading: false });
+      return;
+    }
+    if (this.data.needsCouple) this.setData({ needsCouple: false });
     this.loadAlbums();
   },
 
@@ -51,7 +59,11 @@ Page({
         if (selected) await this.openAlbum({ currentTarget: { dataset: { id: selected._id } } });
       }
     } catch (error) {
-      this.setData({ error: api.getErrorMessage(error, "相册加载失败") });
+      if (isCoupleRequiredError(error)) {
+        this.setData({ needsCouple: true, albums: [], error: "" });
+      } else {
+        this.setData({ error: api.getErrorMessage(error, "相册加载失败") });
+      }
     } finally {
       this.setData({ loading: false });
     }
@@ -233,6 +245,25 @@ Page({
     const current = event.currentTarget.dataset.url;
     const urls = this.data.assets.map((asset) => asset.tempURL).filter(Boolean);
     if (current) wx.previewImage({ current, urls });
+  },
+
+  // 长按照片弹出操作面板：预览 / 设为封面 / 删除（删除仍走二次确认）
+  onPhotoActions(event) {
+    const assetId = event.currentTarget.dataset.id;
+    const asset = this.data.assets.find((item) => item._id === assetId);
+    if (!asset) return;
+    wx.showActionSheet({
+      itemList: ["预览", "设为封面", "删除"],
+      success: ({ tapIndex }) => {
+        if (tapIndex === 0) {
+          this.preview({ currentTarget: { dataset: { url: asset.tempURL } } });
+        } else if (tapIndex === 1) {
+          this.setCover({ currentTarget: { dataset: { id: assetId } } });
+        } else if (tapIndex === 2) {
+          this.deleteAsset({ currentTarget: { dataset: { id: assetId } } });
+        }
+      }
+    });
   },
 
   async deleteAsset(event) {

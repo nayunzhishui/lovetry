@@ -6,12 +6,17 @@
     <view class="subtitle">共享的留在双轨上，私密的只属于你。</view>
   </view>
 
+  <state-view wx:if="{{needsCouple}}" mode="couple-required" />
+
+  <block wx:else>
   <scroll-view class="filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
     <view class="filter-row">
       <button
         wx:for="{{typeOptions}}"
         wx:key="value"
         class="filter-chip {{selectedType === item.value ? 'filter-chip--active' : ''}}"
+        aria-role="tab"
+        aria-selected="{{selectedType === item.value}}"
         data-type="{{item.value}}"
         bindtap="selectType"
       >{{item.label}}</button>
@@ -24,7 +29,7 @@
   </view>
   <view wx:if="{{selectedType === 'outing'}}" class="outing-filters">
     <scroll-view scroll-x show-scrollbar="{{false}}"><view class="filter-row">
-      <button wx:for="{{outingCategories}}" wx:key="*this" class="filter-chip {{outingCategory === item ? 'filter-chip--active' : ''}}" data-category="{{item}}" bindtap="selectOutingCategory">{{item || '全部分类'}}</button>
+      <button wx:for="{{outingCategories}}" wx:key="*this" class="filter-chip {{outingCategory === item ? 'filter-chip--active' : ''}}" aria-role="tab" aria-selected="{{outingCategory === item}}" data-category="{{item}}" bindtap="selectOutingCategory">{{item || '全部分类'}}</button>
     </view></scroll-view>
     <view class="date-filter"><picker mode="date" value="{{filterDate}}" bindchange="selectFilterDate"><view class="input-like">{{filterDate || '按日期筛选'}}</view></picker><button wx:if="{{filterDate}}" bindtap="clearFilterDate">清除</button></view>
   </view>
@@ -57,23 +62,25 @@
   </view>
   <view wx:if="{{stats.trendText}}" class="stats-trend">{{stats.trendText}}</view>
 
-  <view wx:if="{{isLoading}}" class="state-card" aria-live="polite">
-    <view class="state-pulse"></view>
-    <view>正在整理记录…</view>
-  </view>
+  <state-view wx:if="{{isLoading}}" variant="loading" title="正在整理记录…" />
 
-  <view wx:elif="{{error}}" class="empty" aria-live="polite">
-    <view class="empty-title">记录暂时没有加载出来</view>
-    <view class="empty-desc">{{error}}</view>
-    <button class="button secondary compact state-action" bindtap="loadRecords">重新加载</button>
-  </view>
+  <state-view
+    wx:elif="{{error}}"
+    variant="error"
+    title="记录暂时没有加载出来"
+    description="{{error}}"
+    actionText="重新加载"
+    bind:action="loadRecords"
+  />
 
-  <view wx:elif="{{records.length === 0}}" class="empty">
-    <view class="empty-rails" aria-hidden="true"><view></view><view></view></view>
-    <view class="empty-title">这里还没有记录</view>
-    <view class="empty-desc">写下今天最想记住的一件小事。</view>
-    <button class="button compact state-action" bindtap="createRecord">写第一条</button>
-  </view>
+  <state-view
+    wx:elif="{{records.length === 0}}"
+    variant="empty"
+    title="这里还没有记录"
+    description="写下今天最想记住的一件小事。"
+    actionText="写第一条"
+    bind:action="createRecord"
+  />
 
   <view wx:else class="record-list">
     <button
@@ -94,5 +101,8 @@
       <view wx:if="{{item.contentPreview}}" class="record-content">{{item.contentPreview}}</view>
       <view class="record-arrow" aria-hidden="true">›</view>
     </button>
+    <view wx:if="{{loadingMore}}" class="list-footer" aria-live="polite">加载更多中…</view>
+    <view wx:elif="{{!hasMore && records.length > 0}}" class="list-footer">没有更多了</view>
   </view>
+  </block>
 </view>

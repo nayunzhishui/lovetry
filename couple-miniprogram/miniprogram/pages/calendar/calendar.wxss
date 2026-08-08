@@ -12,18 +12,22 @@
   text-align: center;
 }
 .calendar-head__center { display: flex; flex-direction: column; align-items: center; gap: 4rpx; }
-.today-button { min-height: 48rpx; margin: 0; padding: 0 14rpx; background: transparent; color: var(--cobalt); font-size: 19rpx; line-height: 48rpx; }
+.today-button { min-height: 88rpx; margin: -20rpx 0; padding: 0 24rpx; background: transparent; color: var(--cobalt); font-size: 20rpx; line-height: 88rpx; }
 .calendar-filters { margin: -4rpx 0 18rpx; white-space: nowrap; }
 .calendar-filters__inner { display: inline-flex; gap: 10rpx; }
 .filter-chip { min-height: 72rpx; margin: 0; padding: 0 24rpx; border: 1rpx solid var(--line); border-radius: 36rpx; background: var(--surface); color: var(--ink-soft); font-size: 24rpx; line-height: 72rpx; }
-.filter-chip--active { border-color: var(--ink-strong); background: var(--ink-strong); color: #fff; }
+.filter-chip--active { border-color: var(--chip-active-bg); background: var(--chip-active-bg); color: var(--chip-active-ink); }
 
 .month-button {
+  /* 触控热区 88rpx：padding 计入命中区，背景裁剪到内容盒保持 64rpx 视觉圆形 */
   width: 64rpx;
   height: 64rpx;
-  padding: 0;
+  margin: -12rpx;
+  padding: 12rpx;
+  box-sizing: content-box;
   border-radius: 50%;
   background: var(--surface);
+  background-clip: content-box;
   color: var(--ink-strong);
   font-size: 42rpx;
   line-height: 64rpx;
@@ -60,11 +64,11 @@
 }
 
 .day--selected {
-  background: var(--ink-strong);
-  color: #fff;
+  background: var(--chip-active-bg);
+  color: var(--chip-active-ink);
 }
 .day--today { box-shadow: inset 0 0 0 2rpx var(--cobalt); }
-.day--today.day--selected { box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, .7); }
+.day--today.day--selected { box-shadow: inset 0 0 0 2rpx var(--paper); }
 
 .event-dots {
   position: absolute;
@@ -117,7 +121,7 @@
 .body-journal__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10rpx; }
 .body-action { display: flex; align-items: center; gap: 13rpx; min-height: 98rpx; margin: 0; padding: 15rpx 16rpx; border: 1rpx solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink-strong); text-align: left; line-height: 1.35; }
 .body-action view view { font-size: 23rpx; font-weight: 700; }
-.body-action view text { display: block; margin-top: 4rpx; color: var(--ink-soft); font-size: 18rpx; }
+.body-action view text { display: block; margin-top: 4rpx; color: var(--ink-soft); font-size: 20rpx; }
 .body-action__mark { width: 9rpx; height: 48rpx; border-radius: 5rpx; background: var(--coral); }
 .body-action--intimacy .body-action__mark { background: var(--cobalt); }
 .calendar-quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12rpx; margin: 22rpx 0 10rpx; }
@@ -125,16 +129,9 @@
 .calendar-agenda__empty { padding: 38rpx 10rpx 20rpx; text-align: center; }
 .event-time { flex: 0 0 82rpx; color: var(--cobalt); font-family: "SFMono-Regular", Consolas, monospace; font-size: 21rpx; }
 .event-main { min-width: 0; flex: 1; }
-.event-meta { margin-top: 4rpx; color: var(--ink-soft); font-size: 19rpx; }
+.event-meta { margin-top: 4rpx; color: var(--ink-soft); font-size: 20rpx; }
 .event-arrow { color: var(--ink-soft); font-size: 34rpx; }
 
-.error-banner {
-  margin-top: 24rpx;
-  padding: 22rpx;
-  border-radius: var(--radius-sm);
-  background: #f5e4e1;
-  color: var(--danger);
-}
 .error-banner .button { width: 220rpx; margin: 18rpx 0 0; }
 
 @media (max-width: 340px) {

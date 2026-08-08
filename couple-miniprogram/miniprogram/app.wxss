@@ -8,12 +8,18 @@ page {
   --line: #d6dfdc;
   --cobalt: #35658d;
   --coral: #d46557;
-  --moss: #738e78;
-  --brass: #c49a4a;
   --amber: #c49a4a;
   --amber-deep: #735a2d;
   --sage: #738e78;
   --danger: #b44f45;
+  /* 选中态芯片：亮色为深底白字，暗色自动反转为浅底深字 */
+  --chip-active-bg: #1f2d31;
+  --chip-active-ink: #ffffff;
+  /* 柔和底色对：浅色纸感衬底 + 可读文字，暗色下整对反转 */
+  --amber-soft-bg: #f5eee4;
+  --sage-soft-bg: #e8eee9;
+  --sage-soft-ink: #536a59;
+  --danger-soft-bg: #f5e4e1;
   --space-1: 8rpx;
   --space-2: 16rpx;
   --space-3: 24rpx;
@@ -182,7 +188,7 @@ textarea {
 input:focus,
 textarea:focus {
   border-color: var(--amber);
-  box-shadow: 0 0 0 5rpx rgba(183, 121, 50, 0.12);
+  box-shadow: 0 0 0 5rpx rgba(196, 154, 74, 0.12);
 }
 
 .button {
@@ -190,8 +196,8 @@ textarea:focus {
   margin-top: 28rpx;
   padding: 0 28rpx;
   border-radius: 6rpx;
-  background: var(--ink-strong);
-  color: #ffffff;
+  background: var(--chip-active-bg);
+  color: var(--chip-active-ink);
   font-size: 27rpx;
   font-weight: 650;
   line-height: 88rpx;
@@ -219,8 +225,8 @@ textarea:focus {
 }
 
 .button[disabled] {
-  background: #b9b6af;
-  color: #f7f5f0;
+  background: var(--surface-muted);
+  color: var(--ink-soft);
   opacity: 1;
 }
 
@@ -287,22 +293,22 @@ textarea:focus {
   min-height: 44rpx;
   padding: 0 18rpx;
   border-radius: 22rpx;
-  background: #e8eee9;
-  color: #536a59;
+  background: var(--sage-soft-bg);
+  color: var(--sage-soft-ink);
   font-size: 21rpx;
   font-weight: 650;
   line-height: 44rpx;
 }
 
 .status--warm {
-  background: #f2e6d5;
+  background: var(--amber-soft-bg);
   color: var(--amber-deep);
 }
 
 .empty {
   margin-top: var(--space-3);
   padding: 54rpx 30rpx;
-  border: 1rpx dashed #cabfae;
+  border: 1rpx dashed var(--line);
   border-radius: var(--radius-md);
   color: var(--ink-soft);
   text-align: center;
@@ -360,6 +366,15 @@ textarea:focus {
   line-height: 1.6;
 }
 
+/* 全局错误横幅：各页共用同一份样式，暗色由下方 dark 块统一覆盖 */
+.error-banner {
+  margin-top: 24rpx;
+  padding: 22rpx;
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft-bg);
+  color: var(--danger);
+}
+
 @media (max-width: 340px) {
   .page {
     padding-right: 22rpx;
@@ -400,18 +415,20 @@ textarea:focus {
     --line: #34494f;
     --cobalt: #8dbce0;
     --coral: #ff9a8f;
-    --moss: #a7c4aa;
     --sage: #a7c4aa;
-    --brass: #e0c27c;
     --amber: #e0c27c;
     --amber-deep: #e0c27c;
     --danger: #ff9a8f;
+    --chip-active-bg: #eef4f2;
+    --chip-active-ink: #1f2d31;
+    --amber-soft-bg: #3b3424;
+    --sage-soft-bg: #243b35;
+    --sage-soft-ink: #b7d8bd;
+    --danger-soft-bg: #3d292a;
     --shadow-card: none;
   }
   input, textarea, .input-like { background:#172429; color:var(--ink-strong); }
   .button.secondary, .panel, .card, .almanac-card, .nav-item { background:var(--surface); }
-  .status { background: #243b35; color: #b7d8bd; }
-  .status--warm { background: #3b3424; color: var(--amber-deep); }
   .button[disabled] { background: #4b5a5e; color: #d7dfdd; }
-  .error-banner, .form-error, .inline-error, .timer-error { background: #3d292a; color: var(--danger); }
+  .error-banner, .form-error, .inline-error, .timer-error { background: var(--danger-soft-bg); color: var(--danger); }
 }

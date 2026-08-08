@@ -1,0 +1,9 @@
+{
+  "triggers": [
+    {
+      "name": "purge-due-archiving-couples",
+      "type": "timer",
+      "config": "0 30 4 * * * *"
+    }
+  ]
+}

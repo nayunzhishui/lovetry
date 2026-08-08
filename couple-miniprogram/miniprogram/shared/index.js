@@ -9,6 +9,7 @@ module.exports = {
   ...require("./constants"),
   ...require("./duration"),
   ...require("./form-assist"),
+  ...require("./format-date"),
   ...require("./calendar-view"),
   ...require("./errors"),
   ...require("./permissions"),

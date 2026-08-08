@@ -6,18 +6,21 @@
     <view class="subtitle">把看见、感谢和兑现，记成两个人都看得见的流水。</view>
   </view>
 
+  <state-view wx:if="{{needsCouple}}" mode="couple-required" />
+
+  <block wx:else>
   <view class="reward-mode-nav"><button class="reward-mode-nav__active">账户</button><button data-mode="store" bindtap="goRewardStore">商城</button><button data-mode="inventory" bindtap="goRewardStore">仓库</button></view>
 
-  <view wx:if="{{isLoading}}" class="state-card">
-    <view class="state-pulse"></view>
-    <view>正在核对两个人的账户…</view>
-  </view>
+  <state-view wx:if="{{isLoading}}" variant="loading" title="正在核对两个人的账户…" />
 
-  <view wx:elif="{{error && wallets.length === 0}}" class="state-card state-card--error">
-    <view class="empty-title">账户暂时没有加载出来</view>
-    <view class="empty-desc">{{error}}</view>
-    <button class="button secondary compact" bindtap="loadRewards">重新加载</button>
-  </view>
+  <state-view
+    wx:elif="{{error && wallets.length === 0}}"
+    variant="error"
+    title="账户暂时没有加载出来"
+    description="{{error}}"
+    actionText="重新加载"
+    bind:action="loadRewards"
+  />
 
   <block wx:else>
     <view class="wallet-grid">
@@ -65,8 +68,8 @@
 
     <view class="panel action-panel">
       <view class="action-tabs">
-        <button class="action-tab {{actionMode === 'grant' ? 'action-tab--active' : ''}}" data-mode="grant" bindtap="switchAction">给伴侣奖励</button>
-        <button class="action-tab {{actionMode === 'spend' ? 'action-tab--active' : ''}}" data-mode="spend" bindtap="switchAction">使用我的积分</button>
+        <button class="action-tab {{actionMode === 'grant' ? 'action-tab--active' : ''}}" aria-role="tab" aria-selected="{{actionMode === 'grant'}}" data-mode="grant" bindtap="switchAction">给伴侣奖励</button>
+        <button class="action-tab {{actionMode === 'spend' ? 'action-tab--active' : ''}}" aria-role="tab" aria-selected="{{actionMode === 'spend'}}" data-mode="spend" bindtap="switchAction">使用我的积分</button>
       </view>
 
       <view wx:if="{{actionMode === 'grant'}}">
@@ -110,15 +113,14 @@
 
     <view wx:if="{{error}}" class="inline-error">{{error}}</view>
 
-    <view wx:if="{{isLoadingTransactions}}" class="state-card state-card--small">
-      <view class="state-pulse"></view>
-      <view>正在加载流水…</view>
-    </view>
+    <state-view wx:if="{{isLoadingTransactions}}" variant="loading" title="正在加载流水…" />
 
-    <view wx:elif="{{transactions.length === 0}}" class="empty">
-      <view class="empty-title">还没有积分流水</view>
-      <view class="empty-desc">赠送或使用积分后，变化会按时间留在这里。</view>
-    </view>
+    <state-view
+      wx:elif="{{transactions.length === 0}}"
+      variant="empty"
+      title="还没有积分流水"
+      description="赠送或使用积分后，变化会按时间留在这里。"
+    />
 
     <view wx:else class="ledger">
       <view class="ledger__spine" aria-hidden="true"></view>
@@ -132,6 +134,9 @@
           <view class="ledger-row__meta">{{item.kindLabel}} · {{item.createdAtText}}</view>
         </view>
       </view>
+      <view wx:if="{{loadingMoreTransactions}}" class="list-footer" aria-live="polite">加载更多中…</view>
+      <view wx:elif="{{!transactionsHasMore && transactions.length > 0}}" class="list-footer">没有更多了</view>
     </view>
+  </block>
   </block>
 </view>

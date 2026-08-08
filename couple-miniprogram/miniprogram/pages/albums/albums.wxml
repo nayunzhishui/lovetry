@@ -1,6 +1,9 @@
 <view class="page">
   <view class="hero"><twin-rail /><view class="eyebrow">TWO-PERSON ARCHIVE</view><view class="title">共同相册</view><view class="subtitle">照片只属于当前情侣空间，不作为公开动态。</view></view>
 
+  <state-view wx:if="{{needsCouple}}" mode="couple-required" />
+
+  <block wx:else>
   <view class="panel">
     <view class="panel-title">新建相册</view>
     <input value="{{newTitle}}" placeholder="例如：厦门旅行" bindinput="onTitleInput" />
@@ -27,14 +30,27 @@
   <view wx:if="{{uploadProgress}}" class="upload-progress">{{uploadProgress}}</view>
 
   <view wx:if="{{error}}" class="error-banner">{{error}}</view>
-  <view wx:if="{{!loading && selectedAlbum && assets.length === 0}}" class="empty"><view class="empty-title">相册还是空的</view><view class="empty-desc">选择几张只属于你们的照片。</view></view>
+  <state-view wx:if="{{loading && !albums.length}}" variant="loading" title="正在整理相册…" />
+  <state-view
+    wx:elif="{{!albums.length && !error}}"
+    variant="empty"
+    title="还没有相册"
+    description="用上面的表单建第一本相册，收藏只属于你们的照片。"
+  />
+  <state-view
+    wx:if="{{!loading && selectedAlbum && assets.length === 0}}"
+    variant="empty"
+    title="相册还是空的"
+    description="选择几张只属于你们的照片。"
+  />
+  <view wx:if="{{selectedAlbum && assets.length}}" class="hint">点按照片可预览；长按可设为封面或删除。</view>
   <view class="photo-grid">
     <view wx:for="{{assets}}" wx:key="_id" class="photo-wrap">
-      <image src="{{item.tempURL}}" mode="aspectFill" class="photo" data-url="{{item.tempURL}}" bindtap="preview" />
+      <image src="{{item.tempURL}}" mode="aspectFill" class="photo" data-url="{{item.tempURL}}" data-id="{{item._id}}" bindtap="preview" bindlongpress="onPhotoActions" />
       <view class="photo-date">{{item.createdAtText}}</view>
-      <button class="photo-delete" data-id="{{item._id}}" bindtap="deleteAsset">删除</button>
-      <button class="photo-cover" data-id="{{item._id}}" bindtap="setCover">{{selectedAlbum.coverAssetId === item._id ? '封面' : '设封面'}}</button>
+      <view wx:if="{{selectedAlbum.coverAssetId === item._id}}" class="photo-cover-badge">封面</view>
     </view>
   </view>
   <button wx:if="{{hasMore}}" class="button secondary load-more" loading="{{loadingMore}}" disabled="{{loadingMore}}" bindtap="loadMore">加载更多照片</button>
+  </block>
 </view>

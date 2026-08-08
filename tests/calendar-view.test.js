@@ -1,3 +1,4 @@
+process.env.TZ = "Asia/Shanghai"; // 云函数运行时同样固定北京时间（见 cloudfunctions/*/index.js）
 const test = require("node:test");
 const assert = require("node:assert/strict");
 

@@ -1,4 +1,6 @@
+process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
+const { findMineViaMembership } = require("./membership");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -32,12 +34,8 @@ function failure(error) {
 }
 
 async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
+  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
+  return findMineViaMembership(db, openid);
 }
 
 async function getAlbum(id, couple) {
@@ -66,6 +64,42 @@ async function getAsset(id, couple) {
     if (error.code) throw error;
     throw businessError("ASSET_NOT_FOUND");
   }
+}
+
+async function tryDeleteFiles(fileList) {
+  try {
+    const result = await cloud.deleteFile({ fileList });
+    // deleteFile 单文件失败不会 reject，而是在返回值 fileList[i].status 中体现（0 为成功）。
+    const items = (result && result.fileList) || [];
+    const failed = items.filter((item) => Number(item.status || 0) !== 0);
+    if (failed.length) {
+      console.error("cloud file delete partially failed", { failed: failed.map((item) => ({ fileID: item.fileID, status: item.status })) });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("cloud file delete failed", { code: error.errCode || error.message });
+    return false;
+  }
+}
+
+// 定时触发器入口：跨空间清理删除失败残留的云文件（每日一次即可）。
+async function purgeAllPendingDeletions() {
+  const result = await db
+    .collection("media_assets")
+    .where({ pendingDeletion: true })
+    .limit(50)
+    .get();
+  let purged = 0;
+  for (const asset of result.data) {
+    const ok = await tryDeleteFiles([asset.fileID]);
+    if (ok) {
+      await db.collection("media_assets").doc(asset._id).update({ data: { pendingDeletion: false, updatedAt: new Date() } });
+      purged += 1;
+    }
+  }
+  console.info("media purgePendingDeletions", { scanned: result.data.length, purged });
+  return { scanned: result.data.length, purged };
 }
 
 async function handle(event, openid) {
@@ -184,17 +218,34 @@ async function handle(event, openid) {
   if (action === "deleteAsset") {
     const asset = await getAsset(event.assetId, couple);
     const deletedAt = new Date();
-    let pendingDeletion = false;
-    try {
-      await cloud.deleteFile({ fileList: [asset.fileID] });
-    } catch (error) {
-      pendingDeletion = true;
-      console.error("cloud file delete failed", { assetId: asset._id, code: error.errCode || error.message });
-    }
+    // 先软删数据库记录（用户视角立即消失），再删云文件；
+    // 文件删除失败或逐文件返回码非 0 时标记 pendingDeletion，由 purgePendingDeletions 兜底重试。
     await db.collection("media_assets").doc(asset._id).update({
-      data: { deletedAt, updatedAt: deletedAt, pendingDeletion }
+      data: { deletedAt, updatedAt: deletedAt, pendingDeletion: true }
     });
+    const pendingDeletion = !(await tryDeleteFiles([asset.fileID]));
+    if (!pendingDeletion) {
+      await db.collection("media_assets").doc(asset._id).update({ data: { pendingDeletion: false } });
+    }
     return success({ assetId: asset._id, deletedAt, pendingDeletion });
+  }
+
+  if (action === "purgePendingDeletions") {
+    // 仅清理本空间内删除失败残留的云文件；全局兜底由定时触发器走 purgeAllPendingDeletions。
+    const result = await db
+      .collection("media_assets")
+      .where({ coupleId: couple._id, pendingDeletion: true })
+      .limit(50)
+      .get();
+    let purged = 0;
+    for (const asset of result.data) {
+      const ok = await tryDeleteFiles([asset.fileID]);
+      if (ok) {
+        await db.collection("media_assets").doc(asset._id).update({ data: { pendingDeletion: false, updatedAt: new Date() } });
+        purged += 1;
+      }
+    }
+    return success({ scanned: result.data.length, purged });
   }
 
   throw businessError("UNKNOWN_ACTION");
@@ -202,6 +253,15 @@ async function handle(event, openid) {
 
 exports.main = async (event = {}) => {
   const startedAt = Date.now();
+  // 定时触发器（无用户上下文）：执行全局 pendingDeletion 清理。
+  if (event.Type === "Timer" || event.TriggerName) {
+    try {
+      return { ok: true, data: await purgeAllPendingDeletions() };
+    } catch (error) {
+      console.error("media timer purge failed", { code: error.code || error.message });
+      return { ok: false };
+    }
+  }
   const { OPENID } = cloud.getWXContext();
   try {
     const result = await handle(event, OPENID);

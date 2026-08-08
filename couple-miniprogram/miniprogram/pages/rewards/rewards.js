@@ -1,15 +1,6 @@
 const cloudApi = require("../../services/cloudApi");
-
-function formatTime(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
-  return `${date.getFullYear()}.${month}.${day} ${hour}:${minute}`;
-}
+const { isCoupleMissing, isCoupleRequiredError } = require("../../services/coupleGate");
+const { formatCompact } = require("../../shared/format-date");
 
 function decorateTransaction(item) {
   const isEarn = item.kind === "earn";
@@ -18,7 +9,7 @@ function decorateTransaction(item) {
     isEarn,
     kindLabel: isEarn ? "获得" : "消费",
     amountText: `${isEarn ? "+" : "−"}${item.amount}`,
-    createdAtText: formatTime(item.createdAt)
+    createdAtText: formatCompact(item.createdAt)
   };
 }
 
@@ -60,11 +51,20 @@ Page({
     quickAmounts: [5, 10, 20, 50],
     isLoading: false,
     isLoadingTransactions: false,
+    transactionsHasMore: false,
+    loadingMoreTransactions: false,
     isSubmitting: false,
+    needsCouple: false,
     error: ""
   },
 
   onShow() {
+    // 未绑定伴侣时直接展示引导，不发起注定失败的云函数调用
+    if (isCoupleMissing(getApp().globalData)) {
+      this.setData({ needsCouple: true, isLoading: false });
+      return;
+    }
+    if (this.data.needsCouple) this.setData({ needsCouple: false });
     this.loadRewards();
   },
 
@@ -97,6 +97,10 @@ Page({
         return this.loadTransactions(selectedOwnerOpenid);
       })
       .catch((error) => {
+        if (isCoupleRequiredError(error)) {
+          this.setData({ needsCouple: true, wallets: [], transactions: [], error: "" });
+          return;
+        }
         const message = cloudApi.getErrorMessage(error, "奖励账户加载失败，请稍后重试");
         this.setData({ error: message, wallets: [], transactions: [] });
       })
@@ -110,19 +114,56 @@ Page({
     if (!ownerOpenid) return Promise.resolve();
     this.setData({ isLoadingTransactions: true });
     return cloudApi
-      .listRewardTransactions({ ownerOpenid, limit: 50 })
-      .then((transactions) => {
-        this.setData({ transactions: transactions.map(decorateTransaction) });
+      .listRewardTransactions({ ownerOpenid, limit: 50, offset: 0 })
+      .then((result) => {
+        this.setData({
+          transactions: result.transactions.map(decorateTransaction),
+          transactionsHasMore: result.page.hasMore
+        });
       })
       .finally(() => {
         this.setData({ isLoadingTransactions: false });
       });
   },
 
+  // 触底只追加当前选中账户的流水，不影响页面其它区块
+  onReachBottom() {
+    this.loadMoreTransactions();
+  },
+
+  loadMoreTransactions() {
+    const ownerOpenid = this.data.selectedOwnerOpenid;
+    if (
+      !ownerOpenid ||
+      this.data.needsCouple ||
+      this.data.isLoading ||
+      this.data.isLoadingTransactions ||
+      this.data.loadingMoreTransactions ||
+      !this.data.transactionsHasMore
+    ) return;
+    this.setData({ loadingMoreTransactions: true });
+    cloudApi
+      .listRewardTransactions({ ownerOpenid, limit: 50, offset: this.data.transactions.length })
+      .then((result) => {
+        // 追加期间切换了账户时丢弃过期结果
+        if (ownerOpenid !== this.data.selectedOwnerOpenid) return;
+        this.setData({
+          transactions: [...this.data.transactions, ...result.transactions.map(decorateTransaction)],
+          transactionsHasMore: result.page.hasMore
+        });
+      })
+      .catch((error) => {
+        wx.showToast({ title: cloudApi.getErrorMessage(error, "更多流水加载失败，请稍后重试"), icon: "none" });
+      })
+      .finally(() => {
+        this.setData({ loadingMoreTransactions: false });
+      });
+  },
+
   selectWallet(event) {
     const ownerOpenid = event.currentTarget.dataset.openid;
     if (!ownerOpenid || ownerOpenid === this.data.selectedOwnerOpenid || this.data.isLoadingTransactions) return;
-    this.setData({ selectedOwnerOpenid: ownerOpenid, transactions: [], error: "" });
+    this.setData({ selectedOwnerOpenid: ownerOpenid, transactions: [], transactionsHasMore: false, error: "" });
     this.loadTransactions(ownerOpenid).catch((error) => {
       const message = cloudApi.getErrorMessage(error, "流水加载失败，请稍后重试");
       this.setData({ error: message });

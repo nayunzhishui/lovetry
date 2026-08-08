@@ -1,6 +1,6 @@
 <view class="page notifications-page">
   <view class="hero almanac-hero">
-    <view class="almanac-code">NOTICE / 01</view>
+    <view class="almanac-code" aria-hidden="true">NOTICE / 01</view>
     <view class="title">提醒中心</view>
     <view class="subtitle">只提醒需要两个人回应的事情，不追踪、不催促。</view>
   </view>
@@ -16,7 +16,7 @@
     <button class="button secondary" bindtap="subscribe">设置微信订阅消息</button>
   </view>
 
-  <view class="section-heading"><text>近期提醒</text><text class="almanac-code">{{reminders.length}} ITEMS</text></view>
+  <view class="section-heading"><text>近期提醒</text><text class="almanac-code" aria-hidden="true">{{reminders.length}} ITEMS</text></view>
   <state-view wx:if="{{loading}}" loading="{{true}}" />
   <state-view wx:elif="{{!reminders.length}}" title="暂时没有临近事项" description="任务和纪念日进入提醒范围后会出现在这里。" />
   <archive-card wx:for="{{reminders}}" wx:key="sourceId">
@@ -24,11 +24,12 @@
     <view><view class="record-title">{{item.title}}</view><view class="record-meta">{{item.scheduledDate}} · {{item.daysRemaining === 0 ? '就是今天' : item.daysRemaining + ' 天后'}}</view></view>
   </archive-card>
 
-  <view wx:if="{{notifications.length}}" class="section-heading"><text>提醒存档</text><text class="almanac-code">{{notifications.length}} LOGS</text></view>
+  <view wx:if="{{notifications.length}}" class="section-heading"><text>提醒存档</text><text class="almanac-code" aria-hidden="true">{{notifications.length}} LOGS</text></view>
   <archive-card wx:for="{{notifications}}" wx:key="_id">
     <view class="archive-stamp">{{item.readAt ? '已读' : '待查看'}}</view>
     <view class="record-title">{{item.title}}</view>
-    <view class="record-meta">{{item.scheduledDate}}</view>
+    <view class="record-meta"><text class="notify-tag {{item.typeClass}}">{{item.typeLabel}}</text> {{item.scheduledDate}}</view>
+    <view wx:if="{{item.body}}" class="notify-body">{{item.body}}</view>
     <button wx:if="{{!item.readAt}}" class="button secondary compact" data-id="{{item._id}}" bindtap="markRead">标记已读</button>
   </archive-card>
 

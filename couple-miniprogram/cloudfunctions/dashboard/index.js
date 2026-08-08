@@ -1,19 +1,39 @@
+process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const { validateBackupEnvelope } = require("./backup");
+const { projectSyncRecords } = require("./sync-view");
+const { findMineViaMembership } = require("./membership");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
 
+// 白名单：只回传本函数自己抛出的业务错误码；未知错误一律折叠为 INTERNAL_ERROR，
+// 避免把底层数据库/运行时的原始 code、message 暴露给客户端。
+const ERROR_MESSAGES = {
+  COUPLE_REQUIRED: "请先创建或加入情侣空间",
+  INVALID_RANGE: "请选择正确的日期范围",
+  INVALID_SYNC_CURSOR: "同步位置已失效，请刷新页面",
+  INVALID_BACKUP: "备份格式不正确，或不属于当前情侣空间",
+  TRUNCATED_BACKUP: "该备份内容不完整，请重新导出完整备份",
+  UNKNOWN_ACTION: "暂不支持这个操作"
+};
+
 function success(data) {
   return { ok: true, data, ...data };
 }
 
 function failure(error) {
+  const code = error.code || error.message || "INTERNAL_ERROR";
+  const known = Object.prototype.hasOwnProperty.call(ERROR_MESSAGES, code);
   return {
     ok: false,
-    error: { code: error.code || error.message || "INTERNAL_ERROR", message: error.userMessage || "加载数据失败" }
+    error: {
+      // businessError(code, userMessage) 的第二参数是给用户看的文案，白名单内原样透传
+      code: known ? code : "INTERNAL_ERROR",
+      message: known ? (error.userMessage || ERROR_MESSAGES[code]) : "服务暂时不可用"
+    }
   };
 }
 
@@ -25,12 +45,8 @@ function businessError(code, userMessage) {
 }
 
 async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
+  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
+  return findMineViaMembership(db, openid);
 }
 
 function canReadRecord(record, openid) {
@@ -84,7 +100,32 @@ async function handle(event, openid) {
   const action = event.action;
 
   if (action === "summary") {
-    const base = await loadBase(couple, openid, 100, 30);
+    // 等待"当前用户"处理的事项：
+    // a. 伴侣提议、待我确认的奖励商品（reward_items.status === "proposed" 且 createdBy 不是我）
+    // b. 伴侣兑换、待我确认的仓库条目（reward_inventory.status === "pending" 且 ownerOpenid 不是我）
+    // 说明：plans 没有"已完成待确认积分"的状态字段（结算与否由 reward_transactions 是否存在推导），
+    // 按约定不发明字段，这里只统计 a + b。查询均带 coupleId 且用 count()，不拉取全量数据。
+    // 今日一问轻查询：当日两条以内（每人最多一条回答），用嵌套字段条件直接命中
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const [base, proposedItemCount, pendingInventoryCount, dailyQuestionResult] = await Promise.all([
+      loadBase(couple, openid, 100, 30),
+      db.collection("reward_items")
+        .where({ coupleId: couple._id, status: "proposed", createdBy: _.neq(openid) })
+        .count(),
+      db.collection("reward_inventory")
+        .where({ coupleId: couple._id, status: "pending", ownerOpenid: _.neq(openid) })
+        .count(),
+      db.collection("records")
+        .where({ coupleId: couple._id, "payload.dailyQuestionDate": today, deletedAt: null })
+        .limit(2)
+        .get()
+    ]);
+    const answeredBy = [...new Set(dailyQuestionResult.data
+      .filter((record) => !record.deletedAt)
+      .map((record) => record.ownerOpenid || record.creatorOpenid)
+      .filter(Boolean))];
+    const pendingApprovals = (Number(proposedItemCount.total) || 0) + (Number(pendingInventoryCount.total) || 0);
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date(todayStart);
@@ -99,6 +140,13 @@ async function handle(event, openid) {
       pendingTasks: base.plans.filter((plan) => plan.type === "task" && plan.status !== "done" && plan.status !== "archived").slice(0, 5),
       anniversaries: base.plans.filter((plan) => plan.type === "anniversary" && plan.status !== "archived").slice(0, 30),
       wallets: base.wallets,
+      pendingApprovals,
+      dailyQuestion: {
+        date: today,
+        answeredBy,
+        answeredByMe: answeredBy.includes(openid),
+        answeredByPartner: answeredBy.some((member) => member !== openid)
+      },
       stats: {
         recordCount7d: last7Records.length,
         focusMinutes7d: last7Records.filter((record) => record.type === "pomodoro")
@@ -240,7 +288,7 @@ async function handle(event, openid) {
     };
     return success({
       changes: {
-        records: pages.records.filter((record) => canReadRecord(record, openid)),
+        records: projectSyncRecords(pages.records, openid),
         plans: pages.plans,
         notifications: pages.notifications
       },

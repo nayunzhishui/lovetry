@@ -1,4 +1,5 @@
 const api = require("../../services/cloudApi");
+const { isCoupleMissing, isCoupleRequiredError } = require("../../services/coupleGate");
 const { presentCalendarEvents } = require("../../shared/calendar-view");
 
 function pad(value) {
@@ -47,6 +48,8 @@ function buildDays(month, events, today = new Date()) {
     cells.push({
       key,
       day,
+      // 供屏幕阅读器朗读："7月26日，2项"；无事件时只读日期
+      ariaLabel: `${month.getMonth() + 1}月${day}日${dayEvents.length ? `，${dayEvents.length}项` : ""}`,
       eventCount: dayEvents.length,
       events: dayEvents,
       hasPeriod: dayEvents.some((event) => event.type === "period"),
@@ -74,6 +77,7 @@ Page({
     selectedEvents: [],
     todayKey: "",
     loading: false,
+    needsCouple: false,
     error: ""
   },
 
@@ -83,7 +87,23 @@ Page({
     this.loadMonth(now);
   },
 
+  onShow() {
+    // 未绑定伴侣时直接展示引导；绑定完成回到本页时重新加载当月
+    if (isCoupleMissing(getApp().globalData)) {
+      if (!this.data.needsCouple) this.setData({ needsCouple: true, loading: false });
+      return;
+    }
+    if (this.data.needsCouple) {
+      this.setData({ needsCouple: false });
+      this.loadMonth(new Date(this.data.month));
+    }
+  },
+
   async loadMonth(month) {
+    if (isCoupleMissing(getApp().globalData)) {
+      this.setData({ needsCouple: true, loading: false });
+      return;
+    }
     const emptyDays = buildDays(month, []);
     this.setData({
       loading: true,
@@ -105,7 +125,11 @@ Page({
         selectedEvents: selected?.events || []
       });
     } catch (error) {
-      this.setData({ error: api.getErrorMessage(error, "日历加载失败") });
+      if (isCoupleRequiredError(error)) {
+        this.setData({ needsCouple: true, error: "" });
+      } else {
+        this.setData({ error: api.getErrorMessage(error, "日历加载失败") });
+      }
     } finally {
       this.setData({ loading: false });
     }
@@ -169,8 +193,12 @@ Page({
   openEvent(event) {
     const item = this.data.selectedEvents.find((entry) => entry.id === event.currentTarget.dataset.id);
     if (!item) return;
-    wx.navigateTo({ url: item.source === "record"
-      ? `/pages/record-detail/record-detail?id=${encodeURIComponent(item.id)}`
-      : `/pages/plans/plans?type=${encodeURIComponent(item.type || "task")}&date=${this.data.selectedKey}` });
+    if (item.source === "record") {
+      wx.navigateTo({ url: `/pages/record-detail/record-detail?id=${encodeURIComponent(item.id)}` });
+      return;
+    }
+    // 周年展开事件的 id 形如 `${planId}-${year}`，优先取事件对象上的真实 planId
+    const planId = item.planId || item.id;
+    wx.navigateTo({ url: `/pages/plans/plans?type=${encodeURIComponent(item.type || "task")}&planId=${encodeURIComponent(planId)}` });
   }
 });

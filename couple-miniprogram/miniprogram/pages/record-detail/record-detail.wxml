@@ -1,11 +1,14 @@
 <view class="page detail-page">
-  <view wx:if="{{isLoading}}" class="detail-state" aria-live="polite">正在打开记录…</view>
+  <state-view wx:if="{{isLoading}}" variant="loading" title="正在打开记录…" />
 
-  <view wx:elif="{{error && !record}}" class="empty">
-    <view class="empty-title">这条记录暂时无法打开</view>
-    <view class="empty-desc">{{error}}</view>
-    <button class="button secondary compact detail-retry" bindtap="loadRecord">重新加载</button>
-  </view>
+  <state-view
+    wx:elif="{{error && !record}}"
+    variant="error"
+    title="这条记录暂时无法打开"
+    description="{{error}}"
+    actionText="重新加载"
+    bind:action="loadRecord"
+  />
 
   <block wx:elif="{{record}}">
     <view class="hero detail-hero">

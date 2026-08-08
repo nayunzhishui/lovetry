@@ -89,11 +89,12 @@ Page({
   },
 
   openResult(event) {
-    const { id, source } = event.currentTarget.dataset;
+    const { id, source, type } = event.currentTarget.dataset;
+    // 计划类结果带上类型与 planId，落地后切到对应清单并定位到目标计划卡
     wx.navigateTo({
       url: source === "record"
         ? `/pages/record-detail/record-detail?id=${encodeURIComponent(id)}`
-        : "/pages/plans/plans"
+        : `/pages/plans/plans?type=${encodeURIComponent(type || "task")}&planId=${encodeURIComponent(id)}`
     });
   }
 });

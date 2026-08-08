@@ -1,4 +1,5 @@
 const cloudApi = require("../../services/cloudApi");
+const { formatDateTime } = require("../../shared/format-date");
 
 const TYPE_LABELS = {
   moment: "共同经历",
@@ -11,21 +12,9 @@ const TYPE_LABELS = {
   game: "游戏记录",
   pomodoro: "专注记录"
 };
-const EDITABLE_TYPES = new Set(["mood", "conflict", "outing", "sleep", "period", "intimacy", "game"]);
+// pomodoro 由专注流程生成，保持只读；其余类型（含 moment 生活日记）都可跳转表单编辑
+const EDITABLE_TYPES = new Set(["moment", "mood", "conflict", "outing", "sleep", "period", "intimacy", "game"]);
 const REPAIR_LABELS = { noted: "先记录下来", preparing: "准备沟通", talked: "已经沟通", later: "稍后再谈" };
-
-function pad(value) {
-  return String(value).padStart(2, "0");
-}
-
-function formatDate(value) {
-  if (!value) return "";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return `${date.getFullYear()} 年 ${pad(date.getMonth() + 1)} 月 ${pad(date.getDate())} 日 ${pad(
-    date.getHours()
-  )}:${pad(date.getMinutes())}`;
-}
 
 function minutesText(value) {
   const minutes = Number(value);
@@ -83,8 +72,8 @@ function presentRecord(record) {
     ...record,
     typeLabel: TYPE_LABELS[record.type] || "生活记录",
     visibilityLabel: record.visibility === "private" ? "仅自己可见" : "两人共享",
-    startText: formatDate(record.startAt || record.createdAt),
-    endText: formatDate(record.endAt),
+    startText: formatDateTime(record.startAt || record.createdAt),
+    endText: formatDateTime(record.endAt),
     detailRows: buildRows(record)
   };
 }

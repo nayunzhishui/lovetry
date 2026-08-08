@@ -12,5 +12,15 @@
   },
   "appid": "touristappid",
   "projectname": "couple-records",
-  "condition": {}
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "联调检查页（仅本地编译使用）",
+          "pathName": "pages/integration-test/integration-test",
+          "query": ""
+        }
+      ]
+    }
+  }
 }

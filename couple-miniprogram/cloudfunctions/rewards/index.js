@@ -1,11 +1,12 @@
+process.env.TZ = "Asia/Shanghai";
 const cloud = require("wx-server-sdk");
 const crypto = require("crypto");
 const { normalizeRewardItem, transitionRewardItem } = require("./reward-policy");
+const { findMineViaMembership } = require("./membership");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
-const _ = db.command;
 const ERROR_MESSAGES = {
   COUPLE_REQUIRED: "请先创建或加入情侣空间",
   INVALID_AMOUNT: "积分必须是大于零的整数",
@@ -43,12 +44,8 @@ function failure(error) {
 }
 
 async function findMine(openid) {
-  const result = await db
-    .collection("couples")
-    .where({ members: openid, status: _.neq("archived") })
-    .limit(1)
-    .get();
-  return result.data[0] || null;
+  // 快路径：memberships 哈希主键 O(1) 命中；miss 或数据不一致时模块内部回退 couples 条件查询
+  return findMineViaMembership(db, openid);
 }
 
 function walletId(coupleId, openid) {
@@ -95,6 +92,18 @@ async function ensureWallet(couple, openid) {
 
 function transactionId(coupleId, idempotencyKey) {
   return crypto.createHash("sha256").update(`${coupleId}:${idempotencyKey}`).digest("hex").slice(0, 32);
+}
+
+// 任务结算幂等键：以“标记完成”那一刻写定的 completedAt（见 plans/mutations.js setStatus）标识完成轮次，
+// done→todo→done 重新完成后 completedAt 更新，可再次结算；同一轮内重复确认则命中同一键。
+// 历史任务可能没有 completedAt（早期版本或经 update 直接改 status），退化为 updatedAt。
+function taskSettlementKey(task) {
+  return `task:${task._id}:${new Date(task.completedAt || task.updatedAt || 0).getTime()}`;
+}
+
+// 2026-07 之前的固定格式旧键：仅用于判断旧数据是否已结算，新结算不再写入该键。
+function legacyTaskSettlementKey(task) {
+  return `task:${task._id}:reward`;
 }
 
 async function existingTransaction(coupleId, idempotencyKey) {
@@ -184,13 +193,19 @@ async function handle(event, openid) {
   if (action === "list") {
     const ownerOpenid = event.ownerOpenid && couple.members.includes(event.ownerOpenid) ? event.ownerOpenid : openid;
     const limit = Math.min(Math.max(Number(event.limit) || 30, 1), 50);
+    // 不传 offset 时保持旧行为（第一页），传入后支持流水翻页
+    const offset = Math.max(Number(event.offset) || 0, 0);
     const result = await db
       .collection("reward_transactions")
       .where({ coupleId: couple._id, ownerOpenid })
       .orderBy("createdAt", "desc")
-      .limit(limit)
+      .skip(offset)
+      .limit(limit + 1)
       .get();
-    return success({ transactions: result.data });
+    return success({
+      transactions: result.data.slice(0, limit),
+      page: { offset, limit, hasMore: result.data.length > limit }
+    });
   }
 
   if (action === "pendingTasks") {
@@ -205,8 +220,9 @@ async function handle(event, openid) {
       !task.deletedAt && Number(task.rewardPoints) > 0 &&
       Array.isArray(task.assigneeOpenids) && task.assigneeOpenids.includes(partnerOpenid)
     );
-    const settled = await Promise.all(candidates.map((task) =>
-      existingTransaction(couple._id, `task:${task._id}:reward`)
+    const settled = await Promise.all(candidates.map(async (task) =>
+      (await existingTransaction(couple._id, taskSettlementKey(task))) ||
+      (await existingTransaction(couple._id, legacyTaskSettlementKey(task)))
     ));
     return success({ tasks: candidates.filter((task, index) => !settled[index]) });
   }
@@ -263,7 +279,10 @@ async function handle(event, openid) {
     const wallet = await ensureWallet(couple, openid);
     const stableKey = String(event.idempotencyKey).slice(0, 160);
     const inventoryId = transactionId(couple._id, `inventory:${stableKey}`);
-    const rewardTransactionId = transactionId(couple._id, stableKey);
+    // 流水 ID 加 redeem: 命名空间：不能与 grant/spend 直接用 stableKey 派生的 ID 共用键空间，
+    // 否则同一 idempotencyKey 会因 transaction.set 的覆盖语义互相改写流水。
+    // 历史兼容：旧数据用旧 ID，新键空间不会与旧冲突，旧流水查不到属可接受。
+    const rewardTransactionId = transactionId(couple._id, `redeem:${stableKey}`);
     const result = await db.runTransaction(async (transaction) => {
       try {
         const existing = (await transaction.collection("reward_inventory").doc(inventoryId).get()).data;
@@ -273,6 +292,19 @@ async function handle(event, openid) {
         }
       } catch (error) {
         if (error.code === "IDEMPOTENCY_CONFLICT") throw error;
+      }
+      // 与 applyTransaction 相同的流水查重：存在且指纹一致返回 duplicate，不一致抛 IDEMPOTENCY_CONFLICT
+      try {
+        const duplicateResult = await transaction.collection("reward_transactions").doc(rewardTransactionId).get();
+        if (duplicateResult.data) {
+          if (duplicateResult.data.ownerOpenid !== openid || duplicateResult.data.kind !== "spend" || duplicateResult.data.sourceId !== itemId) {
+            throw businessError("IDEMPOTENCY_CONFLICT");
+          }
+          return { transaction: duplicateResult.data, duplicate: true };
+        }
+      } catch (error) {
+        if (error.code === "IDEMPOTENCY_CONFLICT") throw error;
+        // 流水文档不存在：继续正常兑换。
       }
       let item;
       try { item = (await transaction.collection("reward_items").doc(itemId).get()).data; }
@@ -373,19 +405,24 @@ async function handle(event, openid) {
       throw businessError("INVALID_TARGET");
     }
     if (targetOpenid === openid) throw businessError("SELF_APPROVAL_NOT_ALLOWED");
-    return success(
-      await applyTransaction({
-        couple,
-        actorOpenid: openid,
-        targetOpenid,
-        kind: "earn",
-        value: task.rewardPoints,
-        title: `完成任务：${task.title}`,
-        sourceType: "task",
-        sourceId: task._id,
-        idempotencyKey: `task:${task._id}:reward`
-      })
-    );
+    // 旧固定键结算过的任务视为已结算：旧轮次不迁移、不重复加分。
+    if (await existingTransaction(couple._id, legacyTaskSettlementKey(task))) {
+      throw businessError("REWARD_ALREADY_SETTLED");
+    }
+    const result = await applyTransaction({
+      couple,
+      actorOpenid: openid,
+      targetOpenid,
+      kind: "earn",
+      value: task.rewardPoints,
+      title: `完成任务：${task.title}`,
+      sourceType: "task",
+      sourceId: task._id,
+      idempotencyKey: taskSettlementKey(task)
+    });
+    // 同一完成轮次内重复确认：明确告知已结算，而不是静默返回旧流水。
+    if (result.duplicate) throw businessError("REWARD_ALREADY_SETTLED");
+    return success(result);
   }
 
   throw businessError("UNKNOWN_ACTION");

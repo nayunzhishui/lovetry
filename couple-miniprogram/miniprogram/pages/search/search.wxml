@@ -4,9 +4,9 @@
     <view class="label">搜索词</view>
     <input value="{{keyword}}" maxlength="50" placeholder="例如：旅行、火锅、生日" bindinput="onInput" confirm-type="search" bindconfirm="search" />
     <view class="filter-row">
-      <button class="filter-chip {{source === '' ? 'filter-chip--active' : ''}}" data-source="" bindtap="selectSource">全部</button>
-      <button class="filter-chip {{source === 'record' ? 'filter-chip--active' : ''}}" data-source="record" bindtap="selectSource">记录</button>
-      <button class="filter-chip {{source === 'plan' ? 'filter-chip--active' : ''}}" data-source="plan" bindtap="selectSource">计划</button>
+      <button class="filter-chip {{source === '' ? 'filter-chip--active' : ''}}" aria-role="tab" aria-selected="{{source === ''}}" data-source="" bindtap="selectSource">全部</button>
+      <button class="filter-chip {{source === 'record' ? 'filter-chip--active' : ''}}" aria-role="tab" aria-selected="{{source === 'record'}}" data-source="record" bindtap="selectSource">记录</button>
+      <button class="filter-chip {{source === 'plan' ? 'filter-chip--active' : ''}}" aria-role="tab" aria-selected="{{source === 'plan'}}" data-source="plan" bindtap="selectSource">计划</button>
     </view>
     <picker mode="selector" range="{{typeOptions}}" range-key="label" value="{{typeIndex}}" bindchange="selectType">
       <view class="input-like type-picker"><text>内容类型</text><text>{{selectedTypeLabel}} ›</text></view>
@@ -21,8 +21,13 @@
     </view>
   </view>
   <view wx:if="{{error}}" class="error-banner">{{error}}</view>
-  <view wx:if="{{searched && results.length === 0}}" class="empty"><view class="empty-title">没有找到相关内容</view><view class="empty-desc">换一个更短的关键词，或清除部分筛选条件。</view></view>
-  <button wx:for="{{results}}" wx:key="id" class="card result-card" data-id="{{item.id}}" data-source="{{item.source}}" bindtap="openResult">
+  <state-view
+    wx:if="{{searched && results.length === 0}}"
+    variant="empty"
+    title="没有找到相关内容"
+    description="换一个更短的关键词，或清除部分筛选条件。"
+  />
+  <button wx:for="{{results}}" wx:key="id" class="card result-card" data-id="{{item.id}}" data-source="{{item.source}}" data-type="{{item.type}}" bindtap="openResult">
     <view class="result-card__meta"><text>{{item.sourceLabel}} · {{item.typeLabel}}</text><text>{{item.dateText}}</text></view>
     <view class="panel-title">{{item.title || '未命名内容'}}</view>
     <view class="result-card__arrow">查看详情 ›</view>

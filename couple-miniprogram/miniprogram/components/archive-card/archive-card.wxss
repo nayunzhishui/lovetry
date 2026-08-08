@@ -1,2 +1,1 @@
-.archive-card { margin-top: 20rpx; padding: 28rpx; border: 1rpx solid #d6dfdc; border-left: 6rpx solid #35658d; border-radius: 10rpx; background: #fcfdfc; box-shadow: 0 12rpx 34rpx rgba(31,45,49,.06); }
-@media (prefers-color-scheme: dark) { .archive-card { border-color:#34494f; background:#1b2a2f; box-shadow:none; } }
+.archive-card { margin-top: 20rpx; padding: 28rpx; border: 1rpx solid var(--line); border-left: 6rpx solid var(--cobalt); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-card); }

@@ -51,7 +51,7 @@
     </view>
 
     <view wx:if="{{type === 'mood'}}" class="type-fields">
-      <view class="field"><view class="label">心情程度 · {{moodLevel}} / 5</view><slider min="1" max="5" step="1" value="{{moodLevel}}" activeColor="#b77932" backgroundColor="#ded6c9" data-key="moodLevel" bindchange="onNumberInput" /></view>
+      <view class="field"><view class="label">心情程度 · {{moodLevel}} / 5</view><slider min="1" max="5" step="1" value="{{moodLevel}}" activeColor="{{sliderColors.active}}" backgroundColor="{{sliderColors.track}}" data-key="moodLevel" bindchange="onNumberInput" /></view>
       <view class="field"><view class="label">心情标签</view><input value="{{tagsText}}" maxlength="80" placeholder="例如：安心，期待，疲惫" data-key="tagsText" bindinput="onInput" /></view>
     </view>
 
@@ -62,18 +62,18 @@
       <view class="field"><view class="label">沟通过程</view><textarea value="{{communication}}" maxlength="800" auto-height placeholder="彼此怎样表达、倾听，又在哪里停住了" data-key="communication" bindinput="onInput" /></view>
       <view class="field"><view class="label">共同约定</view><textarea value="{{agreement}}" maxlength="800" auto-height placeholder="已经达成什么，还有什么之后再谈" data-key="agreement" bindinput="onInput" /></view>
       <view class="field"><view class="label">现在进行到哪一步</view><picker mode="selector" range="{{repairChoices}}" value="{{repairIndex}}" data-key="repairIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{repairChoices[repairIndex]}}</view></picker><view class="hint">记录不等于问题已经解决，可以按真实进度稍后更新。</view></view>
-      <view class="field"><view class="label">沟通满意度 · {{satisfaction}} / 10</view><slider min="1" max="10" step="1" value="{{satisfaction}}" activeColor="#718577" backgroundColor="#ded6c9" data-key="satisfaction" bindchange="onNumberInput" /></view>
+      <view class="field"><view class="label">沟通满意度 · {{satisfaction}} / 10</view><slider min="1" max="10" step="1" value="{{satisfaction}}" activeColor="{{sliderColors.altActive}}" backgroundColor="{{sliderColors.track}}" data-key="satisfaction" bindchange="onNumberInput" /></view>
     </view>
 
     <view wx:if="{{type === 'outing'}}" class="type-fields">
       <view class="field"><view class="label">类型</view><picker mode="selector" range="{{outingCategories}}" value="{{outingCategoryIndex}}" data-key="outingCategoryIndex" bindchange="onPickerChange"><view class="input-like picker-value">{{outingCategories[outingCategoryIndex]}}</view></picker></view>
       <view class="field"><view class="label">地点</view><input value="{{location}}" maxlength="100" placeholder="餐厅、城市或地点" data-key="location" bindinput="onInput" /></view>
       <view class="field"><view class="label">共同花费（元）</view><input type="digit" value="{{amount}}" placeholder="可选填" data-key="amount" bindinput="onInput" /></view>
-      <view class="field"><view class="label">这次体验 · {{outingRating}} / 5</view><slider min="1" max="5" step="1" value="{{outingRating}}" activeColor="#b77932" backgroundColor="#ded6c9" data-key="outingRating" bindchange="onNumberInput" /></view>
+      <view class="field"><view class="label">这次体验 · {{outingRating}} / 5</view><slider min="1" max="5" step="1" value="{{outingRating}}" activeColor="{{sliderColors.active}}" backgroundColor="{{sliderColors.track}}" data-key="outingRating" bindchange="onNumberInput" /></view>
     </view>
 
     <view wx:if="{{type === 'sleep'}}" class="type-fields">
-      <view class="field"><view class="label">睡眠质量 · {{sleepQuality}} / 5</view><slider min="1" max="5" step="1" value="{{sleepQuality}}" activeColor="#718577" backgroundColor="#ded6c9" data-key="sleepQuality" bindchange="onNumberInput" /></view>
+      <view class="field"><view class="label">睡眠质量 · {{sleepQuality}} / 5</view><slider min="1" max="5" step="1" value="{{sleepQuality}}" activeColor="{{sliderColors.altActive}}" backgroundColor="{{sliderColors.track}}" data-key="sleepQuality" bindchange="onNumberInput" /></view>
     </view>
 
     <view wx:if="{{type === 'period'}}" class="type-fields">

@@ -1,0 +1,36 @@
+{
+  "light": {
+    "navBgColor": "#f1f4f2",
+    "navTxtStyle": "black",
+    "bgColor": "#f1f4f2",
+    "tabColor": "#68767A",
+    "tabSelectedColor": "#1F2D31",
+    "tabBgColor": "#FCFDFC",
+    "tabBorderStyle": "white",
+    "tabIconToday": "assets/tabbar/today.png",
+    "tabIconTodayActive": "assets/tabbar/today-active.png",
+    "tabIconCalendar": "assets/tabbar/calendar.png",
+    "tabIconCalendarActive": "assets/tabbar/calendar-active.png",
+    "tabIconRecords": "assets/tabbar/records.png",
+    "tabIconRecordsActive": "assets/tabbar/records-active.png",
+    "tabIconUs": "assets/tabbar/us.png",
+    "tabIconUsActive": "assets/tabbar/us-active.png"
+  },
+  "dark": {
+    "navBgColor": "#142126",
+    "navTxtStyle": "white",
+    "bgColor": "#142126",
+    "tabColor": "#94A5A2",
+    "tabSelectedColor": "#EEF4F2",
+    "tabBgColor": "#1B2A2F",
+    "tabBorderStyle": "black",
+    "tabIconToday": "assets/tabbar/today-dark.png",
+    "tabIconTodayActive": "assets/tabbar/today-active-dark.png",
+    "tabIconCalendar": "assets/tabbar/calendar-dark.png",
+    "tabIconCalendarActive": "assets/tabbar/calendar-active-dark.png",
+    "tabIconRecords": "assets/tabbar/records-dark.png",
+    "tabIconRecordsActive": "assets/tabbar/records-active-dark.png",
+    "tabIconUs": "assets/tabbar/us-dark.png",
+    "tabIconUsActive": "assets/tabbar/us-active-dark.png"
+  }
+}

@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  describeSyncDigest,
   mergeSyncChanges,
   normalizeSyncOffsets,
   parseSyncCursor,
@@ -22,6 +23,21 @@ test("同步摘要只统计实际变更", () => {
     plans: 0,
     notifications: 1
   });
+});
+
+test("同步摘要文案省略零分量并保持中性措辞", () => {
+  assert.equal(
+    describeSyncDigest({ total: 3, records: 2, plans: 1, notifications: 0 }),
+    "有 2 条记录、1 个计划更新"
+  );
+  assert.equal(describeSyncDigest({ total: 1, records: 0, plans: 0, notifications: 1 }), "有 1 条提醒更新");
+  assert.equal(describeSyncDigest({ total: 1, records: 1, plans: 0, notifications: 0 }), "有 1 条记录更新");
+});
+
+test("同步摘要文案在全零或缺失时返回空串", () => {
+  assert.equal(describeSyncDigest({ total: 0, records: 0, plans: 0, notifications: 0 }), "");
+  assert.equal(describeSyncDigest(null), "");
+  assert.equal(describeSyncDigest(undefined), "");
 });
 
 test("同步分页结果按类别合并", () => {

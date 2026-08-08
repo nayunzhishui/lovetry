@@ -2,5 +2,30 @@
 .setting-switch:last-of-type { border-bottom: 0; }
 .reminder-card { display: flex; align-items: center; gap: 22rpx; }
 .rail-dot { width: 18rpx; height: 18rpx; flex: none; border-radius: 50%; background: var(--cobalt); box-shadow: 0 0 0 8rpx rgba(53, 101, 141, 0.1); }
-.rail-dot--shared { background: var(--moss); }
-.error-banner { margin-top: 24rpx; padding: 22rpx; border-left: 6rpx solid var(--coral); background: #fff5f3; color: var(--danger); }
+.rail-dot--shared { background: var(--sage); }
+.error-banner { margin-top: 24rpx; padding: 22rpx; border-left: 6rpx solid var(--coral); background: var(--danger-soft-bg); color: var(--danger); }
+
+/* 提醒类型标签：不同类型用主题色区分，未知类型用默认灰 */
+.notify-tag {
+  display: inline-block;
+  margin-right: 8rpx;
+  padding: 2rpx 12rpx;
+  border: 1rpx solid var(--line);
+  border-radius: 999rpx;
+  color: var(--ink-soft);
+  font-size: 19rpx;
+}
+
+.notify-tag--task { border-color: var(--cobalt); color: var(--cobalt); }
+.notify-tag--anniversary { border-color: var(--coral); color: var(--coral); }
+.notify-tag--rewardApproval { border-color: var(--amber); color: var(--amber-deep); }
+.notify-tag--reaction { border-color: var(--sage); color: var(--sage-soft-ink); }
+.notify-tag--coupleArchiving { border-color: var(--danger); color: var(--danger); }
+.notify-tag--coupleArchivingCancelled { border-color: var(--sage); color: var(--sage-soft-ink); }
+
+.notify-body {
+  margin-top: 8rpx;
+  color: var(--ink);
+  font-size: 23rpx;
+  line-height: 1.6;
+}

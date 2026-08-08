@@ -7,8 +7,8 @@
   </view>
 
   <view class="phase-switch">
-    <button class="phase-option {{phase === 'focus' ? 'phase-option--active' : ''}}" data-phase="focus" bindtap="selectPhase">专注 · 25 分钟</button>
-    <button class="phase-option {{phase === 'break' ? 'phase-option--active' : ''}}" data-phase="break" bindtap="selectPhase">休息 · 5 分钟</button>
+    <button class="phase-option {{phase === 'focus' ? 'phase-option--active' : ''}}" aria-role="tab" aria-selected="{{phase === 'focus'}}" data-phase="focus" bindtap="selectPhase">专注 · 25 分钟</button>
+    <button class="phase-option {{phase === 'break' ? 'phase-option--active' : ''}}" aria-role="tab" aria-selected="{{phase === 'break'}}" data-phase="break" bindtap="selectPhase">休息 · 5 分钟</button>
   </view>
 
   <view class="timer-panel">

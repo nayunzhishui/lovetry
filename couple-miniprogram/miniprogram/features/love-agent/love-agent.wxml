@@ -69,7 +69,7 @@
 
   <view class="composer">
     <view class="composer__head"><text>{{modeText}}</text><button wx:if="{{messages.length}}" bindtap="clearConversation">清空本次对话</button></view>
-    <textarea value="{{question}}" maxlength="600" auto-height placeholder="描述一件具体的事：发生了什么、你最担心什么、你希望有什么变化…" bindinput="onInput" />
+    <textarea value="{{question}}" maxlength="600" auto-height cursor-spacing="20" placeholder="描述一件具体的事：发生了什么、你最担心什么、你希望有什么变化…" bindinput="onInput" />
     <button class="button" loading="{{loading}}" disabled="{{loading || question.length < 2}}" bindtap="ask">让助手帮我梳理</button>
     <view class="caveat">AI 可能理解不完整。重要决定请结合真实沟通与可信任的现实支持。</view>
   </view>

@@ -3,6 +3,7 @@ const formDraft = require("../../services/formDraft");
 const agentHandoff = require("../../services/agentHandoff");
 const { applyFormTemplate, templatesFor } = require("../../shared/form-assist");
 const { handoffToConflictPatch } = require("../../shared/agent-context");
+const { SLIDER_COLORS } = require("../../shared/constants");
 
 const TYPES = [
   { value: "moment", label: "生活日记" },
@@ -100,6 +101,7 @@ function emptyRecordFields() {
 
 Page({
   data: {
+    sliderColors: SLIDER_COLORS,
     typeOptions: TYPES,
     typeIndex: 0,
     type: "mood",
@@ -150,6 +152,8 @@ Page({
   },
 
   onLoad(options) {
+    // 一次表单会话一个幂等键：双击保存或超时后手动重试都沿用同一 ID，服务端据此去重。
+    this.clientRequestId = `form:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
     const now = new Date();
     const later = new Date(now.getTime() + 60 * 60 * 1000);
     const start = toParts(null, now);
@@ -445,6 +449,7 @@ Page({
 
     this.setData({ isSubmitting: true, error: "" });
     wx.showLoading({ title: "保存中", mask: true });
+    if (!this.data.recordId) record.clientRequestId = this.clientRequestId;
     const request = this.data.recordId
       ? cloudApi.updateRecord(this.data.recordId, this.data.version, record)
       : cloudApi.createRecord(record);

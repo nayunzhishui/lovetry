@@ -32,10 +32,57 @@ test("只读请求超过时限会返回明确的 REQUEST_TIMEOUT", async () => {
   );
 });
 
-test("只读请求允许超时重试，写请求不会被客户端自动重放", () => {
+const WRITE_TIMEOUT_MESSAGE = "请求超时，结果未知，请刷新确认后再重试";
+
+test("只读请求允许超时重试，普通写请求有 20 秒超时兜底但不会被客户端自动重放", () => {
   assert.deepEqual(getRequestPolicy("records", "list"), { timeoutMs: 12000, retries: 1, delayMs: 250 });
-  assert.deepEqual(getRequestPolicy("records", "create"), { timeoutMs: 0, retries: 0, delayMs: 0 });
   assert.deepEqual(getRequestPolicy("login"), { timeoutMs: 12000, retries: 1, delayMs: 250 });
+  // 写操作不能是 0（无超时），否则悬挂的写请求会让 UI 永远 loading
+  assert.deepEqual(getRequestPolicy("records", "create"), {
+    timeoutMs: 20000,
+    retries: 0,
+    delayMs: 0,
+    timeoutMessage: WRITE_TIMEOUT_MESSAGE
+  });
+  assert.deepEqual(getRequestPolicy("plans", "update"), {
+    timeoutMs: 20000,
+    retries: 0,
+    delayMs: 0,
+    timeoutMessage: WRITE_TIMEOUT_MESSAGE
+  });
+  assert.deepEqual(getRequestPolicy("rewards", "grant"), {
+    timeoutMs: 20000,
+    retries: 0,
+    delayMs: 0,
+    timeoutMessage: WRITE_TIMEOUT_MESSAGE
+  });
+});
+
+test("带服务端幂等键的写操作 react/redeemItem 允许自动重试一次", () => {
+  assert.deepEqual(getRequestPolicy("records", "react"), {
+    timeoutMs: 20000,
+    retries: 1,
+    delayMs: 250,
+    timeoutMessage: WRITE_TIMEOUT_MESSAGE
+  });
+  assert.deepEqual(getRequestPolicy("rewards", "redeemItem"), {
+    timeoutMs: 20000,
+    retries: 1,
+    delayMs: 250,
+    timeoutMessage: WRITE_TIMEOUT_MESSAGE
+  });
+});
+
+test("写操作超时携带“结果未知，请刷新确认”文案", async () => {
+  await assert.rejects(
+    executeWithRetry(
+      () => new Promise(() => {}),
+      { timeoutMs: 15, timeoutMessage: WRITE_TIMEOUT_MESSAGE }
+    ),
+    (error) => error.code === "REQUEST_TIMEOUT" &&
+      error.message === WRITE_TIMEOUT_MESSAGE &&
+      error.userMessage === WRITE_TIMEOUT_MESSAGE
+  );
 });
 
 test("云函数只读调用遇到 callFunction 瞬时失败会重试", async (t) => {
@@ -55,4 +102,31 @@ test("云函数只读调用遇到 callFunction 瞬时失败会重试", async (t)
   const result = await cloudApi.call("records", { action: "list" });
   assert.deepEqual(result, { records: [] });
   assert.equal(attempts, 2);
+});
+
+test("写操作超时文案能穿过 cloudApi.getErrorMessage 到达 UI", async (t) => {
+  const timeoutMessage = "请求超时，结果未知，请刷新确认后再重试";
+  global.wx = {
+    cloud: {
+      callFunction() {
+        // 模拟 shared/retry 的 runWithTimeout 在写操作超时时抛出的错误形态
+        const error = new Error(timeoutMessage);
+        error.code = "REQUEST_TIMEOUT";
+        error.userMessage = timeoutMessage;
+        return Promise.reject(error);
+      }
+    }
+  };
+  t.after(() => { delete global.wx; });
+
+  const cloudApi = require("../couple-miniprogram/miniprogram/services/cloudApi");
+  let caught = null;
+  try {
+    await cloudApi.call("records", { action: "create" });
+  } catch (error) {
+    caught = error;
+  }
+  assert.ok(caught, "写操作超时应向上抛出");
+  assert.equal(caught.code, "REQUEST_TIMEOUT");
+  assert.equal(cloudApi.getErrorMessage(caught), timeoutMessage);
 });

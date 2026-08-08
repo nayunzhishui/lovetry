@@ -1,6 +1,14 @@
 const api = require("../../services/cloudApi");
 
 Page({
+  // 联调页已移出正式页面注册，仅供本地编译场景使用；双保险：开关关闭时直接退回
+  onLoad() {
+    if (!require("../../config").enableDeveloperTools) {
+      wx.navigateBack();
+      return;
+    }
+  },
+
   data: {
     running: false,
     steps: [
